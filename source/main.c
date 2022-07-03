@@ -1,15 +1,23 @@
 #include "defines.h"
 #include "os/os.h"
-#include "base/mem.h"
+#include "base/base.h"
 
 #include <GLFW/glfw3.h>
 #include <assert.h>
 
-b8  is_power_of_two(uintptr_t x);
-u64 align_forward_u64(u64 ptr, u64 align);
+int another_test();
+
+int test() {
+	LogReturn(0, "Returned 0");
+}
 
 int main() {
 	OS_Init();
+	
+	Log("A Simple Log");
+	LogError("Error %d", 10);
+	test();
+	another_test();
 	
 	ThreadContext context = {0};
 	tctx_init(&context);
@@ -21,4 +29,8 @@ int main() {
 	glfwTerminate();
 	
 	tctx_free(&context);
+}
+
+int another_test() {
+	LogReturn(0, "Returned 0 from another test");
 }

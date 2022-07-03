@@ -119,4 +119,8 @@ exit(-10);          \
 #define MemoryZero(d,z) memset((d), 0, (z))
 #define MemoryZeroStruct(d,s) MemoryZero((d),sizeof((s)))
 
+#define Statement(s) do {\
+s\
+} while (0)
+
 #endif //DEFINES_H

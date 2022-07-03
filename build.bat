@@ -25,9 +25,9 @@ FOR %%f in (source\impl\*.c) do (
 )
 SET c_filenames=!c_filenames! source\os\os.c
 
-SET compiler_flags=-Wall -Wvarargs -Werror -Wno-unused-function -Wno-format-security -Wno-incompatible-pointer-types-discards-qualifiers -Wno-unused-but-set-variable
+SET compiler_flags=-Wall -Wvarargs -Werror -Wno-unused-function -Wno-format-security -Wno-incompatible-pointer-types-discards-qualifiers -Wno-unused-but-set-variable -fsanitize=address
 SET include_flags=-Isource -Ithird_party/include
-SET linker_flags=-g -lshell32 -luser32 -lwinmm -luserenv -lgdi32 -lopengl32 -Lthird_party/lib -lglfw3dll
+SET linker_flags=-g -lshell32 -luser32 -lwinmm -luserenv -lgdi32 -lopengl32 -ldxguid -ld3d11 -Lthird_party/lib -lglfw3dll
 SET defines=-D_DEBUG -D_CRT_SECURE_NO_WARNINGS
 SET output=-o bin/codebase.exe
 
