@@ -30,6 +30,7 @@ void* arena_alloc_array_sized(M_Arena* arena, u64 elem_size, u64 count);
 arena_alloc_array_sized(arena, sizeof(elem_type), count)
 
 void arena_init(M_Arena* arena);
+void arena_init_sized(M_Arena* arena, u64 max);
 void arena_clear(M_Arena* arena);
 void arena_free(M_Arena* arena);
 

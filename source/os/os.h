@@ -27,6 +27,7 @@ void  OS_MemoryRelease(void* memory, u64 size);
 
 b32    OS_FileCreate(string filename);
 
+b32    OS_FileExists(string filename);
 b32    OS_FileRename(string filename, string new_name);
 string OS_FileRead(M_Arena* arena, string filename);
 b32    OS_FileCreateWrite(string filename, string data);

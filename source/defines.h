@@ -119,6 +119,8 @@ exit(-10);          \
 #define MemoryZero(d,z) memset((d), 0, (z))
 #define MemoryZeroStruct(d,s) MemoryZero((d),sizeof((s)))
 
+#define ArrayCount(a) (sizeof(a) / sizeof(a[0]))
+
 #define Statement(s) do {\
 s\
 } while (0)

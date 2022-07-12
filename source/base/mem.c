@@ -141,6 +141,14 @@ void arena_init(M_Arena* arena) {
     arena->static_size = false;
 }
 
+void arena_init_sized(M_Arena* arena, u64 max) {
+	arena->max = max;
+    arena->memory = OS_MemoryReserve(arena->max);
+    arena->alloc_position = 0;
+    arena->commit_position = 0;
+    arena->static_size = false;
+}
+
 void arena_clear(M_Arena* arena) {
     arena_dealloc(arena, arena->alloc_position);
 }
