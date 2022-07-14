@@ -110,4 +110,8 @@ OS_Library OS_LibraryLoad(string path);
 void_func* OS_LibraryGetFunction(OS_Library lib, char* name);
 void       OS_LibraryRelease(OS_Library lib);
 
+//~ Windowing
+
+#include "window.h"
+
 #endif //OS_H

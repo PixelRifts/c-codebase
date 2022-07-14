@@ -3,7 +3,7 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
-#include "stdio.h"
+#include <stdio.h>
 
 // Unsigned int types.
 typedef unsigned char u8;
@@ -28,11 +28,12 @@ typedef float f32;
 typedef double f64;
 
 // Boolean types
-typedef char b8;
+typedef u8  b8;
 typedef u32 b32;
 
 // Void function type
 typedef void void_func(void);
+typedef void (*void_func_ptr)(void);
 
 #define true 1
 #define false 0
@@ -58,15 +59,16 @@ typedef void void_func(void);
 #  define FILE_NAME __FILE__
 #endif
 
-#define trace do { printf("Trace %d\n", __LINE__); fflush(stdout); } while (0)
-#define flush fflush(stdout)
-#define unreachable do { printf("How did we get here? In %s on line %d\n", FILE_NAME, __LINE__); fflush(stdout); } while(0)
+#define Statement(s) do {\
+s\
+} while (0)
 
-#define FATAL(s)            \
-do {                    \
-fprintf(stderr, s); \
-exit(-10);          \
-} while(false)
+#define flush fflush(stdout)
+#define trace Statement(printf("%s:%d: Trace\n", FILE_NAME, __LINE__); flush;)
+#define unreachable Statement(\
+printf("How did we get here? In %s on line %d\n", FILE_NAME, __LINE__);\
+flush;\
+)
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
 #  define PLATFORM_WIN
@@ -120,9 +122,5 @@ exit(-10);          \
 #define MemoryZeroStruct(d,s) MemoryZero((d),sizeof((s)))
 
 #define ArrayCount(a) (sizeof(a) / sizeof(a[0]))
-
-#define Statement(s) do {\
-s\
-} while (0)
 
 #endif //DEFINES_H

@@ -1,5 +1,5 @@
 //~ OpenGL 4.6 Resources
-#include <glad/glad.h>
+#include "gl_functions.h"
 
 typedef struct R_GL46Buffer {
 	R_BufferFlags flags;

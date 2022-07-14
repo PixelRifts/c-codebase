@@ -1,5 +1,5 @@
 //~ OpenGL 3.3 Resources
-#include <glad/glad.h>
+#include "gl_functions.h"
 
 typedef struct R_GL33Buffer {
 	R_BufferFlags flags;

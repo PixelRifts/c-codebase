@@ -3,5 +3,5 @@
 #include "os.h"
 
 #ifdef PLATFORM_WIN
-#include "os_win.c"
+#include "impl/win32_os.c"
 #endif

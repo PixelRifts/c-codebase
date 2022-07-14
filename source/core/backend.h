@@ -4,10 +4,13 @@
 #define BACKEND_H
 
 #include "defines.h"
+#include "base/base.h"
 #include <GLFW/glfw3.h>
 
+#include "os/window.h"
+
 //~ Initialization
-void B_BackendInitWindow(void);
-void B_BackendInit(GLFWwindow* window);
+void B_BackendInit(OS_Window* window);
+void B_BackendSwapchainNext(OS_Window* window);
 
 #endif //BACKEND_H
