@@ -72,24 +72,26 @@ typedef BOOL  WINAPI W32_wglDeleteContext(HGLRC);
 typedef BOOL  WINAPI W32_wglMakeCurrent(HDC, HGLRC);
 typedef PROC  WINAPI W32_wglGetProcAddress(LPCSTR);
 
-typedef BOOL WINAPI W32_wglChoosePixelFormatARB(HDC hdc,
-												const int* piAttribIList,
-												const FLOAT* pfAttribFList,
-												UINT nMaxFormats,
-												int* piFormats,
-												UINT* nNumFormats);
-typedef HGLRC WINAPI W32_wglCreateContextAttribsARB(HDC hdc, HGLRC hShareContext,
-													const int* attribList);
-typedef HGLRC WINAPI W32_wglCreateContextAttribsARB(HDC hdc, HGLRC hShareContext,
-													const int* attribList);
+typedef BOOL WINAPI W32_wglChoosePixelFormatARB(HDC hdc, const int* piAttribIList, const FLOAT* pfAttribFList, UINT nMaxFormats, int* piFormats, UINT* nNumFormats);
+typedef HGLRC WINAPI W32_wglCreateContextAttribsARB(HDC hdc, HGLRC hShareContext, const int* attribList);
 typedef BOOL WINAPI W32_wglSwapLayerBuffers(HDC hdc, UINT plane);
-W32_wglSwapLayerBuffers* v_wglSwapLayerBuffers;
+typedef BOOL WINAPI W32_wglShareLists(HGLRC hglrc1, HGLRC  hglrc2);
+
+static W32_wglCreateContext* v_wglCreateContext;
+static W32_wglShareLists* v_wglShareLists;
+static W32_wglDeleteContext* v_wglDeleteContext;
+static W32_wglMakeCurrent* v_wglMakeCurrent;
+static W32_wglGetProcAddress* v_wglGetProcAddress;
+static W32_wglChoosePixelFormatARB* v_wglChoosePixelFormatARB;
+static W32_wglCreateContextAttribsARB* v_wglCreateContextAttribsARB;
 
 typedef struct W32_Window {
 	u32 width;
 	u32 height;
 	string title;
 	HWND handle;
+	HGLRC glrc;
+	u64 v[6];
 } W32_Window;
 
 static LRESULT CALLBACK Win32Proc(HWND window, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -109,40 +111,39 @@ static LRESULT CALLBACK Win32Proc(HWND window, UINT msg, WPARAM wparam, LPARAM l
     return result;
 }
 
-void B_BackendInit(OS_Window* _window) {
+void B_BackendInitShared(OS_Window* _window, OS_Window* _share) {
 	W32_Window* window = (W32_Window*) _window;
+	W32_Window* share = (W32_Window*) _share;
 	
 	//- Load Preliminary WGL functions 
 	HINSTANCE hinstance = GetModuleHandle(0);
-	HGLRC real_context;
 	
-	HMODULE opengl_module = LoadLibraryA("opengl32.dll");
-	
-	W32_wglCreateContext* v_wglCreateContext = (W32_wglCreateContext*) GetProcAddress(opengl_module, "wglCreateContext");
-	if (!v_wglCreateContext) {
-		LogReturn(, "Win32 OpenGL WGL Function Loading: Loading wglCreateContext failed");
+	if (!v_wglCreateContext || !v_wglDeleteContext || !v_wglMakeCurrent || !v_wglGetProcAddress || !v_wglShareLists) {
+		HMODULE opengl_module = LoadLibraryA("opengl32.dll");
+		v_wglCreateContext = (W32_wglCreateContext*) GetProcAddress(opengl_module, "wglCreateContext");
+		if (!v_wglCreateContext) {
+			LogReturn(, "Win32 OpenGL WGL Function Loading: Loading wglCreateContext failed");
+		}
+		v_wglDeleteContext = (W32_wglDeleteContext*) GetProcAddress(opengl_module, "wglDeleteContext");
+		if (!v_wglDeleteContext) {
+			LogReturn(, "Win32 OpenGL WGL Function Loading: Loading wglDeleteContext failed");
+		}
+		v_wglMakeCurrent = (W32_wglMakeCurrent*) GetProcAddress(opengl_module, "wglMakeCurrent");
+		if (!v_wglMakeCurrent) {
+			LogReturn(, "Win32 OpenGL WGL Function Loading: Loading wglMakeCurrent failed");
+		}
+		v_wglGetProcAddress = (W32_wglGetProcAddress*) GetProcAddress(opengl_module, "wglGetProcAddress");
+		if (!v_wglGetProcAddress) {
+			LogReturn(, "Win32 OpenGL WGL Function Loading: Loading wglGetProcAddress failed");
+		}
+		v_wglShareLists = (W32_wglShareLists*) GetProcAddress(opengl_module, "wglShareLists");
+		if (!v_wglShareLists) {
+			LogReturn(, "Win32 OpenGL WGL Function Loading: Loading wglShareLists failed");
+		}
 	}
-	W32_wglDeleteContext* v_wglDeleteContext = (W32_wglDeleteContext*) GetProcAddress(opengl_module, "wglDeleteContext");
-	if (!v_wglDeleteContext) {
-		LogReturn(, "Win32 OpenGL WGL Function Loading: Loading wglDeleteContext failed");
-	}
-	W32_wglMakeCurrent* v_wglMakeCurrent = (W32_wglMakeCurrent*) GetProcAddress(opengl_module, "wglMakeCurrent");
-	if (!v_wglMakeCurrent) {
-		LogReturn(, "Win32 OpenGL WGL Function Loading: Loading wglMakeCurrent failed");
-	}
-	W32_wglGetProcAddress* v_wglGetProcAddress = (W32_wglGetProcAddress*) GetProcAddress(opengl_module, "wglGetProcAddress");
-	if (!v_wglGetProcAddress) {
-		LogReturn(, "Win32 OpenGL WGL Function Loading: Loading wglGetProcAddress failed");
-	}
-	W32_wglSwapLayerBuffers* v_wglSwapLayerBuffers = (W32_wglSwapLayerBuffers*) GetProcAddress(opengl_module, "wglSwapLayerBuffers");
-	if (!v_wglSwapLayerBuffers) {
-		LogReturn(, "Win32 OpenGL WGL Function Loading: Loading wglSwapLayerBuffers failed");
-	}
-	W32_wglChoosePixelFormatARB* v_wglChoosePixelFormatARB;
-	W32_wglCreateContextAttribsARB* v_wglCreateContextAttribsARB;
 	
 	//- Create Dummy OpenGL Context 
-	{
+	if (!v_wglChoosePixelFormatARB || !v_wglCreateContextAttribsARB) {
 		WNDCLASSA wc = {
 			.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC,
 			.lpfnWndProc = DefWindowProcA,
@@ -267,12 +268,16 @@ void B_BackendInit(OS_Window* _window) {
 			0,
 		};
 		
-		real_context = v_wglCreateContextAttribsARB(dc, 0, context_attribs);
-		if (!real_context) {
+		if (share) {
+			window->glrc = v_wglCreateContextAttribsARB(dc, share->glrc, context_attribs);
+		} else {
+			window->glrc = v_wglCreateContextAttribsARB(dc, 0, context_attribs);
+		}
+		if (!window->glrc) {
 			ReleaseDC(window->handle, dc);
 			LogReturn(, "Win32 OpenGL Window: Context Creation Failed");
 		}
-		if (!v_wglMakeCurrent(dc, real_context)) {
+		if (!v_wglMakeCurrent(dc, window->glrc)) {
 			ReleaseDC(window->handle, dc);
 			LogReturn(, "Win32 OpenGL Window: Context Activation Failed");
 		}
@@ -281,11 +286,34 @@ void B_BackendInit(OS_Window* _window) {
 		
 		ReleaseDC(window->handle, dc);
 	}
+	
+	if (share) {
+		v_wglShareLists(share->glrc, window->glrc); // What does this do exactly :think:
+	}
+}
+
+void B_BackendInit(OS_Window* _window) {
+	B_BackendInitShared(_window, 0);
+}
+
+void B_BackendSelectRenderWindow(OS_Window* _window) {
+	W32_Window* window = (W32_Window*) _window;
+	HDC dc = GetDC(window->handle);
+	v_wglMakeCurrent(dc, window->glrc);
+	ReleaseDC(window->handle, dc);
 }
 
 void B_BackendSwapchainNext(OS_Window* _window) {
 	W32_Window* window = (W32_Window*) _window;
 	HDC dc = GetDC(window->handle);
 	SwapBuffers(dc);
+	ReleaseDC(window->handle, dc);
+}
+
+void B_BackendFree(OS_Window* _window) {
+	W32_Window* window = (W32_Window*) _window;
+	HDC dc = GetDC(window->handle);
+	v_wglMakeCurrent(dc, 0);
+	v_wglDeleteContext(window->glrc);
 	ReleaseDC(window->handle, dc);
 }

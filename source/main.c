@@ -1,6 +1,7 @@
 #include "defines.h"
 #include "os/os.h"
 #include "os/window.h"
+#include "os/input.h"
 #include "base/tctx.h"
 #include "core/backend.h"
 #include "core/resources.h"
@@ -23,6 +24,7 @@ int main() {
 	OS_WindowShow(&window);
 	
 	//- Graphics 
+	B_BackendSelectRenderWindow(&window);
 	R_ShaderPack program = {0};
 	R_ShaderPackAllocLoad(&program, str_lit("res/test"));
 	
@@ -46,20 +48,36 @@ int main() {
 	while (OS_WindowIsOpen(&window)) {
 		OS_PollEvents();
 		
-		glClear(GL_COLOR_BUFFER_BIT);
+		if (OS_InputKeyPressed('A')) {
+			LogError("We never press the A key :(");
+			flush;
+		}
 		
+		if (OS_InputKeyPressed('B')) {
+			if (OS_InputKey(Input_Key_Shift)) {
+				Log("B with shift is even better :D");
+				flush;
+			} else {
+				Log("B is good though :)");
+				flush;
+			}
+		}
+		
+		glClear(GL_COLOR_BUFFER_BIT);
 		R_PipelineBind(&vin);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 		
 		B_BackendSwapchainNext(&window);
 	}
 	
-	
 	//- Graphics 
 	R_BufferFree(&buf);
 	R_PipelineFree(&vin);
 	R_ShaderPackFree(&program);
 	//- End Graphics 
+	
+	B_BackendFree(&window);
+	OS_WindowClose(&window);
 	
 	tctx_free(&context);
 }

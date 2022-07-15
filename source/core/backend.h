@@ -11,6 +11,10 @@
 
 //~ Initialization
 void B_BackendInit(OS_Window* window);
+void B_BackendInitShared(OS_Window* window, OS_Window* share);
+
+void B_BackendSelectRenderWindow(OS_Window* window);
 void B_BackendSwapchainNext(OS_Window* window);
+void B_BackendFree(OS_Window* window);
 
 #endif //BACKEND_H
