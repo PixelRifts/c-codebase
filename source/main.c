@@ -44,6 +44,7 @@ int main() {
 	
 	R_PipelineAddBuffer(&vin, &buf, 2);
 	//- End Graphics 
+	if (!glClear) { LogError("Clear not found"); flush; }
 	
 	while (OS_WindowIsOpen(&window)) {
 		OS_PollEvents();
@@ -66,7 +67,6 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT);
 		R_PipelineBind(&vin);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
-		
 		B_BackendSwapchainNext(&window);
 	}
 	

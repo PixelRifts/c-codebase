@@ -8,8 +8,10 @@ typedef long_func* loader_func(const char* name);
 GL_FUNCTIONS
 #undef X
 
-void __LoadGLFunctions(loader_func* load_proc) {
-#define X(Name, Return, Args) Name = (GL_##Name##_Func *) load_proc(#Name);
+void __LoadGLFunctions(loader_func* load_proc, loader_func* fallback) {
+#define X(Name, Return, Args) \
+Name = (GL_##Name##_Func *) load_proc(#Name);\
+if (!Name) Name = (GL_##Name##_Func *) fallback(#Name);
 	
 	GL_FUNCTIONS
 		

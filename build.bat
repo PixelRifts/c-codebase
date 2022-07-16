@@ -3,12 +3,6 @@ SetLocal EnableDelayedExpansion
 
 IF NOT EXIST bin mkdir bin
 
-REM Copy over dlls
-IF NOT EXIST bin\glfw3.dll (
-	ECHO INFO: glfw3.dll not found in bin folder: Copying it over from third_party\lib
-	COPY "third_party\lib\glfw3.dll" "bin"
-)
-
 SET cc=clang
 
 REM Get's list of all C files
@@ -24,7 +18,7 @@ REM SET compiler_flags=
 SET compiler_flags=-Wall -Wvarargs -Werror -Wno-unused-function -Wno-format-security -Wno-incompatible-pointer-types-discards-qualifiers -Wno-unused-but-set-variable -Wno-int-to-void-pointer-cast
 
 SET include_flags=-Isource -Ithird_party/include -Ithird_party/source
-SET linker_flags=-g -lmsvcrt -lshell32 -luser32 -lwinmm -luserenv -lgdi32 -lopengl32 -Lthird_party/lib
+SET linker_flags=-g -lmsvcrt -lshell32 -luser32 -lwinmm -luserenv -lgdi32 -Lthird_party/lib
 SET defines=-D_DEBUG -D_CRT_SECURE_NO_WARNINGS
 SET output=-obin/codebase.exe
 SET backend=-DBACKEND_GL46

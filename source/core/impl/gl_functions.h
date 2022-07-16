@@ -117,6 +117,8 @@ X(glBindVertexArray, void, (GLuint vao_handle))\
 X(glVertexAttribPointer, void, (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer))\
 X(glEnableVertexAttribArray, void, (GLuint index))\
 X(glDeleteVertexArrays, void, (GLsizei count, const GLuint* vao_handles))\
+X(glDrawArrays, void, (GLenum mode, GLint first, GLsizei count))\
+X(glClear, void, (GLbitfield mask))\
 
 #elif defined(BACKEND_GL46)
 
@@ -145,7 +147,8 @@ X(glVertexArrayAttribBinding, void, (GLuint vao_handle, GLuint attribute_index, 
 X(glVertexArrayVertexBuffer, void, (GLuint vao_handle, GLuint binding_index, GLuint buffer_handle, GLintptr offset, GLsizei stride))\
 X(glEnableVertexArrayAttrib, void, (GLuint vao_handle, GLuint index))\
 X(glDeleteVertexArrays, void, (GLsizei count, const GLuint* vao_handles))\
-
+X(glDrawArrays, void, (GLenum mode, GLint first, GLsizei count))\
+X(glClear, void, (GLbitfield mask))\
 
 #endif
 

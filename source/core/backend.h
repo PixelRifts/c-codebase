@@ -5,7 +5,6 @@
 
 #include "defines.h"
 #include "base/base.h"
-#include <GLFW/glfw3.h>
 
 #include "os/window.h"
 

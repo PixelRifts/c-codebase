@@ -1,9 +1,3 @@
-#if defined(BACKEND_GL46)
-#  include <glad/glad.h>
-#endif
-
-
-
 #include "backend.h"
 
 #if defined(BACKEND_GL46)

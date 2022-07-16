@@ -17,7 +17,7 @@ typedef struct W32_Window {
 MSG _Msg;
 char* _classname_buffer = {0};
 u32 _window_ct = 0;
-
+void Render();
 
 void Test() {
 	printf("sizeof(HWND) = %llu\n", sizeof(HWND));

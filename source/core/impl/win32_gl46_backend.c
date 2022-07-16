@@ -3,7 +3,7 @@
 // From gl_functions.h
 typedef i64 long_func();
 typedef long_func* loader_func(const char* name);
-void __LoadGLFunctions(loader_func* load_proc);
+void __LoadGLFunctions(loader_func* load_proc, loader_func* fallback);
 
 #define WGL_NUMBER_PIXEL_FORMATS_ARB 0x2000
 #define WGL_DRAW_TO_WINDOW_ARB 0x2001
@@ -77,6 +77,8 @@ typedef HGLRC WINAPI W32_wglCreateContextAttribsARB(HDC hdc, HGLRC hShareContext
 typedef BOOL WINAPI W32_wglSwapLayerBuffers(HDC hdc, UINT plane);
 typedef BOOL WINAPI W32_wglShareLists(HGLRC hglrc1, HGLRC  hglrc2);
 
+static HMODULE opengl_module;
+
 static W32_wglCreateContext* v_wglCreateContext;
 static W32_wglShareLists* v_wglShareLists;
 static W32_wglDeleteContext* v_wglDeleteContext;
@@ -84,6 +86,10 @@ static W32_wglMakeCurrent* v_wglMakeCurrent;
 static W32_wglGetProcAddress* v_wglGetProcAddress;
 static W32_wglChoosePixelFormatARB* v_wglChoosePixelFormatARB;
 static W32_wglCreateContextAttribsARB* v_wglCreateContextAttribsARB;
+
+long_func* _GetAddress(const char* name) {
+	return (long_func*) GetProcAddress(opengl_module, name);
+}
 
 typedef struct W32_Window {
 	u32 width;
@@ -118,8 +124,8 @@ void B_BackendInitShared(OS_Window* _window, OS_Window* _share) {
 	//- Load Preliminary WGL functions 
 	HINSTANCE hinstance = GetModuleHandle(0);
 	
-	if (!v_wglCreateContext || !v_wglDeleteContext || !v_wglMakeCurrent || !v_wglGetProcAddress || !v_wglShareLists) {
-		HMODULE opengl_module = LoadLibraryA("opengl32.dll");
+	if (!opengl_module || !v_wglCreateContext || !v_wglDeleteContext || !v_wglMakeCurrent || !v_wglGetProcAddress || !v_wglShareLists) {
+		opengl_module = LoadLibraryA("opengl32.dll");
 		v_wglCreateContext = (W32_wglCreateContext*) GetProcAddress(opengl_module, "wglCreateContext");
 		if (!v_wglCreateContext) {
 			LogReturn(, "Win32 OpenGL WGL Function Loading: Loading wglCreateContext failed");
@@ -282,7 +288,7 @@ void B_BackendInitShared(OS_Window* _window, OS_Window* _share) {
 			LogReturn(, "Win32 OpenGL Window: Context Activation Failed");
 		}
 		
-		__LoadGLFunctions(v_wglGetProcAddress);
+		__LoadGLFunctions(v_wglGetProcAddress, _GetAddress);
 		
 		ReleaseDC(window->handle, dc);
 	}
