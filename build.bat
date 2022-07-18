@@ -5,9 +5,8 @@ IF NOT EXIST bin mkdir bin
 
 SET cc=clang
 
-REM Get's list of all C files
+REM Gets list of all C files
 SET c_filenames= 
-
 FOR %%f in (source\*.c) do SET c_filenames=!c_filenames! %%f
 FOR %%f in (source\base\*.c) do SET c_filenames=!c_filenames! %%f
 FOR %%f in (source\impl\*.c) do SET c_filenames=!c_filenames! %%f

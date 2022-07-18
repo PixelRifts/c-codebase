@@ -84,6 +84,15 @@ static u32 get_shader_type_of(R_ShaderType type) {
 	return GL_INVALID_ENUM;
 }
 
+static u32 get_input_assembly_type_of(R_InputAssembly assembly) {
+	AssertTrue(2 == InputAssembly_MAX, "Non Exhaustive switch statement: get_input_assembly_type_of in gl33 backend");
+	switch (assembly) {
+		case InputAssembly_Triangles: return GL_TRIANGLES;
+		case InputAssembly_Lines: return GL_LINES;
+	}
+	return GL_INVALID_ENUM;
+}
+
 //~ Function Implementations
 
 void R_BufferAlloc(R_Buffer* _buf, R_BufferFlags flags) {
@@ -210,7 +219,7 @@ void R_ShaderPackFree(R_ShaderPack* _pack) {
 	glDeleteProgram(pack->handle);
 }
 
-//~ Vertex Input (VAOs)
+//~ Pipeline (VAOs)
 
 void R_PipelineAlloc(R_Pipeline* _in, R_InputAssembly assembly, R_Attribute* attributes, R_ShaderPack* shader, u32 attribute_count) {
 	R_GL33Pipeline* in = (R_GL33Pipeline*) _in;
@@ -250,3 +259,98 @@ void R_PipelineFree(R_Pipeline* _in) {
 	R_GL33Pipeline* in = (R_GL33Pipeline*) _in;
 	glDeleteVertexArrays(1, &in->handle);
 }
+
+//~ Command Buffers
+
+static void R_CommandBufferPushBytes(R_CommandBuffer* cb, u8* from, u32 count) {
+    if (cb->idx + count > cb->cap) {
+        // reallocate buffer
+        u8* old_buffer = cb->buffer;
+        cb->cap = CommandBuffer_GrowCapacity(cb->cap);
+        cb->buffer = calloc(cb->cap, sizeof(u8));
+        if (old_buffer) {
+            memmove(cb->buffer, old_buffer, cb->idx);
+            free(old_buffer);
+        }
+    }
+    memmove(cb->buffer + cb->idx, from, count);
+    cb->idx += count;
+}
+
+static void R_CommandBufferOpcode(R_CommandBuffer* cb, u32 op) {
+    u32 op_a = op;
+    R_CommandBufferPushBytes(cb, (u8*)&op_a, sizeof(u32));
+}
+
+void R_CommandBufferAlloc(R_CommandBuffer* cb) {
+	// Do nothing lol
+}
+
+void R_CommandBufferStartRecording(R_CommandBuffer* cb) { cb->idx = 0; }
+
+void R_CommandBufferEndRecording(R_CommandBuffer* cb) {
+	// Do nothing lol
+}
+
+void R_CommandBufferPipelineBind(R_CommandBuffer* cb, R_Pipeline* _pipeline) {
+	R_Pipeline* pipeline = _pipeline;
+	R_CommandBufferOpcode(cb, Command_BindPipeline);
+	R_CommandBufferPushBytes(cb, (u8*) &pipeline, sizeof(R_Pipeline*));
+}
+
+void R_CommandBufferClearScreen(R_CommandBuffer* cb, R_BufferMask _mask) {
+	R_BufferMask mask = _mask;
+	R_CommandBufferOpcode(cb, Command_Clear);
+	R_CommandBufferPushBytes(cb, (u8*) &mask, sizeof(R_BufferMask));
+}
+
+void R_CommandBufferDraw(R_CommandBuffer* cb, u32 start, u32 count) {
+	u32 args[] = { start, count };
+	R_CommandBufferOpcode(cb, Command_Draw);
+	R_CommandBufferPushBytes(cb, (u8*) args, sizeof(u32) * 2);
+}
+
+#define CommandBuffer_Read(type) *((type*) (cb->buffer + i))
+void R_CommandBufferExecute(R_CommandBuffer* cb) {
+	R_Pipeline* current_pipeline;
+	
+	for (u32 i = 0; i < cb->idx;) {
+        u32 opcode = CommandBuffer_Read(u32);
+        i += sizeof(u32);
+        
+        switch (opcode) {
+            case Command_BindPipeline: {
+				current_pipeline = CommandBuffer_Read(R_Pipeline*);
+				i += sizeof(R_Pipeline*);
+				R_PipelineBind(current_pipeline);
+			} break;
+			
+			case Command_Clear: {
+				R_BufferMask mask = CommandBuffer_Read(R_BufferMask);
+				i += sizeof(R_BufferMask);
+				glClear(mask);
+			} break;
+			
+			case Command_Draw: {
+				u32 start = CommandBuffer_Read(u32);
+				i += sizeof(u32);
+				u32 count = CommandBuffer_Read(u32);
+				i += sizeof(u32);
+				glDrawArrays(get_input_assembly_type_of(current_pipeline->assembly), start, count);
+			} break;
+			
+			default: {
+				LogError("Unknown opcode: %d\n", opcode);
+			} goto done;
+        }
+    }
+	done: return;
+}
+#undef CommandBuffer_Read
+
+void R_CommandBufferFree(R_CommandBuffer* cb) {
+	if (cb->buffer) free(cb->buffer);
+	cb->idx = 0;
+	cb->cap = 0;
+}
+
