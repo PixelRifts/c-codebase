@@ -70,6 +70,7 @@ typedef u64 GLuint64EXT;
 #define GL_INT 0x1404
 #define GL_UNSIGNED_INT 0x1405
 #define GL_FLOAT 0x1406
+#define GL_UNSIGNED_INT_24_8 0x84FA
 
 #define GL_INVALID_ENUM 0x0500
 
@@ -91,6 +92,41 @@ typedef u64 GLuint64EXT;
 #define GL_DYNAMIC_STORAGE_BIT 0x0100
 #define GL_CLIENT_STORAGE_BIT 0x0200
 
+#define GL_TEXTURE_2D 0x0DE1
+#define GL_TEXTURE0 0x84C0
+
+#define GL_TEXTURE_MAG_FILTER 0x2800
+#define GL_TEXTURE_MIN_FILTER 0x2801
+#define GL_TEXTURE_WRAP_S 0x2802
+#define GL_TEXTURE_WRAP_T 0x2803
+
+#define GL_CLAMP_TO_EDGE 0x812F
+#define GL_CLAMP_TO_BORDER 0x812D
+#define GL_REPEAT 0x2901
+#define GL_MIRRORED_REPEAT 0x8370
+#define GL_MIRROR_CLAMP_TO_EDGE 0x8743
+
+#define GL_NEAREST 0x2600
+#define GL_LINEAR 0x2601
+#define GL_NEAREST_MIPMAP_NEAREST 0x2700
+#define GL_LINEAR_MIPMAP_NEAREST 0x2701
+#define GL_NEAREST_MIPMAP_LINEAR 0x2702
+#define GL_LINEAR_MIPMAP_LINEAR 0x2703
+
+#define GL_RED_INTEGER 0x8D94
+#define GL_RED 0x1903
+#define GL_RG 0x8227
+#define GL_RGB 0x1907
+#define GL_RGBA 0x1908
+#define GL_DEPTH_STENCIL 0x84F9
+
+#define GL_R32I 0x8235
+#define GL_R8 0x8229
+#define GL_RG8 0x822B
+#define GL_RGB8 0x8051
+#define GL_RGBA8 0x8058
+#define GL_DEPTH24_STENCIL8 0x88F0
+
 #if defined(BACKEND_GL33)
 
 #  define GL_FUNCTIONS \
@@ -108,6 +144,11 @@ X(glCreateProgram, u32, (void))\
 X(glAttachShader, void, (GLuint program_handle, GLuint shader_handle))\
 X(glLinkProgram, void, (GLuint program_handle))\
 X(glUseProgram, void, (GLuint program_handle))\
+X(glGetUniformLocation, i32, (GLuint program_handle, const GLchar *name))\
+X(glUniformMatrix4fv, void, (GLint location, GLsizei count, GLboolean transpose, const GLfloat* value))\
+X(glUniform1i, void, (GLint location, GLint value))\
+X(glUniform1f, void, (GLint location, GLfloat value))\
+X(glUniform4f, void, (GLint location, GLfloat x, GLfloat y, GLfloat z, GLfloat w))\
 X(glGetProgramiv, void, (GLuint program_handle, GLenum param_name, GLint* values))\
 X(glGetProgramInfoLog, void, (GLuint program_handle, GLsizei buf_size, GLsizei* length, GLchar* log))\
 X(glDetachShader, void, (GLuint program_handle, GLuint shader_handle))\
@@ -119,6 +160,13 @@ X(glEnableVertexAttribArray, void, (GLuint index))\
 X(glDeleteVertexArrays, void, (GLsizei count, const GLuint* vao_handles))\
 X(glDrawArrays, void, (GLenum mode, GLint first, GLsizei count))\
 X(glClear, void, (GLbitfield mask))\
+X(glGenTextures, void, (GLsizei count, GLuint* texture_handles))\
+X(glBindTexture, void, (GLenum target, GLuint texture_handle))\
+X(glTexImage2D, void, (GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void* data))\
+X(glTexParameteri, void, (GLenum target, GLenum pname, GLint param))\
+X(glActiveTexture, void, (GLenum texture_handle))\
+X(glTexSubImage2D, void, (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void* data))\
+X(glDeleteTextures, void, (GLsizei count, GLuint* texture_handles))\
 
 #elif defined(BACKEND_GL46)
 
@@ -135,6 +183,11 @@ X(glDeleteShader, void, (GLuint shader_handle))\
 X(glCreateProgram, u32, (void))\
 X(glAttachShader, void, (GLuint program_handle, GLuint shader_handle))\
 X(glLinkProgram, void, (GLuint program_handle))\
+X(glGetUniformLocation, i32, (GLuint program_handle, const GLchar *name))\
+X(glUniformMatrix4fv, void, (GLint location, GLsizei count, GLboolean transpose, const GLfloat* value))\
+X(glUniform1i, void, (GLint location, GLint value))\
+X(glUniform1f, void, (GLint location, GLfloat value))\
+X(glUniform4f, void, (GLint location, GLfloat x, GLfloat y, GLfloat z, GLfloat w))\
 X(glUseProgram, void, (GLuint program_handle))\
 X(glGetProgramiv, void, (GLuint program_handle, GLenum param_name, GLint* values))\
 X(glGetProgramInfoLog, void, (GLuint program_handle, GLsizei buf_size, GLsizei* length, GLchar* log))\
@@ -149,6 +202,13 @@ X(glEnableVertexArrayAttrib, void, (GLuint vao_handle, GLuint index))\
 X(glDeleteVertexArrays, void, (GLsizei count, const GLuint* vao_handles))\
 X(glDrawArrays, void, (GLenum mode, GLint first, GLsizei count))\
 X(glClear, void, (GLbitfield mask))\
+X(glCreateTextures, void, (GLenum type, GLsizei count, GLuint* texture_handles))\
+X(glBindTextureUnit, void, (GLint slot, GLuint texture_handle))\
+X(glTextureStorage2D, void, (GLuint texture_handle, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height))\
+X(glTextureParameteri, void, (GLuint texture_handle, GLenum pname, GLint param))\
+X(glTextureSubImage2D, void, (GLuint texture_handle, GLint level, GLint xoffset, GLint yoffset, GLsizei width,\
+GLsizei height, GLenum format, GLenum type, const void* data))\
+X(glDeleteTextures, void, (GLsizei count, GLuint* texture_handles))\
 
 #endif
 

@@ -10,8 +10,6 @@ typedef struct OS_Window {
 	u64 v[8];
 } OS_Window;
 
-void Test();
-
 OS_Window OS_WindowCreate(u32 width, u32 height, string title);
 void OS_WindowShow(OS_Window* window);
 b8   OS_WindowIsOpen(OS_Window* window);

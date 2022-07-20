@@ -19,14 +19,6 @@ char* _classname_buffer = {0};
 u32 _window_ct = 0;
 void Render();
 
-void Test() {
-	printf("sizeof(HWND) = %llu\n", sizeof(HWND));
-	printf("sizeof(W32_Window) = %llu\n", sizeof(W32_Window));
-	printf("sizeof(OS_Window) = %llu\n", sizeof(OS_Window));
-	printf("sizeof(HGLRC) = %llu\n", sizeof(HGLRC));
-	flush;
-}
-
 static LRESULT CALLBACK Win32Proc(HWND window, UINT msg, WPARAM wparam, LPARAM lparam);
 OS_Window OS_WindowCreate(u32 width, u32 height, string title) {
 	M_Scratch scratch = scratch_get();

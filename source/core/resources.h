@@ -5,6 +5,8 @@
 
 #include "defines.h"
 #include "base/str.h"
+#include "base/ds.h"
+#include "base/vmath.h"
 
 //~ Buffers
 
@@ -43,7 +45,7 @@ typedef struct R_Shader {
 } R_Shader;
 
 typedef struct R_ShaderPack {
-	u64 v[1];
+	u64 v[4];
 } R_ShaderPack;
 
 void R_ShaderAlloc(R_Shader* shader, string data, R_ShaderType type);
@@ -53,6 +55,11 @@ void R_ShaderFree(R_Shader* shader);
 void R_ShaderPackAlloc(R_ShaderPack* pack, R_Shader* shaders, u32 shader_count);
 void R_ShaderPackAllocLoad(R_ShaderPack* pack, string fp_prefix);
 void R_ShaderPackFree(R_ShaderPack* pack);
+
+void R_ShaderPackUploadMat4(R_ShaderPack* pack, string name, mat4 mat);
+void R_ShaderPackUploadInt(R_ShaderPack* pack, string name, i32 val);
+void R_ShaderPackUploadFloat(R_ShaderPack* pack, string name, f32 val);
+void R_ShaderPackUploadVec4(R_ShaderPack* pack, string name, vec4 val);
 
 //~ Pipelines (VAOs)
 
@@ -87,50 +94,79 @@ typedef struct R_Pipeline {
 	u64 v[2];
 } R_Pipeline;
 
-void R_PipelineAlloc(R_Pipeline* in, R_InputAssembly assembly, R_Attribute* attributes, R_ShaderPack* shader, u32 attribute_count);
+void R_PipelineAlloc(R_Pipeline* _in, R_InputAssembly assembly, R_Attribute* attributes, u32 attribute_count, R_ShaderPack* shader);
 void R_PipelineAddBuffer(R_Pipeline* in, R_Buffer* _buf, u32 attribute_count);
 void R_PipelineBind(R_Pipeline* in);
 void R_PipelineFree(R_Pipeline* in);
 
-//~ Command Buffers
+//~ Textures
 
-#define CommandBuffer_GrowthFactor 4
-#define CommandBuffer_GrowCapacity(cap) ((cap) < 64 ? 64 : cap * CommandBuffer_GrowthFactor)
+typedef u32 R_TextureWrapParam;
+enum {
+	TextureWrap_ClampToEdge,
+	TextureWrap_ClampToBorder,
+	TextureWrap_Repeat,
+	TextureWrap_MirroredRepeat,
+	TextureWrap_MirrorClampToEdge,
+	
+	TextureWrap_MAX
+};
 
-typedef struct R_CommandBuffer {
-	u8* buffer;
-    u32 cap;
-    u32 idx;
-} R_CommandBuffer;
+typedef u32 R_TextureResizeParam;
+enum {
+	TextureResize_Nearest,
+	TextureResize_Linear,
+	TextureResize_LinearMipmapLinear,
+	TextureResize_LinearMipmapNearest,
+	TextureResize_NearestMipmapLinear,
+	TextureResize_NearestMipmapNearest,
+	
+	TextureResize_MAX,
+};
+
+typedef u32 R_TextureFormat;
+enum {
+	TextureFormat_RInteger,
+	TextureFormat_R,
+	TextureFormat_RG,
+	TextureFormat_RGB,
+	TextureFormat_RGBA,
+	TextureFormat_DepthStencil,
+	
+	TextureFormat_MAX,
+};
+
+typedef struct R_Texture2D {
+	u32 width;
+	u32 height;
+	
+	R_TextureFormat format;
+	R_TextureResizeParam min;
+	R_TextureResizeParam mag;
+	R_TextureWrapParam wrap_s;
+	R_TextureWrapParam wrap_t;
+	
+	u64 v[1];
+} R_Texture2D;
+
+void R_Texture2DAlloc(R_Texture2D* texture, R_TextureFormat format, u32 width, u32 height, R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t);
+void R_Texture2DAllocLoad(R_Texture2D* texture, string filepath, R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t);
+void R_Texture2DData(R_Texture2D* texture, void* data);
+
+void R_Texture2DBindTo(R_Texture2D* texture, u32 slot);
+void R_Texture2DFree(R_Texture2D* texture);
+
+//~ Other
 
 typedef u32 R_BufferMask;
 enum {
-	BufferMask_Depth = 0x100,
-	BufferMask_Stencil = 0x400,
-	BufferMask_Color = 0x4000,
+	BufferMask_Color,
+	BufferMask_Depth,
+	BufferMask_Stencil,
 };
 
-typedef u32 R_Command;
-enum {
-	Command_Null,
-    
-    Command_BindPipeline, // Expects R_Pipeline*
-	Command_Clear, // Expects R_BufferMask
-	Command_Draw, // Expects u32 start, u32 count
-    
-    Command_MAX,
-};
+void R_Clear(R_BufferMask buffer_mask);
+void R_Draw(R_Pipeline* pipeline, u32 start, u32 count);
 
-void R_CommandBufferAlloc(R_CommandBuffer* cb);
-void R_CommandBufferStartRecording(R_CommandBuffer* cb);
-void R_CommandBufferEndRecording(R_CommandBuffer* cb);
-
-void R_CommandBufferPipelineBind(R_CommandBuffer* cb, R_Pipeline* pipeline);
-void R_CommandBufferClearScreen(R_CommandBuffer* cb, R_BufferMask mask);
-void R_CommandBufferDraw(R_CommandBuffer* cb, u32 start, u32 count);
-
-void R_CommandBufferExecute(R_CommandBuffer* cb);
-
-void R_CommandBufferFree(R_CommandBuffer* cb);
 
 #endif //RESOURCES_H
