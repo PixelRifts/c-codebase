@@ -3,6 +3,8 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
+#include "base/str.h"
+
 typedef struct OS_Window {
 	u32 width;
 	u32 height;

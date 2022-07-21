@@ -6,6 +6,20 @@
 #include "core/backend.h"
 #include "core/resources.h"
 
+#include "opt/render_2d.h"
+
+string_array tetrominos = {0};
+
+i32 index_with_rotate(i32 x, i32 y, i32 r) {
+	switch (r % 4) {
+		case 0: return y * 4 + x;
+		case 1: return 12 + y - (x * 4);
+		case 2: return 15 - (y * 4) - x;
+		case 3: return 3 - y + (x * 4);
+	}
+	return 0;
+}
+
 int main() {
 	OS_Init();
 	
@@ -16,50 +30,55 @@ int main() {
 	B_BackendInit(&window);
 	OS_WindowShow(&window);
 	
-	//- Start Graphics 
-	B_BackendSelectRenderWindow(&window);
-	R_ShaderPack program = {0};
-	R_ShaderPackAllocLoad(&program, str_lit("res/test"));
-	R_ShaderPackUploadInt(&program, str_lit("u_texture"), 0);
+	/*//- Init tetrominos 
+	string_array_add(&tetrominos, str_lit("..X."
+										  "..X."
+										  "..X."
+										  "..X."));
+	string_array_add(&tetrominos, str_lit("..X."
+										  ".XX."
+										  ".X.."
+										  "...."));
+	string_array_add(&tetrominos, str_lit(".X.."
+										  ".XX."
+										  "..X."
+										  "...."));
+	string_array_add(&tetrominos, str_lit("...."
+										  ".XX."
+										  ".XX."
+										  "...."));
+	string_array_add(&tetrominos, str_lit("..X."
+										  ".XX."
+										  "..X."
+										  "...."));
+	string_array_add(&tetrominos, str_lit("...."
+										  ".XX."
+										  "..X."
+										  "..X."));
+	string_array_add(&tetrominos, str_lit("...."
+										  ".XX."
+										  ".X.."
+										  ".X.."));
+	*/
 	
-	R_Texture2D texture = {0};
-	R_Texture2DAllocLoad(&texture, str_lit("res/pepper.png"), TextureResize_Linear, TextureResize_Linear, TextureWrap_Repeat, TextureWrap_Repeat);
-	R_Texture2DBindTo(&texture, 0);
+	R2D_Renderer renderer = {0};
+	R2D_Init(&window, &renderer);
 	
-	R_Pipeline vin = {0};
-	R_Attribute attribs[] = { Attribute_Float2, Attribute_Float2 };
-	R_PipelineAlloc(&vin, InputAssembly_Triangles, attribs, ArrayCount(attribs), &program);
-	
-	float verts[] = {
-		-.5f, -.5f, 0.f, 0.f,
-		.5f, -.5f,  1.f, 0.f,
-		.5f, .5f,   1.f, 1.f,
-		-.5f, -.5f, 0.f, 0.f,
-		.5f, .5f,   1.f, 1.f,
-		-.5f, .5f,  0.f, 1.f,
-	};
-	R_Buffer buf = {0};
-	R_BufferAlloc(&buf, BufferFlag_Type_Vertex);
-	R_BufferData(&buf, sizeof(verts), verts);
-	
-	R_PipelineAddBuffer(&vin, &buf, 2);
-	//- End Graphics 
-	
+	f32 x = 0;
 	while (OS_WindowIsOpen(&window)) {
 		OS_PollEvents();
 		
 		R_Clear(BufferMask_Color);
-		R_PipelineBind(&vin);
-		R_Draw(&vin, 0, 6);
+		
+		x += 0.1;
+		R2D_BeginDraw(&renderer);
+		R2D_DrawQuadC(&renderer, (rect) { x, 100, 100, 100 }, (vec4) { 0.8f, 0.2f, 0.3f, 1.f });
+		R2D_EndDraw(&renderer);
+		
 		B_BackendSwapchainNext(&window);
 	}
 	
-	//- Start Graphics 
-	R_Texture2DFree(&texture);
-	R_BufferFree(&buf);
-	R_PipelineFree(&vin);
-	R_ShaderPackFree(&program);
-	//- End Graphics 
+	R2D_Free(&renderer);
 	
 	B_BackendFree(&window);
 	OS_WindowClose(&window);

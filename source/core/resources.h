@@ -26,6 +26,7 @@ typedef struct R_Buffer {
 
 void R_BufferAlloc(R_Buffer* buf, R_BufferFlags flags);
 void R_BufferData(R_Buffer* buf, u64 size, void* data);
+void R_BufferUpdate(R_Buffer* _buf, u64 offset, u64 size, void* data);
 void R_BufferFree(R_Buffer* buf);
 
 //~ Shaders
@@ -58,6 +59,7 @@ void R_ShaderPackFree(R_ShaderPack* pack);
 
 void R_ShaderPackUploadMat4(R_ShaderPack* pack, string name, mat4 mat);
 void R_ShaderPackUploadInt(R_ShaderPack* pack, string name, i32 val);
+void R_ShaderPackUploadIntArray(R_ShaderPack* _pack, string name, i32* vals, u32 count);
 void R_ShaderPackUploadFloat(R_ShaderPack* pack, string name, f32 val);
 void R_ShaderPackUploadVec4(R_ShaderPack* pack, string name, vec4 val);
 
@@ -152,6 +154,7 @@ typedef struct R_Texture2D {
 void R_Texture2DAlloc(R_Texture2D* texture, R_TextureFormat format, u32 width, u32 height, R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t);
 void R_Texture2DAllocLoad(R_Texture2D* texture, string filepath, R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t);
 void R_Texture2DData(R_Texture2D* texture, void* data);
+void R_Texture2DWhite(R_Texture2D* texture);
 
 void R_Texture2DBindTo(R_Texture2D* texture, u32 slot);
 void R_Texture2DFree(R_Texture2D* texture);
@@ -160,9 +163,9 @@ void R_Texture2DFree(R_Texture2D* texture);
 
 typedef u32 R_BufferMask;
 enum {
-	BufferMask_Color,
-	BufferMask_Depth,
-	BufferMask_Stencil,
+	BufferMask_Color = 0x01,
+	BufferMask_Depth = 0x02,
+	BufferMask_Stencil = 0x04,
 };
 
 void R_Clear(R_BufferMask buffer_mask);

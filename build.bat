@@ -13,6 +13,11 @@ FOR %%f in (source\impl\*.c) do SET c_filenames=!c_filenames! %%f
 FOR %%f in (source\core\*.c) do SET c_filenames=!c_filenames! %%f
 FOR %%f in (source\os\*.c) do SET c_filenames=!c_filenames! %%f
 
+REM optional layers
+
+ECHO Optional Layer Selected: Render2D
+SET c_filenames=!c_filenames! source\opt\render_2d.c
+
 REM SET compiler_flags=
 SET compiler_flags=-Wall -Wvarargs -Werror -Wno-unused-function -Wno-format-security -Wno-incompatible-pointer-types-discards-qualifiers -Wno-unused-but-set-variable -Wno-int-to-void-pointer-cast
 

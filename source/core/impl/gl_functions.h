@@ -133,6 +133,7 @@ typedef u64 GLuint64EXT;
 X(glGenBuffers, void, (GLsizei count, GLuint* buffer_handles))\
 X(glBindBuffer, void, (GLenum target, GLuint buffer_handle))\
 X(glBufferData, void, (GLenum target, GLsizeiptr size, const void* data, GLenum usage))\
+X(glBufferSubData, void, (GLenum target, GLintptr offset, GLsizeiptr size, const void* data))\
 X(glDeleteBuffers, void, (GLsizei count, const GLuint* buffer_handles))\
 X(glCreateShader, u32, (GLenum type))\
 X(glShaderSource, void, (GLuint shader_handle, GLsizei count, const GLchar* const* str, const GLint* length))\
@@ -147,6 +148,7 @@ X(glUseProgram, void, (GLuint program_handle))\
 X(glGetUniformLocation, i32, (GLuint program_handle, const GLchar *name))\
 X(glUniformMatrix4fv, void, (GLint location, GLsizei count, GLboolean transpose, const GLfloat* value))\
 X(glUniform1i, void, (GLint location, GLint value))\
+X(glUniform1iv, void, (GLint location, GLuint count, GLint* values))\
 X(glUniform1f, void, (GLint location, GLfloat value))\
 X(glUniform4f, void, (GLint location, GLfloat x, GLfloat y, GLfloat z, GLfloat w))\
 X(glGetProgramiv, void, (GLuint program_handle, GLenum param_name, GLint* values))\
@@ -173,6 +175,7 @@ X(glDeleteTextures, void, (GLsizei count, GLuint* texture_handles))\
 #  define GL_FUNCTIONS \
 X(glCreateBuffers, void, (GLsizei count, GLuint* buffer_handles))\
 X(glNamedBufferStorage, void, (GLuint buffer_handle, GLsizeiptr size, const void* data, GLbitfield flags))\
+X(glNamedBufferSubData, void, (GLuint buffer_handle, GLintptr offset, GLsizeiptr size, const void* data))\
 X(glDeleteBuffers, void, (GLsizei count, const GLuint* buffer_handles))\
 X(glCreateShader, u32, (GLenum type))\
 X(glShaderSource, void, (GLuint shader_handle, GLsizei count, const GLchar* const* str, const GLint* length))\
@@ -186,6 +189,7 @@ X(glLinkProgram, void, (GLuint program_handle))\
 X(glGetUniformLocation, i32, (GLuint program_handle, const GLchar *name))\
 X(glUniformMatrix4fv, void, (GLint location, GLsizei count, GLboolean transpose, const GLfloat* value))\
 X(glUniform1i, void, (GLint location, GLint value))\
+X(glUniform1iv, void, (GLint location, GLuint count, GLint* values))\
 X(glUniform1f, void, (GLint location, GLfloat value))\
 X(glUniform4f, void, (GLint location, GLfloat x, GLfloat y, GLfloat z, GLfloat w))\
 X(glUseProgram, void, (GLuint program_handle))\

@@ -102,6 +102,6 @@ b8   rect_contains_point(rect a, vec2 p);
 b8   rect_overlaps(rect a, rect b);
 b8   rect_contained_by_rect(rect a, rect b);
 rect rect_get_overlap(rect a, rect b);
-rect rect_uv_cull(rect pos, rect uv, rect quad);
+rect rect_uv_cull(rect quad, rect uv, rect cull_quad);
 
 #endif //VMATH_H

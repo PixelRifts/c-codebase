@@ -179,6 +179,12 @@ void R_BufferData(R_Buffer* _buf, u64 size, void* data) {
 	glBufferData(GL_ARRAY_BUFFER, size, data, usage);
 }
 
+void R_BufferUpdate(R_Buffer* _buf, u64 offset, u64 size, void* data) {
+	R_GL33Buffer* buf = (R_GL33Buffer*) _buf;
+	glBindBuffer(GL_ARRAY_BUFFER, buf->handle);
+	glBufferSubData(GL_ARRAY_BUFFER, offset, size, data);
+}
+
 void R_BufferFree(R_Buffer* _buf) {
 	R_GL33Buffer* buf = (R_GL33Buffer*) _buf;
 	glDeleteBuffers(1, &buf->handle);
@@ -304,6 +310,16 @@ void R_ShaderPackUploadInt(R_ShaderPack* _pack, string name, i32 val) {
         uniform_hash_table_set(&pack->uniforms, name, loc);
     }
     glUniform1i(loc, val);
+}
+
+void R_ShaderPackUploadIntArray(R_ShaderPack* _pack, string name, i32* vals, u32 count) {
+	R_GL33ShaderPack* pack = (R_GL33ShaderPack*) _pack;
+	i32 loc;
+    if (!uniform_hash_table_get(&pack->uniforms, name, &loc)) {
+        loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
+        uniform_hash_table_set(&pack->uniforms, name, loc);
+    }
+    glUniform1iv(loc, count, vals);
 }
 
 void R_ShaderPackUploadFloat(R_ShaderPack* _pack, string name, f32 val) {

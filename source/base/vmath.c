@@ -357,19 +357,19 @@ rect rect_get_overlap(rect a, rect b) {
     return (rect) { min.x, min.y, max.x - min.x, max.y - min.y, };
 }
 
-rect rect_uv_cull(rect pos, rect uv, rect quad) {
-    if (!rect_overlaps(pos, quad) || rect_contained_by_rect(pos, quad)) {
+rect rect_uv_cull(rect quad, rect uv, rect cull_quad) {
+    if (!rect_overlaps(quad, cull_quad) || rect_contained_by_rect(quad, cull_quad)) {
         return uv;
     }
     
-    b8 x_shift_constant = !(pos.x >= quad.x && pos.x <= quad.x + quad.w);
-    b8 y_shift_constant = !(pos.y >= quad.y && pos.y <= quad.y + quad.h);
+    b8 x_shift_constant = !(quad.x >= cull_quad.x && quad.x <= cull_quad.x + cull_quad.w);
+    b8 y_shift_constant = !(quad.y >= cull_quad.y && quad.y <= cull_quad.y + cull_quad.h);
     
-    f32 uv_xratio = uv.w / pos.w;
-    f32 uv_yratio = uv.h / pos.h;
-    rect overlap = rect_get_overlap(pos, quad);
-    f32 culled_x = uv.x + (pos.w - overlap.w) * uv_xratio * x_shift_constant;
-    f32 culled_y = uv.y + (pos.h - overlap.h) * uv_yratio * y_shift_constant;
+    f32 uv_xratio = uv.w / quad.w;
+    f32 uv_yratio = uv.h / quad.h;
+    rect overlap = rect_get_overlap(quad, cull_quad);
+    f32 culled_x = uv.x + (quad.w - overlap.w) * uv_xratio * x_shift_constant;
+    f32 culled_y = uv.y + (quad.h - overlap.h) * uv_yratio * y_shift_constant;
     f32 culled_w = overlap.w * uv_xratio;
     f32 culled_h = overlap.h * uv_yratio;
     return (rect) { culled_x, culled_y, culled_w, culled_h };

@@ -17,6 +17,7 @@ typedef struct W32_Window {
 MSG _Msg;
 char* _classname_buffer = {0};
 u32 _window_ct = 0;
+b8 _should_close = false;
 void Render();
 
 static LRESULT CALLBACK Win32Proc(HWND window, UINT msg, WPARAM wparam, LPARAM lparam);
@@ -73,6 +74,7 @@ OS_Window OS_WindowCreate(u32 width, u32 height, string title) {
 									0,
 									hinstance,
 									0);
+	
 	if (!window.handle) {
 		LogReturn((OS_Window) {0}, "Win32 Window Creation Failed");
 	}
@@ -91,7 +93,7 @@ void OS_WindowShow(OS_Window* _window) {
 }
 
 b8 OS_WindowIsOpen(OS_Window* _window) {
-	return GetMessage(&_Msg, NULL, 0, 0);
+	return !_should_close;
 }
 
 void OS_WindowClose(OS_Window* _window) {
@@ -105,10 +107,11 @@ void OS_WindowClose(OS_Window* _window) {
 }
 
 void OS_PollEvents() {
-	__OS_InputReset();
-	
-	TranslateMessage(&_Msg);
-	DispatchMessage(&_Msg);
+	if (PeekMessage(&_Msg, NULL, 0, 0, PM_REMOVE | PM_NOYIELD)) {
+		__OS_InputReset();
+		TranslateMessage(&_Msg);
+		DispatchMessage(&_Msg);
+	}
 }
 
 static LRESULT CALLBACK Win32Proc(HWND window, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -156,6 +159,7 @@ static LRESULT CALLBACK Win32Proc(HWND window, UINT msg, WPARAM wparam, LPARAM l
 		case WM_CLOSE:
 		case WM_DESTROY: {
 			PostQuitMessage(0);
+			_should_close = true;
 		} break;
 		
 		default: {
