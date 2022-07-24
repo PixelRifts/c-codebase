@@ -110,8 +110,17 @@ OS_Library OS_LibraryLoad(string path);
 void_func* OS_LibraryGetFunction(OS_Library lib, char* name);
 void       OS_LibraryRelease(OS_Library lib);
 
-//~ Windowing
+//~ Threading
 
-#include "window.h"
+typedef u32 thread_func(void* context); 
+
+typedef struct OS_Thread {
+	u64 v[1];
+} OS_Thread;
+
+OS_Thread OS_ThreadCreate(thread_func* start, void* context);
+void      OS_ThreadWaitForJoin(OS_Thread* other);
+void      OS_ThreadWaitForJoinAll(OS_Thread** threads, u32 count);
+void      OS_ThreadWaitForJoinAny(OS_Thread** threads, u32 count);
 
 #endif //OS_H

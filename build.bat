@@ -18,8 +18,8 @@ REM ==============
 REM ==============
 REM optional layers
 
-REM  ECHO Optional Layer Selected: Render2D
-REM  SET c_filenames=!c_filenames! source\opt\render_2d.c
+REM ECHO Optional Layer Selected: Render2D
+REM SET c_filenames=!c_filenames! source\opt\render_2d.c
 REM ==============
 
 REM ==============

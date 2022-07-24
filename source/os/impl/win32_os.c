@@ -630,3 +630,29 @@ void OS_LibraryRelease(OS_Library lib) {
 	HMODULE module = (HMODULE) lib.v[0];
 	FreeLibrary(module);
 }
+
+//~ Threading
+
+OS_Thread OS_ThreadCreate(thread_func* start, void* context) {
+	OS_Thread result = {0};
+	result.v[0] = (u64) CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE) start, context, 0, nullptr);
+	return result;
+}
+
+void OS_ThreadWaitForJoin(OS_Thread* other) {
+	WaitForSingleObject((HANDLE)other->v[0], INFINITE);
+}
+
+void _OS_ThreadWaitForJoinAll(OS_Thread** threads, u32 count) {
+	HANDLE handles[count];
+	for (u32 i = 0; i < count; i++)
+		handles[i] = (HANDLE) threads[i]->v[0];
+	WaitForMultipleObjects(count, handles, TRUE, INFINITE);
+}
+
+void _OS_ThreadWaitForJoinAny(OS_Thread** threads, u32 count) {
+	HANDLE handles[count];
+	for (u32 i = 0; i < count; i++)
+		handles[i] = (HANDLE) threads[i]->v[0];
+	WaitForMultipleObjects(count, handles, FALSE, INFINITE);
+}
