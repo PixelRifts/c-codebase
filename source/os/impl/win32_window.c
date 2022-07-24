@@ -14,7 +14,6 @@ typedef struct W32_Window {
 	u64 v[6];
 } W32_Window;
 
-MSG _Msg;
 char* _classname_buffer = {0};
 u32 _window_ct = 0;
 b8 _should_close = false;
@@ -107,8 +106,9 @@ void OS_WindowClose(OS_Window* _window) {
 }
 
 void OS_PollEvents() {
-	if (PeekMessage(&_Msg, NULL, 0, 0, PM_REMOVE | PM_NOYIELD)) {
-		__OS_InputReset();
+	MSG _Msg = {0};
+	__OS_InputReset();
+	if (PeekMessage(&_Msg, NULL, 0, 0, PM_REMOVE)) {
 		TranslateMessage(&_Msg);
 		DispatchMessage(&_Msg);
 	}
@@ -121,8 +121,7 @@ static LRESULT CALLBACK Win32Proc(HWND window, UINT msg, WPARAM wparam, LPARAM l
 		
 		case WM_SYSKEYDOWN:
         case WM_KEYDOWN: {
-			int repeat_count = lparam & 0xF;
-            __OS_InputKeyCallback((u8)wparam, repeat_count != 1 ? Input_Repeat : Input_Press);
+			__OS_InputKeyCallback((u8)wparam, (lparam >> 30) & 0x01 ? Input_Repeat : Input_Press);
 		} break;
 		
 		case WM_SYSKEYUP:

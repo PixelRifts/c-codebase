@@ -439,6 +439,12 @@ void R_Texture2DData(R_Texture2D* _texture, void* data) {
 	glTextureSubImage2D(texture->handle, 0, 0, 0, texture->width, texture->height, get_texture_format_type_of(texture->format), datatype, data);
 }
 
+b8 R_Texture2DEquals(R_Texture2D* _a, R_Texture2D* _b) {
+	R_GL46Texture2D* a = (R_GL46Texture2D*) _a;
+	R_GL46Texture2D* b = (R_GL46Texture2D*) _b;
+	return a->handle == b->handle;
+}
+
 void R_Texture2DBindTo(R_Texture2D* _texture, u32 slot) {
 	R_GL46Texture2D* texture = (R_GL46Texture2D*) _texture;
 	glBindTextureUnit(slot, texture->handle);

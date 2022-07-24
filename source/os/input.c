@@ -20,24 +20,24 @@ typedef struct OS_InputState {
 } OS_InputState;
 static OS_InputState _state;
 
-void __OS_InputKeyCallback(int key, int action) {
-    if (key < 0 || key >= 350) return;
+void __OS_InputKeyCallback(u8 key, int action) {
+    //if (key < 0 || key >= 350) return;
     
     switch (action) {
         case Input_Press: {
-            _state.key_frame_states[key] |= 0b00000001;
-            _state.key_current_states[key] = 1;
-        } break;
-        
-        case Input_Release: {
-            _state.key_frame_states[key] |= 0b00000010;
-            _state.key_current_states[key] = 0;
-        } break;
-        
-        case Input_Repeat: {
-            _state.key_frame_states[key] |= 0b00000100;
-        } break;
-    }
+			_state.key_frame_states[key] = 0b00000001;
+			_state.key_current_states[key] = 1;
+		} break;
+		
+		case Input_Release: {
+			_state.key_frame_states[key] = 0b00000010;
+			_state.key_current_states[key] = 0;
+		} break;
+		
+		case Input_Repeat: {
+			_state.key_frame_states[key] = 0b00000100;
+		} break;
+	}
 }
 
 void __OS_InputButtonCallback(int button, int action) {
@@ -78,14 +78,14 @@ void __OS_InputReset() {
 }
 
 b32 OS_InputKey(i32 key) { return _state.key_current_states[key]; }
-b32 OS_InputKeyPressed(i32 key) { return (_state.key_frame_states[key] & 0b00000001) != 0; }
-b32 OS_InputKeyReleased(i32 key) { return (_state.key_frame_states[key] & 0b00000010) != 0; }
-b32 OS_InputKeyHeld(i32 key) { return (_state.key_frame_states[key] & 0b00000100) != 0; }
+b32 OS_InputKeyPressed(i32 key) { return (_state.key_frame_states[key] == 0b00000001); }
+b32 OS_InputKeyReleased(i32 key) { return (_state.key_frame_states[key] == 0b00000010); }
+b32 OS_InputKeyHeld(i32 key) { return (_state.key_frame_states[key] == 0b00000100); }
 b32 OS_InputButton(i32 button) { return _state.button_current_states[button]; }
 b32 OS_InputButtonPressed(i32 button)
-{ return (_state.button_frame_states[button] & 0b00000001) != 0; }
+{ return (_state.button_frame_states[button] == 0b00000001); }
 b32 OS_InputButtonReleased(i32 button)
-{ return (_state.button_frame_states[button] & 0b00000010) != 0; }
+{ return (_state.button_frame_states[button] == 0b00000010); }
 f32 OS_InputGetMouseX() { return _state.mouse_x; }
 f32 OS_InputGetMouseY() { return _state.mouse_y; }
 f32 OS_InputGetMouseScrollX() { return _state.mouse_scrollx; }

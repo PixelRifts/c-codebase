@@ -435,6 +435,12 @@ void R_Texture2DData(R_Texture2D* _texture, void* data) {
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, texture->width, texture->height, get_texture_format_type_of(texture->format), datatype, data);
 }
 
+b8 R_Texture2DEquals(R_Texture2D* _a, R_Texture2D* _b) {
+	R_GL33Texture2D* a = (R_GL33Texture2D*) _a;
+	R_GL33Texture2D* b = (R_GL33Texture2D*) _b;
+	return a->handle == b->handle;
+}
+
 void R_Texture2DBindTo(R_Texture2D* _texture, u32 slot) {
 	R_GL33Texture2D* texture = (R_GL33Texture2D*) _texture;
 	glActiveTexture(GL_TEXTURE0 + slot);

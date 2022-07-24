@@ -155,6 +155,7 @@ void R_Texture2DAlloc(R_Texture2D* texture, R_TextureFormat format, u32 width, u
 void R_Texture2DAllocLoad(R_Texture2D* texture, string filepath, R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t);
 void R_Texture2DData(R_Texture2D* texture, void* data);
 void R_Texture2DWhite(R_Texture2D* texture);
+b8   R_Texture2DEquals(R_Texture2D* a, R_Texture2D* b);
 
 void R_Texture2DBindTo(R_Texture2D* texture, u32 slot);
 void R_Texture2DFree(R_Texture2D* texture);

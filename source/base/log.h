@@ -10,22 +10,26 @@
 printf("Info: ");\
 printf(format, __VA_ARGS__);\
 printf("\n");\
+flush;\
 )
 #  define LogError(format, ...) Statement(\
 printf("%s:%d: Error: ", FILE_NAME, __LINE__);\
 printf(format, __VA_ARGS__);\
 printf("\n");\
+flush;\
 )
 #  define LogReturn(ret, format, ...) Statement(\
 printf("%s:%d: Error: ", FILE_NAME, __LINE__);\
 printf(format, __VA_ARGS__);\
 printf("\n");\
+flush;\
 return ret;\
 )
 #  define LogFatal(format, ...) Statement(\
 printf("%s:%d: Error: ", FILE_NAME, __LINE__);\
 printf(format, __VA_ARGS__);\
 printf("\n");\
+flush;\
 exit(-1);\
 )
 #  define AssertTrue(c, format, ...) Statement(\

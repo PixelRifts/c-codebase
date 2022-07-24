@@ -13,7 +13,7 @@
 #  error "Not Implemented YET"
 #endif
 
-void __OS_InputKeyCallback(i32 key, i32 action);
+void __OS_InputKeyCallback(u8 key, i32 action);
 void __OS_InputButtonCallback(i32 button, i32 action);
 void __OS_InputCursorPosCallback(f32 xpos, f32 ypos);
 void __OS_InputScrollCallback(f32 xscroll, f32 yscroll);

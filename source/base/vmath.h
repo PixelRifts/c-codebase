@@ -14,6 +14,17 @@
 #define FLOAT_MAX 340282346638528859811704183484516925440.0000000000000000
 #define FLOAT_MIN -FLOAT_MAX
 
+#define Color_Red vec4_init(0.8f, 0.3f, 0.2f, 1.f)
+#define Color_Green vec4_init(0.2f, 0.8f, 0.3f, 1.f)
+#define Color_Blue vec4_init(0.3f, 0.2f, 0.8f, 1.f)
+#define Color_Magenta vec4_init(0.8f, 0.3f, 0.7f, 1.f)
+#define Color_Cyan vec4_init(0.3f, 0.8f, 0.7f, 1.f)
+#define Color_Yellow vec4_init(0.8f, 0.7f, 0.3f, 1.f)
+#define Color_PureGreen vec4_init(0.0f, 1.0f, 0.0f, 1.f)
+#define Color_PureRed vec4_init(1.0f, 0.0f, 0.0f, 1.f)
+#define Color_PureBlue vec4_init(0.0f, 0.0f, 1.0f, 1.f)
+#define Color_White vec4_init(1.0f, 1.0f, 1.0f, 1.f)
+
 typedef struct vec2 { f32 x; f32 y;               } vec2;
 typedef struct vec3 { f32 x; f32 y; f32 z;        } vec3;
 typedef struct vec4 { f32 x; f32 y; f32 z; f32 w; } vec4;

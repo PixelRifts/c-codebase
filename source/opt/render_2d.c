@@ -1,37 +1,67 @@
 #include "render_2d.h"
 
-Array_Impl(R2D_BatchArray, R2D_Batch);
+void R2D_BatchArray_add(R2D_BatchArray * array, R2D_Batch data) {
+	if (array -> len + 1 > array -> cap) {
+		void * prev = array -> elems;
+		u32 new_cap = DoubleCapacity(array -> cap);
+		array -> elems = malloc(new_cap * sizeof(R2D_Batch));
+		memmove(array -> elems, prev, array -> len * sizeof(R2D_Batch));
+		array -> cap = new_cap;
+		free(prev);
+	}
+	array -> elems[array -> len++] = data;
+}
+R2D_Batch R2D_BatchArray_remove(R2D_BatchArray * array, int idx) {
+	if (idx >= array -> len || idx < 0) return (R2D_Batch) {
+		0
+	};
+	R2D_Batch value = array -> elems[idx];
+	if (idx == array -> len - 1) {
+		array -> len--;
+		return value;
+	}
+	R2D_Batch * from = array -> elems + idx + 1;
+	R2D_Batch * to = array -> elems + idx;
+	memmove(to, from, sizeof(R2D_Batch) * (array -> len - idx - 1));
+	array -> len--;
+	return value;
+}
+void R2D_BatchArray_free(R2D_BatchArray * array) {
+	array -> cap = 0;
+	array -> len = 0;
+	free(array -> elems);
+};
 
 static R2D_Batch* R2D_NextBatch(R2D_Renderer* renderer) {
     R2D_Batch* next = &renderer->batches.elems[++renderer->current_batch];
     
     if (renderer->current_batch >= renderer->batches.len) {
+		R2D_BatchArray_add(&renderer->batches, (R2D_Batch) {});
+		next = &renderer->batches.elems[renderer->current_batch];
         next->cache = R2D_VertexCacheCreate(&renderer->arena, R2D_MAX_INTERNAL_CACHE_VCOUNT);
-        R2D_BatchArray_add(&renderer->batches, (R2D_Batch) {0});
     }
     return next;
 }
 
-static b8 R2D_BatchCanAddTexture(R2D_Renderer* renderer, R2D_Batch* batch, R_Texture2D texture) {
+static b8 R2D_BatchCanAddTexture(R2D_Renderer* renderer, R2D_Batch* batch, R_Texture2D* texture) {
     if (batch->tex_count < 8) return true;
     for (u8 i = 0; i < batch->tex_count; i++) {
-        if (memcmp(&batch->textures[i], &texture, sizeof(R_Texture2D)))
+        if (R_Texture2DEquals(batch->textures[i], texture))
             return true;
     }
     return false;
 }
 
-static u8 R2D_BatchAddTexture(R2D_Renderer* renderer, R2D_Batch* batch, R_Texture2D tex) {
+static u8 R2D_BatchAddTexture(R2D_Renderer* renderer, R2D_Batch* batch, R_Texture2D* tex) {
     for (u8 i = 0; i < batch->tex_count; i++) {
-		// NOTE(voxel): @icky Is this fine?
-        if (memcmp(&batch->textures[i], &tex, sizeof(R_Texture2D)))
+		if (R_Texture2DEquals(batch->textures[i], tex))
             return i;
     }
     batch->textures[batch->tex_count] = tex;
     return batch->tex_count++;
 }
 
-static R2D_Batch* R2D_BatchGetCurrent(R2D_Renderer* renderer, int num_verts, R_Texture2D tex) {
+static R2D_Batch* R2D_BatchGetCurrent(R2D_Renderer* renderer, int num_verts, R_Texture2D* tex) {
     R2D_Batch* batch = &renderer->batches.elems[renderer->current_batch];
     if (!R2D_BatchCanAddTexture(renderer, batch, tex) || batch->cache.count + num_verts >= batch->cache.max_verts)
         batch = R2D_NextBatch(renderer);
@@ -107,7 +137,7 @@ void R2D_EndDraw(R2D_Renderer* renderer) {
 	R_PipelineBind(&renderer->pipeline);
 	for (u32 i = 0; i < renderer->current_batch+1; i++) {
 		for (u32 t = 0; t < renderer->batches.elems[i].tex_count; t++) {
-			R_Texture2DBindTo(&renderer->batches.elems[i].textures[t], t);
+			R_Texture2DBindTo(renderer->batches.elems[i].textures[t], t);
 		}
 		R2D_VertexCache* cache = &renderer->batches.elems[i].cache;
 		R_BufferUpdate(&renderer->buffer, 0, cache->count * sizeof(R2D_Vertex), (void*) cache->vertices);
@@ -135,7 +165,7 @@ void D_PopOffset(R2D_Renderer* renderer, vec2 old_offset) {
 	renderer->offset = old_offset;
 }
 
-void R2D_DrawQuad(R2D_Renderer* renderer, rect quad, R_Texture2D texture, rect uvs, vec4 color) {
+void R2D_DrawQuad(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, rect uvs, vec4 color) {
 	quad.x += renderer->offset.x;
 	quad.y += renderer->offset.y;
 	
@@ -187,14 +217,14 @@ void R2D_DrawQuad(R2D_Renderer* renderer, rect quad, R_Texture2D texture, rect u
 }
 
 void R2D_DrawQuadC(R2D_Renderer* renderer, rect quad, vec4 color) {
-	R2D_DrawQuad(renderer, quad, renderer->white_texture, rect_init(0.f, 0.f, 1.f, 1.f), color);
+	R2D_DrawQuad(renderer, quad, &renderer->white_texture, rect_init(0.f, 0.f, 1.f, 1.f), color);
 }
 
-void R2D_DrawQuadT(R2D_Renderer* renderer, rect quad, R_Texture2D texture, vec4 tint) {
+void R2D_DrawQuadT(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, vec4 tint) {
 	R2D_DrawQuad(renderer, quad, texture, rect_init(0.f, 0.f, 1.f, 1.f), tint);
 }
 
-void R2D_DrawQuadST(R2D_Renderer* renderer, rect quad, R_Texture2D texture, rect uvs, vec4 tint) {
+void R2D_DrawQuadST(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, rect uvs, vec4 tint) {
 	R2D_DrawQuad(renderer, quad, texture, uvs, tint);
 }
 

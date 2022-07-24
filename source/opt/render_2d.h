@@ -29,7 +29,7 @@ b8   R2D_VertexCachePush(R2D_VertexCache* cache, R2D_Vertex* vertices, u32 verte
 
 typedef struct R2D_Batch {
 	R2D_VertexCache cache;
-    R_Texture2D textures[8];
+    R_Texture2D *textures[8];
     u8 tex_count;
 } R2D_Batch;
 
@@ -61,9 +61,9 @@ void D_PopCullRect(R2D_Renderer* renderer, rect old_quad);
 vec2 D_PushOffset(R2D_Renderer* renderer, vec2 new_offset);
 void D_PopOffset(R2D_Renderer* renderer, vec2 old_offset);
 
-void R2D_DrawQuad(R2D_Renderer* renderer, rect quad, R_Texture2D texture, rect uvs, vec4 color);
+void R2D_DrawQuad(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, rect uvs, vec4 color);
 void R2D_DrawQuadC(R2D_Renderer* renderer, rect quad, vec4 color);
-void R2D_DrawQuadT(R2D_Renderer* renderer, rect quad, R_Texture2D texture, vec4 tint);
-void R2D_DrawQuadST(R2D_Renderer* renderer, rect quad, R_Texture2D texture, rect uvs, vec4 tint);
+void R2D_DrawQuadT(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, vec4 tint);
+void R2D_DrawQuadST(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, rect uvs, vec4 tint);
 
 #endif //RENDER_2D_H
