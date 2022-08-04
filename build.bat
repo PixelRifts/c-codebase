@@ -28,7 +28,7 @@ SET include_flags=-Isource -Ithird_party/include -Ithird_party/source
 SET linker_flags=-g -lshell32 -luser32 -lwinmm -luserenv -lgdi32 -Lthird_party/lib
 SET defines=-D_DEBUG -D_CRT_SECURE_NO_WARNINGS
 SET output=-obin/codebase.exe
-SET backend=-DBACKEND_GL33
+SET backend=-DBACKEND_GL46
 REM ==============
 
 ECHO "Building codebase.exe..."

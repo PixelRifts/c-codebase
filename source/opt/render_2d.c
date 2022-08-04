@@ -1,36 +1,6 @@
 #include "render_2d.h"
 
-void R2D_BatchArray_add(R2D_BatchArray * array, R2D_Batch data) {
-	if (array -> len + 1 > array -> cap) {
-		void * prev = array -> elems;
-		u32 new_cap = DoubleCapacity(array -> cap);
-		array -> elems = malloc(new_cap * sizeof(R2D_Batch));
-		memmove(array -> elems, prev, array -> len * sizeof(R2D_Batch));
-		array -> cap = new_cap;
-		free(prev);
-	}
-	array -> elems[array -> len++] = data;
-}
-R2D_Batch R2D_BatchArray_remove(R2D_BatchArray * array, int idx) {
-	if (idx >= array -> len || idx < 0) return (R2D_Batch) {
-		0
-	};
-	R2D_Batch value = array -> elems[idx];
-	if (idx == array -> len - 1) {
-		array -> len--;
-		return value;
-	}
-	R2D_Batch * from = array -> elems + idx + 1;
-	R2D_Batch * to = array -> elems + idx;
-	memmove(to, from, sizeof(R2D_Batch) * (array -> len - idx - 1));
-	array -> len--;
-	return value;
-}
-void R2D_BatchArray_free(R2D_BatchArray * array) {
-	array -> cap = 0;
-	array -> len = 0;
-	free(array -> elems);
-};
+Array_Impl(R2D_BatchArray, R2D_Batch);
 
 static R2D_Batch* R2D_NextBatch(R2D_Renderer* renderer) {
     R2D_Batch* next = &renderer->batches.elems[++renderer->current_batch];

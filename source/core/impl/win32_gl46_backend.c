@@ -1,6 +1,7 @@
 #include <Windows.h>
 
-// From gl_functions.h
+#include "gl_functions.h"
+
 typedef i64 long_func();
 typedef long_func* loader_func(const char* name);
 void __LoadGLFunctions(loader_func* load_proc, loader_func* fallback);
@@ -75,12 +76,11 @@ typedef PROC  WINAPI W32_wglGetProcAddress(LPCSTR);
 typedef BOOL WINAPI W32_wglChoosePixelFormatARB(HDC hdc, const int* piAttribIList, const FLOAT* pfAttribFList, UINT nMaxFormats, int* piFormats, UINT* nNumFormats);
 typedef HGLRC WINAPI W32_wglCreateContextAttribsARB(HDC hdc, HGLRC hShareContext, const int* attribList);
 typedef BOOL WINAPI W32_wglSwapLayerBuffers(HDC hdc, UINT plane);
-typedef BOOL WINAPI W32_wglShareLists(HGLRC hglrc1, HGLRC  hglrc2);
 
 static HMODULE opengl_module;
 
 static W32_wglCreateContext* v_wglCreateContext;
-static W32_wglShareLists* v_wglShareLists;
+
 static W32_wglDeleteContext* v_wglDeleteContext;
 static W32_wglMakeCurrent* v_wglMakeCurrent;
 static W32_wglGetProcAddress* v_wglGetProcAddress;
@@ -101,20 +101,20 @@ typedef struct W32_Window {
 } W32_Window;
 
 static LRESULT CALLBACK Win32Proc(HWND window, UINT msg, WPARAM wparam, LPARAM lparam) {
-    LRESULT result = 0;
-    
-    switch (msg) {
-        case WM_CLOSE:
-        case WM_DESTROY: {
-            PostQuitMessage(0);
-        } break;
-        
+	LRESULT result = 0;
+	
+	switch (msg) {
+		case WM_CLOSE:
+		case WM_DESTROY: {
+			PostQuitMessage(0);
+		} break;
+		
 		default: {
-            result = DefWindowProcA(window, msg, wparam, lparam);
-        } break;
-    }
-    
-    return result;
+			result = DefWindowProcA(window, msg, wparam, lparam);
+		} break;
+	}
+	
+	return result;
 }
 
 void B_BackendInitShared(OS_Window* _window, OS_Window* _share) {
@@ -124,7 +124,7 @@ void B_BackendInitShared(OS_Window* _window, OS_Window* _share) {
 	//- Load Preliminary WGL functions 
 	HINSTANCE hinstance = GetModuleHandle(0);
 	
-	if (!opengl_module || !v_wglCreateContext || !v_wglDeleteContext || !v_wglMakeCurrent || !v_wglGetProcAddress || !v_wglShareLists) {
+	if (!opengl_module || !v_wglCreateContext || !v_wglDeleteContext || !v_wglMakeCurrent || !v_wglGetProcAddress) {
 		opengl_module = LoadLibraryA("opengl32.dll");
 		v_wglCreateContext = (W32_wglCreateContext*) GetProcAddress(opengl_module, "wglCreateContext");
 		if (!v_wglCreateContext) {
@@ -141,10 +141,6 @@ void B_BackendInitShared(OS_Window* _window, OS_Window* _share) {
 		v_wglGetProcAddress = (W32_wglGetProcAddress*) GetProcAddress(opengl_module, "wglGetProcAddress");
 		if (!v_wglGetProcAddress) {
 			LogReturn(, "Win32 OpenGL WGL Function Loading: Loading wglGetProcAddress failed");
-		}
-		v_wglShareLists = (W32_wglShareLists*) GetProcAddress(opengl_module, "wglShareLists");
-		if (!v_wglShareLists) {
-			LogReturn(, "Win32 OpenGL WGL Function Loading: Loading wglShareLists failed");
 		}
 	}
 	
@@ -237,36 +233,37 @@ void B_BackendInitShared(OS_Window* _window, OS_Window* _share) {
 	}
 	
 	//- Create Actual Context 
-	{
-		HDC dc = GetDC(window->handle);
-		
-		int format_attribs_i[] = {
-			WGL_DRAW_TO_WINDOW_ARB,     true,
-			WGL_SUPPORT_OPENGL_ARB,     true,
-			WGL_DOUBLE_BUFFER_ARB,      true,
-			WGL_ACCELERATION_ARB,       WGL_FULL_ACCELERATION_ARB,
-			WGL_PIXEL_TYPE_ARB,         WGL_TYPE_RGBA_ARB,
-			WGL_COLOR_BITS_ARB,         32,
-			WGL_DEPTH_BITS_ARB,         24,
-			WGL_STENCIL_BITS_ARB,       8,
-			0
-		};
-		
-		int format_idx;
-		UINT num_formats;
-		v_wglChoosePixelFormatARB(dc, format_attribs_i, 0, 1, &format_idx, &num_formats);
-		if (!num_formats) {
-			ReleaseDC(window->handle, dc);
-			LogReturn(, "Win32 OpenGL Window: Context Choosing Pixel Format failed");
-		}
-		
-		PIXELFORMATDESCRIPTOR format_desc = {0};
-		DescribePixelFormat(dc, format_idx, sizeof(PIXELFORMATDESCRIPTOR), &format_desc);
-		if (!SetPixelFormat(dc, format_idx, &format_desc)) {
-			ReleaseDC(window->handle, dc);
-			LogReturn(, "Win32 OpenGL Window: Context SetPixelFormat failed");
-		}
-		
+	HDC dc = GetDC(window->handle);
+	int format_attribs_i[] = {
+		WGL_DRAW_TO_WINDOW_ARB,     true,
+		WGL_SUPPORT_OPENGL_ARB,     true,
+		WGL_DOUBLE_BUFFER_ARB,      true,
+		WGL_ACCELERATION_ARB,       WGL_FULL_ACCELERATION_ARB,
+		WGL_PIXEL_TYPE_ARB,         WGL_TYPE_RGBA_ARB,
+		WGL_COLOR_BITS_ARB,         32,
+		WGL_DEPTH_BITS_ARB,         24,
+		WGL_STENCIL_BITS_ARB,       8,
+		0
+	};
+	
+	int format_idx;
+	UINT num_formats;
+	v_wglChoosePixelFormatARB(dc, format_attribs_i, 0, 1, &format_idx, &num_formats);
+	if (!num_formats) {
+		ReleaseDC(window->handle, dc);
+		LogReturn(, "Win32 OpenGL Window: Context Choosing Pixel Format failed");
+	}
+	
+	PIXELFORMATDESCRIPTOR format_desc = {0};
+	DescribePixelFormat(dc, format_idx, sizeof(PIXELFORMATDESCRIPTOR), &format_desc);
+	if (!SetPixelFormat(dc, format_idx, &format_desc)) {
+		ReleaseDC(window->handle, dc);
+		LogReturn(, "Win32 OpenGL Window: Context SetPixelFormat failed");
+	}
+	
+	if (share) {
+		window->glrc = share->glrc;
+	} else {
 		int context_attribs[] = {
 			WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
 			WGL_CONTEXT_MINOR_VERSION_ARB, 6,
@@ -274,11 +271,7 @@ void B_BackendInitShared(OS_Window* _window, OS_Window* _share) {
 			0,
 		};
 		
-		if (share) {
-			window->glrc = v_wglCreateContextAttribsARB(dc, share->glrc, context_attribs);
-		} else {
-			window->glrc = v_wglCreateContextAttribsARB(dc, 0, context_attribs);
-		}
+		window->glrc = v_wglCreateContextAttribsARB(dc, 0, context_attribs);
 		if (!window->glrc) {
 			ReleaseDC(window->handle, dc);
 			LogReturn(, "Win32 OpenGL Window: Context Creation Failed");
@@ -289,13 +282,10 @@ void B_BackendInitShared(OS_Window* _window, OS_Window* _share) {
 		}
 		
 		__LoadGLFunctions(v_wglGetProcAddress, _GetAddress);
-		
-		ReleaseDC(window->handle, dc);
 	}
 	
-	if (share) {
-		v_wglShareLists(share->glrc, window->glrc); // What does this do exactly :think:
-	}
+	ReleaseDC(window->handle, dc);
+	
 }
 
 void B_BackendInit(OS_Window* _window) {
@@ -306,6 +296,7 @@ void B_BackendSelectRenderWindow(OS_Window* _window) {
 	W32_Window* window = (W32_Window*) _window;
 	HDC dc = GetDC(window->handle);
 	v_wglMakeCurrent(dc, window->glrc);
+	glViewport(0, 0, window->width, window->height);
 	ReleaseDC(window->handle, dc);
 }
 
@@ -314,6 +305,7 @@ void B_BackendSwapchainNext(OS_Window* _window) {
 	HDC dc = GetDC(window->handle);
 	SwapBuffers(dc);
 	ReleaseDC(window->handle, dc);
+	glFlush();
 }
 
 void B_BackendFree(OS_Window* _window) {

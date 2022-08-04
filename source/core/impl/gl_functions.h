@@ -162,6 +162,7 @@ X(glEnableVertexAttribArray, void, (GLuint index))\
 X(glDeleteVertexArrays, void, (GLsizei count, const GLuint* vao_handles))\
 X(glDrawArrays, void, (GLenum mode, GLint first, GLsizei count))\
 X(glClear, void, (GLbitfield mask))\
+X(glClearColor, void, (GLfloat r, GLfloat g, GLfloat b, GLfloat a))\
 X(glGenTextures, void, (GLsizei count, GLuint* texture_handles))\
 X(glBindTexture, void, (GLenum target, GLuint texture_handle))\
 X(glTexImage2D, void, (GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void* data))\
@@ -169,6 +170,8 @@ X(glTexParameteri, void, (GLenum target, GLenum pname, GLint param))\
 X(glActiveTexture, void, (GLenum texture_handle))\
 X(glTexSubImage2D, void, (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void* data))\
 X(glDeleteTextures, void, (GLsizei count, GLuint* texture_handles))\
+X(glFlush, void, (void))\
+X(glViewport, void, (GLint x, GLint y, GLsizei w, GLsizei h))\
 
 #elif defined(BACKEND_GL46)
 
@@ -206,6 +209,7 @@ X(glEnableVertexArrayAttrib, void, (GLuint vao_handle, GLuint index))\
 X(glDeleteVertexArrays, void, (GLsizei count, const GLuint* vao_handles))\
 X(glDrawArrays, void, (GLenum mode, GLint first, GLsizei count))\
 X(glClear, void, (GLbitfield mask))\
+X(glClearColor, void, (GLfloat r, GLfloat g, GLfloat b, GLfloat a))\
 X(glCreateTextures, void, (GLenum type, GLsizei count, GLuint* texture_handles))\
 X(glBindTextureUnit, void, (GLint slot, GLuint texture_handle))\
 X(glTextureStorage2D, void, (GLuint texture_handle, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height))\
@@ -213,6 +217,8 @@ X(glTextureParameteri, void, (GLuint texture_handle, GLenum pname, GLint param))
 X(glTextureSubImage2D, void, (GLuint texture_handle, GLint level, GLint xoffset, GLint yoffset, GLsizei width,\
 GLsizei height, GLenum format, GLenum type, const void* data))\
 X(glDeleteTextures, void, (GLsizei count, GLuint* texture_handles))\
+X(glFlush, void, (void))\
+X(glViewport, void, (GLint x, GLint y, GLsizei w, GLsizei h))\
 
 #endif
 

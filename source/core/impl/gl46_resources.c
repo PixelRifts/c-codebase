@@ -465,6 +465,10 @@ void R_Clear(R_BufferMask buffer_mask) {
 	glClear(mask);
 }
 
+void R_ClearColor(f32 r, f32 g, f32 b, f32 a) {
+	glClearColor(r, g, b, a);
+}
+
 void R_Draw(R_Pipeline* _in, u32 start, u32 count) {
 	R_GL46Pipeline* in = (R_GL46Pipeline*) _in;
 	glDrawArrays(get_input_assembly_type_of(in->assembly), start, count);

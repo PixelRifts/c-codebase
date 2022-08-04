@@ -170,7 +170,7 @@ enum {
 };
 
 void R_Clear(R_BufferMask buffer_mask);
+void R_ClearColor(f32 r, f32 g, f32 b, f32 a);
 void R_Draw(R_Pipeline* pipeline, u32 start, u32 count);
-
 
 #endif //RESOURCES_H

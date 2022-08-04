@@ -16,15 +16,60 @@ int main() {
 	B_BackendInit(&window);
 	OS_WindowShow(&window);
 	
+	OS_Window window2 = OS_WindowCreate(1080, 720, str_lit("This should work 2"));
+	B_BackendInitShared(&window2, &window);
+	OS_WindowShow(&window2);
 	
+	//~
+	B_BackendSelectRenderWindow(&window);
+	R_ShaderPack program = {0};
+	R_ShaderPackAllocLoad(&program, str_lit("res/test"));
+	
+	R_Attribute attribs[] = { Attribute_Float2, Attribute_Float4 };
+	
+	R_Pipeline vin = {0};
+	R_PipelineAlloc(&vin, InputAssembly_Triangles, attribs, ArrayCount(attribs), &program);
+	
+	float verts[] = {
+		-.5f, -.5f, 0.8f, 0.2f, 0.3f, 1.f,
+		.5f, -.5f,  0.3f, 0.8f, 0.2f, 1.f,
+		.0f, .5f,   0.2f, 0.3f, 0.8f, 1.f,
+	};
+	R_Buffer buf = {0};
+	R_BufferAlloc(&buf, BufferFlag_Type_Vertex);
+	R_BufferData(&buf, sizeof(verts), verts);
+	
+	R_PipelineAddBuffer(&vin, &buf, 2);
+	//~
 	
 	while (OS_WindowIsOpen(&window)) {
 		OS_PollEvents();
 		
+		B_BackendSelectRenderWindow(&window);
+		R_ClearColor(0.2f, 0.3f, 0.8f, 1.f);
+		R_Clear(BufferMask_Color);
+		R_PipelineBind(&vin);
+		R_Draw(&vin, 0, 3);
+		
+		B_BackendSelectRenderWindow(&window2);
+		R_ClearColor(0.8f, 0.2f, 0.3f, 1.f);
+		R_Clear(BufferMask_Color);
+		R_PipelineBind(&vin);
+		R_Draw(&vin, 0, 3);
+		
 		B_BackendSwapchainNext(&window);
+		B_BackendSwapchainNext(&window2);
 	}
 	
+	//~
+	R_BufferFree(&buf);
+	R_PipelineFree(&vin);
+	R_ShaderPackFree(&program);
+	//~
+	
 	B_BackendFree(&window);
+	B_BackendFree(&window2);
+	
 	OS_WindowClose(&window);
 	
 	tctx_free(&context);
