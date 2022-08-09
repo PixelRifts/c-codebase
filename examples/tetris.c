@@ -65,12 +65,12 @@ int main() {
 	M_Arena global_arena = {0};
 	arena_init(&global_arena);
 	
-	OS_Window window = OS_WindowCreate(1080, 720, str_lit("This should work"));
-	B_BackendInit(&window);
-	OS_WindowShow(&window);
+	OS_Window* window = OS_WindowCreate(1080, 720, str_lit("This should work"));
+	B_BackendInit(window);
+	OS_WindowShow(window);
 	
 	R2D_Renderer renderer = {0};
-	R2D_Init(&window, &renderer);
+	R2D_Init(window, &renderer);
 	
 	vec4 colors[] = {
 		(vec4) {0},
@@ -116,7 +116,7 @@ int main() {
 	f32 speed = 2;
 	f32 speed_acc = 0;
 	
-	while (OS_WindowIsOpen(&window) && !game_over) {
+	while (OS_WindowIsOpen(window) && !game_over) {
 		OS_PollEvents();
 		
 		end = OS_TimeMicrosecondsNow();
@@ -207,13 +207,13 @@ int main() {
 		R2D_EndDraw(&renderer);
 		//}
 		
-		B_BackendSwapchainNext(&window);
+		B_BackendSwapchainNext(window);
 	}
 	
 	R2D_Free(&renderer);
 	
-	B_BackendFree(&window);
-	OS_WindowClose(&window);
+	B_BackendFree(window);
+	OS_WindowClose(window);
 	
 	arena_free(&global_arena);
 	

@@ -466,6 +466,10 @@ void R_ClearColor(f32 r, f32 g, f32 b, f32 a) {
 	glClearColor(r, g, b, a);
 }
 
+void R_Viewport(i32 x, i32 y, i32 w, i32 h) {
+	glViewport(x, y, w, h);
+}
+
 void R_Draw(R_Pipeline* _in, u32 start, u32 count) {
 	R_GL33Pipeline* in = (R_GL33Pipeline*) _in;
 	glDrawArrays(get_input_assembly_type_of(in->assembly), start, count);

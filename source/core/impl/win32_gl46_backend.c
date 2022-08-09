@@ -95,27 +95,11 @@ typedef struct W32_Window {
 	u32 width;
 	u32 height;
 	string title;
+	ResizeCallback* resize_callback;
 	HWND handle;
 	HGLRC glrc;
 	u64 v[6];
 } W32_Window;
-
-static LRESULT CALLBACK Win32Proc(HWND window, UINT msg, WPARAM wparam, LPARAM lparam) {
-	LRESULT result = 0;
-	
-	switch (msg) {
-		case WM_CLOSE:
-		case WM_DESTROY: {
-			PostQuitMessage(0);
-		} break;
-		
-		default: {
-			result = DefWindowProcA(window, msg, wparam, lparam);
-		} break;
-	}
-	
-	return result;
-}
 
 void B_BackendInitShared(OS_Window* _window, OS_Window* _share) {
 	W32_Window* window = (W32_Window*) _window;

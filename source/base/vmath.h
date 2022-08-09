@@ -39,6 +39,20 @@ typedef struct quat { f32 s; f32 i; f32 j; f32 k; } quat;
 
 void animate_f32exp(f32* val, f32 target, f32 speed, f32 dt);
 
+typedef u32 axis2;
+enum {
+	axis2_x,
+	axis2_y,
+	axis2_count,
+};
+
+typedef u32 axis3;
+enum {
+	axis3_x,
+	axis3_y,
+	axis3_count,
+};
+
 //~ Inline Initializers
 
 static inline vec2 vec2_init(f32 x, f32 y) { return (vec2) { x, y }; }

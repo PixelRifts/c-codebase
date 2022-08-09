@@ -186,5 +186,4 @@ entry->value = Name##_hash_table_tombstone;\
 return true;\
 }\
 
-
 #endif //DS_H

@@ -12,16 +12,14 @@ int main() {
 	ThreadContext context = {0};
 	tctx_init(&context);
 	
-	OS_Window window = OS_WindowCreate(1080, 720, str_lit("This should work"));
-	B_BackendInit(&window);
-	OS_WindowShow(&window);
+	OS_Window* window = OS_WindowCreate(1080, 720, str_lit("This should work"));
+	B_BackendInit(window);
+	OS_WindowShow(window);
 	
-	OS_Window window2 = OS_WindowCreate(1080, 720, str_lit("This should work 2"));
-	B_BackendInitShared(&window2, &window);
-	OS_WindowShow(&window2);
+	OS_Window* window2 = OS_WindowCreate(1080, 720, str_lit("This should work too"));
+	B_BackendInitShared(window2, window);
+	OS_WindowShow(window2);
 	
-	//~
-	B_BackendSelectRenderWindow(&window);
 	R_ShaderPack program = {0};
 	R_ShaderPackAllocLoad(&program, str_lit("res/test"));
 	
@@ -40,37 +38,33 @@ int main() {
 	R_BufferData(&buf, sizeof(verts), verts);
 	
 	R_PipelineAddBuffer(&vin, &buf, 2);
-	//~
 	
-	while (OS_WindowIsOpen(&window)) {
+	while (OS_WindowIsOpen(window)) {
 		OS_PollEvents();
 		
-		B_BackendSelectRenderWindow(&window);
-		R_ClearColor(0.2f, 0.3f, 0.8f, 1.f);
+		B_BackendSelectRenderWindow(window);
+		R_Viewport(0, 0, window->width, window->height);
 		R_Clear(BufferMask_Color);
 		R_PipelineBind(&vin);
 		R_Draw(&vin, 0, 3);
+		B_BackendSwapchainNext(window);
 		
-		B_BackendSelectRenderWindow(&window2);
-		R_ClearColor(0.8f, 0.2f, 0.3f, 1.f);
+		B_BackendSelectRenderWindow(window2);
+		R_Viewport(0, 0, window2->width, window2->height);
 		R_Clear(BufferMask_Color);
 		R_PipelineBind(&vin);
 		R_Draw(&vin, 0, 3);
-		
-		B_BackendSwapchainNext(&window);
-		B_BackendSwapchainNext(&window2);
+		B_BackendSwapchainNext(window2);
 	}
 	
-	//~
 	R_BufferFree(&buf);
 	R_PipelineFree(&vin);
 	R_ShaderPackFree(&program);
-	//~
 	
-	B_BackendFree(&window);
-	B_BackendFree(&window2);
+	B_BackendFree(window2);
+	B_BackendFree(window);
 	
-	OS_WindowClose(&window);
+	OS_WindowClose(window);
 	
 	tctx_free(&context);
 }

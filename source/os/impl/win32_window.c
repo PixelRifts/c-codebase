@@ -9,18 +9,24 @@ typedef struct W32_Window {
 	u32 width;
 	u32 height;
 	string title;
+	ResizeCallback* resize_callback;
 	HWND handle;
 	HGLRC glrc;
 	u64 v[6];
 } W32_Window;
 
-char* _classname_buffer = {0};
-u32 _window_ct = 0;
-b8 _should_close = false;
-void Render();
+static void CALLBACK OS_PollEvents_Fiber(W32_Window* param);
+
+static char* _classname_buffer = {0};
+static u32 _window_ct = 0;
+static b8 _should_close = false;
+static void* _main_fibre = 0;
+static void* _event_fibre = 0;
 
 static LRESULT CALLBACK Win32Proc(HWND window, UINT msg, WPARAM wparam, LPARAM lparam);
-OS_Window OS_WindowCreate(u32 width, u32 height, string title) {
+static void DefaultResizeCallback(OS_Window* _window, i32 w, i32 h);
+
+OS_Window* OS_WindowCreate(u32 width, u32 height, string title) {
 	M_Scratch scratch = scratch_get();
 	
 	HINSTANCE hinstance = GetModuleHandle(0);
@@ -31,7 +37,6 @@ OS_Window OS_WindowCreate(u32 width, u32 height, string title) {
 		final = str_copy(&scratch.arena, final);
 		_classname_buffer = calloc(final.size + 1, sizeof(char));
 		_classname_buffer = memmove(_classname_buffer, final.str, final.size + 1);
-		
 		
 		WNDCLASSA wc = {
 			.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC,
@@ -44,15 +49,15 @@ OS_Window OS_WindowCreate(u32 width, u32 height, string title) {
 		};
 		
 		if (!RegisterClassA(&wc)) {
-			LogReturn((OS_Window) {0}, "Win32 Window Class Registration Failed");
+			LogReturn((OS_Window*) 0, "Win32 Window Class Registration Failed");
 		}
 	}
 	
-	
-	W32_Window window = {0};
-	window.width = width;
-	window.height = height;
-	window.title = title;
+	W32_Window* window = malloc(sizeof(W32_Window*));
+	window->width = width;
+	window->height = height;
+	window->title = title;
+	window->resize_callback = nullptr;
 	
 	RECT r = {
 		.right = width,
@@ -61,28 +66,35 @@ OS_Window OS_WindowCreate(u32 width, u32 height, string title) {
 	DWORD window_style = WS_OVERLAPPEDWINDOW;
 	AdjustWindowRect(&r, window_style, false);
 	
-	window.handle = CreateWindowExA(0,
-									_classname_buffer,
-									(const char*) title.str,
-									window_style,
-									CW_USEDEFAULT,
-									CW_USEDEFAULT,
-									r.right - r.left,
-									r.bottom - r.top,
-									0,
-									0,
-									hinstance,
-									0);
+	window->handle = CreateWindowExA(0,
+									 _classname_buffer,
+									 (const char*) title.str,
+									 window_style,
+									 CW_USEDEFAULT,
+									 CW_USEDEFAULT,
+									 r.right - r.left,
+									 r.bottom - r.top,
+									 0,
+									 0,
+									 hinstance,
+									 0);
 	
-	if (!window.handle) {
-		LogReturn((OS_Window) {0}, "Win32 Window Creation Failed");
+	
+	if (_window_ct == 0) {
+		_main_fibre = ConvertThreadToFiber(0);
+		_event_fibre = CreateFiber(0, (LPFIBER_START_ROUTINE) OS_PollEvents_Fiber, &window);
+	}
+	SetWindowLongPtr(window->handle, GWLP_USERDATA, (LONG_PTR) window);
+	
+	if (!window->handle) {
+		LogReturn((OS_Window*) 0, "Win32 Window Creation Failed");
 	}
 	
 	scratch_return(&scratch);
 	
 	_window_ct++;
 	
-	return *((OS_Window*)&window);
+	return (OS_Window*)window;
 }
 
 void OS_WindowShow(OS_Window* _window) {
@@ -103,21 +115,55 @@ void OS_WindowClose(OS_Window* _window) {
 		UnregisterClass(_classname_buffer, GetModuleHandle(0));
 		free(_classname_buffer);
 	}
+	free(window);
+}
+
+static void CALLBACK OS_PollEvents_Fiber(W32_Window* param) {
+	MSG _Msg = {0};
+	while (true) {
+		if (PeekMessage(&_Msg, NULL, 0, 0, PM_REMOVE)) {
+			TranslateMessage(&_Msg);
+			DispatchMessage(&_Msg);
+		}
+		SwitchToFiber(_main_fibre);
+	}
 }
 
 void OS_PollEvents() {
-	MSG _Msg = {0};
 	__OS_InputReset();
-	if (PeekMessage(&_Msg, NULL, 0, 0, PM_REMOVE)) {
-		TranslateMessage(&_Msg);
-		DispatchMessage(&_Msg);
-	}
+	SwitchToFiber(_event_fibre);
+}
+
+static void DefaultResizeCallback(OS_Window* _window, i32 w, i32 h) {
+	W32_Window* window = (W32_Window*) _window;
+	window->width = (u32)w;
+	window->height = (u32)h;
+	if (window->resize_callback) window->resize_callback(_window, w, h);
 }
 
 static LRESULT CALLBACK Win32Proc(HWND window, UINT msg, WPARAM wparam, LPARAM lparam) {
 	LRESULT result = 0;
 	
 	switch (msg) {
+		case WM_TIMER: {
+			RECT r;
+			GetClientRect(window, &r);
+			int width = r.right - r.left;
+			int height = r.bottom - r.top;
+			
+			DefaultResizeCallback((OS_Window*) GetWindowLongPtr(window, GWLP_USERDATA),
+								  width, height);
+			
+			SwitchToFiber(_main_fibre);
+		} break;
+		
+		case WM_ENTERSIZEMOVE: {
+			SetTimer(window, 1, 1, 0);
+		} break;
+		
+		case WM_EXITSIZEMOVE: {
+			KillTimer(window, 1);
+		} break;
 		
 		case WM_SYSKEYDOWN:
         case WM_KEYDOWN: {

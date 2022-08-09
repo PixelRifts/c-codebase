@@ -15,12 +15,20 @@ FOR %%f in (source\core\*.c) do SET c_filenames=!c_filenames! %%f
 FOR %%f in (source\os\*.c) do SET c_filenames=!c_filenames! %%f
 REM ==============
 
+
+
 REM ==============
 REM optional layers
 
 REM ECHO Optional Layer Selected: Render2D
 REM SET c_filenames=!c_filenames! source\opt\render_2d.c
+
+REM ECHO Optional Layer Selected: UI
+REM SET c_filenames=!c_filenames! source\opt\ui.c
+
 REM ==============
+
+
 
 REM ==============
 SET compiler_flags=-Wall -Wvarargs -Werror -Wno-unused-function -Wno-format-security -Wno-incompatible-pointer-types-discards-qualifiers -Wno-unused-but-set-variable -Wno-int-to-void-pointer-cast
@@ -30,6 +38,8 @@ SET defines=-D_DEBUG -D_CRT_SECURE_NO_WARNINGS
 SET output=-obin/codebase.exe
 SET backend=-DBACKEND_GL46
 REM ==============
+
+
 
 ECHO "Building codebase.exe..."
 %cc% %c_filenames% %compiler_flags% %defines% %backend% %include_flags% %linker_flags% %output%
