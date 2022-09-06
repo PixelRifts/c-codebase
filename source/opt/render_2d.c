@@ -95,6 +95,12 @@ void R2D_Free(R2D_Renderer* renderer) {
 	arena_free(&renderer->arena);
 }
 
+void R2D_ResizeProjection(R2D_Renderer* renderer, vec2 render_size) {
+	R_PipelineBind(&renderer->pipeline);
+	mat4 projection = mat4_transpose(mat4_ortho(0, render_size.x, 0, render_size.y, -1, 1000));
+	R_ShaderPackUploadMat4(&renderer->shader, str_lit("u_projection"), projection);
+}
+
 void R2D_BeginDraw(R2D_Renderer* renderer) {
 	Iterate(renderer->batches, i) {
 		R2D_VertexCacheReset(&renderer->batches.elems[i].cache);

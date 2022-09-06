@@ -8,12 +8,16 @@
 
 typedef struct OS_Window OS_Window;
 typedef void ResizeCallback(OS_Window* window, i32 w, i32 h);
+typedef void KeyCallback(OS_Window* window, u8 key, i32 action);
+typedef void ButtonCallback(OS_Window* window, i32 button, i32 action);
 
 struct OS_Window {
 	u32 width;
 	u32 height;
 	string title;
 	ResizeCallback* resize_callback;
+	KeyCallback* key_callback;
+	ButtonCallback* button_callback;
 	u64 v[8];
 };
 

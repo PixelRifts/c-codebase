@@ -16,10 +16,6 @@ int main() {
 	B_BackendInit(window);
 	OS_WindowShow(window);
 	
-	OS_Window* window2 = OS_WindowCreate(1080, 720, str_lit("This should work too"));
-	B_BackendInitShared(window2, window);
-	OS_WindowShow(window2);
-	
 	R_ShaderPack program = {0};
 	R_ShaderPackAllocLoad(&program, str_lit("res/test"));
 	
@@ -48,20 +44,12 @@ int main() {
 		R_PipelineBind(&vin);
 		R_Draw(&vin, 0, 3);
 		B_BackendSwapchainNext(window);
-		
-		B_BackendSelectRenderWindow(window2);
-		R_Viewport(0, 0, window2->width, window2->height);
-		R_Clear(BufferMask_Color);
-		R_PipelineBind(&vin);
-		R_Draw(&vin, 0, 3);
-		B_BackendSwapchainNext(window2);
 	}
 	
 	R_BufferFree(&buf);
 	R_PipelineFree(&vin);
 	R_ShaderPackFree(&program);
 	
-	B_BackendFree(window2);
 	B_BackendFree(window);
 	
 	OS_WindowClose(window);

@@ -4,16 +4,7 @@
 #include <stdlib.h>
 
 #include "os/input.h"
-
-typedef struct W32_Window {
-	u32 width;
-	u32 height;
-	string title;
-	ResizeCallback* resize_callback;
-	HWND handle;
-	HGLRC glrc;
-	u64 v[6];
-} W32_Window;
+#include "os/win32_window.h"
 
 static void CALLBACK OS_PollEvents_Fiber(W32_Window* param);
 
@@ -53,7 +44,7 @@ OS_Window* OS_WindowCreate(u32 width, u32 height, string title) {
 		}
 	}
 	
-	W32_Window* window = malloc(sizeof(W32_Window*));
+	W32_Window* window = malloc(sizeof(W32_Window));
 	window->width = width;
 	window->height = height;
 	window->title = title;
@@ -144,6 +135,8 @@ static void DefaultResizeCallback(OS_Window* _window, i32 w, i32 h) {
 static LRESULT CALLBACK Win32Proc(HWND window, UINT msg, WPARAM wparam, LPARAM lparam) {
 	LRESULT result = 0;
 	
+	OS_Window* os_window = (OS_Window*) GetWindowLongPtr(window, GWLP_USERDATA);
+	
 	switch (msg) {
 		case WM_TIMER: {
 			RECT r;
@@ -151,8 +144,7 @@ static LRESULT CALLBACK Win32Proc(HWND window, UINT msg, WPARAM wparam, LPARAM l
 			int width = r.right - r.left;
 			int height = r.bottom - r.top;
 			
-			DefaultResizeCallback((OS_Window*) GetWindowLongPtr(window, GWLP_USERDATA),
-								  width, height);
+			DefaultResizeCallback(os_window, width, height);
 			
 			SwitchToFiber(_main_fibre);
 		} break;
@@ -168,11 +160,13 @@ static LRESULT CALLBACK Win32Proc(HWND window, UINT msg, WPARAM wparam, LPARAM l
 		case WM_SYSKEYDOWN:
         case WM_KEYDOWN: {
 			__OS_InputKeyCallback((u8)wparam, (lparam >> 30) & 0x01 ? Input_Repeat : Input_Press);
-		} break;
+			if (os_window->key_callback) os_window->key_callback(os_window, (u8)wparam, (lparam >> 30) & 0x01 ? Input_Repeat : Input_Press);
+        } break;
 		
 		case WM_SYSKEYUP:
         case WM_KEYUP: {
 			__OS_InputKeyCallback((u8)wparam, Input_Release);
+			if (os_window->key_callback) os_window->key_callback(os_window, (u8)wparam, Input_Release);
         } break;
         
         case WM_LBUTTONDOWN:
@@ -181,24 +175,27 @@ static LRESULT CALLBACK Win32Proc(HWND window, UINT msg, WPARAM wparam, LPARAM l
             u8 btn = msg == WM_LBUTTONDOWN
 				? Input_MouseButton_Left : msg == WM_RBUTTONDOWN
 				? Input_MouseButton_Right : Input_MouseButton_Middle;
+            
 			__OS_InputButtonCallback(btn, Input_Press);
+			if (os_window->button_callback) os_window->button_callback(os_window, btn, Input_Press);
         } break;
         
         case WM_LBUTTONUP:
         case WM_MBUTTONUP:
         case WM_RBUTTONUP: {
-            u8 btn = msg == WM_LBUTTONDOWN
-				? Input_MouseButton_Left : msg == WM_RBUTTONDOWN
+            u8 btn = msg == WM_LBUTTONUP
+				? Input_MouseButton_Left : msg == WM_RBUTTONUP
 				? Input_MouseButton_Right : Input_MouseButton_Middle;
 			__OS_InputButtonCallback(btn, Input_Release);
+			if (os_window->button_callback) os_window->button_callback(os_window, btn, Input_Release);
         } break;
         
 		case WM_MOUSEMOVE: {
 			__OS_InputCursorPosCallback((f32)GET_X_LPARAM(lparam), (f32)GET_Y_LPARAM(lparam));
 		} break;
 		
-		case WM_VSCROLL:{
-			__OS_InputScrollCallback((f32)LOWORD(wparam), 0);
+		case WM_MOUSEWHEEL: {
+			__OS_InputScrollCallback(0, (f32)GET_WHEEL_DELTA_WPARAM(wparam) / 120.f);
 		} break;
 		
 		case WM_CLOSE:
@@ -215,4 +212,3 @@ static LRESULT CALLBACK Win32Proc(HWND window, UINT msg, WPARAM wparam, LPARAM l
 	
 	return result;
 }
-

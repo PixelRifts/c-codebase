@@ -1,6 +1,7 @@
 #include <Windows.h>
 
 #include "gl_functions.h"
+#include "os/win32_window.h"
 
 typedef i64 long_func();
 typedef long_func* loader_func(const char* name);
@@ -90,16 +91,6 @@ static W32_wglCreateContextAttribsARB* v_wglCreateContextAttribsARB;
 long_func* _GetAddress(const char* name) {
 	return (long_func*) GetProcAddress(opengl_module, name);
 }
-
-typedef struct W32_Window {
-	u32 width;
-	u32 height;
-	string title;
-	ResizeCallback* resize_callback;
-	HWND handle;
-	HGLRC glrc;
-	u64 v[6];
-} W32_Window;
 
 void B_BackendInitShared(OS_Window* _window, OS_Window* _share) {
 	W32_Window* window = (W32_Window*) _window;

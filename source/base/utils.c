@@ -46,51 +46,52 @@ U_DateTime U_DateTimeFromDenseTime(U_DenseTime densetime) {
 
 string U_FixFilepath(M_Arena* arena, string filepath) {
     M_Scratch scratch = scratch_get();
-
+	
     string fixed = filepath;
     fixed = str_replace_all(&scratch.arena, fixed, str_lit("\\"), str_lit("/"));
     fixed = str_replace_all(arena, fixed, str_lit("/./"), str_lit("/"));
     while (true) {
         u64 dotdot = str_find_first(fixed, str_lit(".."), 0);
         if (dotdot == fixed.size) break;
-
+		
         u64 last_slash = str_find_last(fixed, str_lit("/"), dotdot - 1);
-
+		
         u64 range = (dotdot + 3) - last_slash;
         string old = fixed;
         fixed = str_alloc(&scratch.arena, fixed.size - range);
         memcpy(fixed.str, old.str, last_slash);
         memcpy(fixed.str + last_slash, old.str + dotdot + 3, old.size - range - last_slash + 1);
     }
-
+	
+    fixed = str_copy(arena, fixed);
     scratch_return(&scratch);
-
+	
     return fixed;
 }
 
 string U_GetFullFilepath(M_Arena* arena, string filename) {
     M_Scratch scratch = scratch_get();
-
+	
     char buffer[PATH_MAX];
     get_cwd(buffer, PATH_MAX);
     string cwd = { .str = (u8*) buffer, .size = strlen(buffer) };
-
+	
     string finalized = str_cat(&scratch.arena, cwd, str_lit("/"));
     finalized = str_cat(&scratch.arena, finalized, filename);
     finalized = U_FixFilepath(arena, finalized);
-
+	
     scratch_return(&scratch);
     return finalized;
 }
 
 string U_GetFilenameFromFilepath(string filepath) {
     u64 last_slash = str_find_last(filepath, str_lit("/"), 0);
-
+	
     if (last_slash == filepath.size)
         last_slash = 0;
     else if (last_slash == 0)
         last_slash = str_find_last(filepath, str_lit("\\"), 0);
-
+	
     u64 sizeof_filename = filepath.size - last_slash;
     return (string) { .str = filepath.str + last_slash, .size = sizeof_filename };
 }

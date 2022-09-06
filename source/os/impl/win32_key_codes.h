@@ -43,8 +43,8 @@
 #define Input_Key_Enter 13
 #define Input_Key_ContextMenu 93
 
-#define Input_Key_Period 188
-#define Input_Key_Comma 190
+#define Input_Key_Period 190
+#define Input_Key_Comma 188
 #define Input_Key_ForwardSlash 191
 #define Input_Key_BackSlash 220
 #define Input_Key_Semicolon 186

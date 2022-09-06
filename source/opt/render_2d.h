@@ -52,6 +52,7 @@ typedef struct R2D_Renderer {
 
 void R2D_Init(OS_Window* window, R2D_Renderer* renderer);
 void R2D_Free(R2D_Renderer* renderer);
+void R2D_ResizeProjection(R2D_Renderer* renderer, vec2 render_size);
 
 void R2D_BeginDraw(R2D_Renderer* renderer);
 void R2D_EndDraw(R2D_Renderer* renderer);
