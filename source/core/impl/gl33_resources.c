@@ -40,9 +40,24 @@ typedef struct R_GL33Texture2D {
 	u32 height;
 	
 	R_TextureFormat format;
+	R_TextureResizeParam min;
+	R_TextureResizeParam mag;
+	R_TextureWrapParam wrap_s;
+	R_TextureWrapParam wrap_t;
 	
 	u32 handle;
 } R_GL33Texture2D;
+
+typedef struct R_GL33Framebuffer {
+	u32 width;
+	u32 height;
+	
+	R_Texture2D* color_attachments;
+	u32 color_attachment_count;
+	R_Texture2D depth_attachment;
+	
+	u32 handle;
+} R_GL33Framebuffer;
 
 //~ Elpers
 
@@ -137,7 +152,7 @@ static u32 get_texture_resize_param_type_of(R_TextureResizeParam param) {
 }
 
 static u32 get_texture_format_type_of(R_TextureFormat format) {
-	AssertTrue(6 == TextureFormat_MAX,
+	AssertTrue(7 == TextureFormat_MAX,
 			   "Non Exhaustive switch statement: get_texture_format_type_of in gl33 backend");
 	switch (format) {
 		case TextureFormat_RInteger: return GL_RED_INTEGER;
@@ -150,8 +165,22 @@ static u32 get_texture_format_type_of(R_TextureFormat format) {
 	return 0;
 }
 
+static u32 get_texture_datatype_of(R_TextureFormat format) {
+	AssertTrue(7 == TextureFormat_MAX,
+			   "Non Exhaustive switch statement: get_texture_datatype_of in gl33 backend");
+	switch (format) {
+		case TextureFormat_RInteger: return GL_INT;
+		case TextureFormat_R: return GL_UNSIGNED_BYTE;
+		case TextureFormat_RG: return GL_UNSIGNED_BYTE;
+		case TextureFormat_RGB: return GL_UNSIGNED_BYTE;
+		case TextureFormat_RGBA: return GL_UNSIGNED_BYTE;
+		case TextureFormat_DepthStencil: return GL_UNSIGNED_INT_24_8;
+	}
+	return 0;
+}
+
 static u32 get_texture_internal_format_type_of(R_TextureFormat format) {
-    AssertTrue(6 == TextureFormat_MAX,
+    AssertTrue(7 == TextureFormat_MAX,
 			   "Non Exhaustive switch statement: get_texture_internal_format_type_of in gl33 backend");
 	switch (format) {
         case TextureFormat_RInteger: return GL_R32I;
@@ -161,6 +190,20 @@ static u32 get_texture_internal_format_type_of(R_TextureFormat format) {
         case TextureFormat_RGBA: return GL_RGBA8;
         case TextureFormat_DepthStencil: return GL_DEPTH24_STENCIL8;
     }
+    return 0;
+}
+
+static u32 get_texture_channel_of(R_TextureChannel format) {
+    AssertTrue(6 == TextureChannel_MAX,
+			   "Non Exhaustive switch statement: get_texture_channel_of in gl33 backend");
+	switch (format) {
+		case TextureChannel_Zero: return GL_ZERO;
+		case TextureChannel_One: return GL_ONE;
+        case TextureChannel_R: return GL_RED;
+		case TextureChannel_G: return GL_GREEN;
+		case TextureChannel_B: return GL_BLUE;
+		case TextureChannel_A: return GL_ALPHA;
+	}
     return 0;
 }
 
@@ -397,6 +440,10 @@ void R_Texture2DAlloc(R_Texture2D* _texture, R_TextureFormat format, u32 width, 
 	texture->width = width;
 	texture->height = height;
 	texture->format = format;
+	texture->min = min;
+	texture->mag = mag;
+	texture->wrap_s = wrap_s;
+	texture->wrap_t = wrap_t;
 	glGenTextures(1, &texture->handle);
 	glBindTexture(GL_TEXTURE_2D, texture->handle);
 	
@@ -414,7 +461,7 @@ void R_Texture2DAlloc(R_Texture2D* _texture, R_TextureFormat format, u32 width, 
 
 void R_Texture2DAllocLoad(R_Texture2D* _texture, string filepath, R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t) {
 	i32 width, height, channels;
-	stbi_set_flip_vertically_on_load(true);
+	//stbi_set_flip_vertically_on_load(true);
 	u8* data = stbi_load((const char*)filepath.str, &width, &height, &channels, 0);
 	
 	if (channels == 3) {
@@ -425,6 +472,18 @@ void R_Texture2DAllocLoad(R_Texture2D* _texture, string filepath, R_TextureResiz
 	
 	R_Texture2DData(_texture, data);
 	stbi_image_free(data);
+}
+
+void R_Texture2DSwizzle(R_Texture2D* _texture, i32* swizzles) {
+	R_GL33Texture2D* texture = (R_GL33Texture2D*) _texture;
+	GLint fixed[4] = {
+		get_texture_channel_of(swizzles[0]),
+		get_texture_channel_of(swizzles[1]),
+		get_texture_channel_of(swizzles[2]),
+		get_texture_channel_of(swizzles[3]),
+	};
+	glBindTexture(GL_TEXTURE_2D, texture->handle);
+	glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, fixed);
 }
 
 void R_Texture2DData(R_Texture2D* _texture, void* data) {
@@ -451,6 +510,119 @@ void R_Texture2DFree(R_Texture2D* _texture) {
 	R_GL33Texture2D* texture = (R_GL33Texture2D*) _texture;
 	glDeleteTextures(1, &texture->handle);
 }
+
+//~ Framebuffers
+
+void R_FramebufferCreate(R_Framebuffer* _framebuffer, u32 width, u32 height, R_Texture2D* color_attachments, u32 color_attachment_count, R_Texture2D depth_attachment) {
+	if (!width) width = 1;
+	if (!height) height = 1;
+	R_GL33Framebuffer* ret = (R_GL33Framebuffer*) _framebuffer;
+	glGenFramebuffers(1, &ret->handle);
+    glBindFramebuffer(GL_FRAMEBUFFER, ret->handle);
+	ret->width = width;
+    ret->height = height;
+	ret->color_attachments = malloc(sizeof(R_Texture2D) * color_attachment_count);
+	MemoryZero(ret->color_attachments, sizeof(R_Texture2D) * color_attachment_count);
+	ret->depth_attachment = depth_attachment;
+    ret->color_attachment_count = color_attachment_count;
+	
+	u32 draw_buffers_active[color_attachment_count];
+    for (u32 i = 0; i < color_attachment_count; i++) {
+        ret->color_attachments[i] = color_attachments[i];
+        draw_buffers_active[i] = GL_COLOR_ATTACHMENT0 + i;
+        R_Texture2DBindTo(&color_attachments[i], 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, ((R_GL33Texture2D*)&color_attachments[i])->handle, 0);
+    }
+    glDrawBuffers(color_attachment_count, draw_buffers_active);
+	
+	if (depth_attachment.format != TextureFormat_Invalid) {
+        AssertTrue(depth_attachment.format == TextureFormat_DepthStencil, "Depth Texture format is not TextureFormat_DepthStencil");
+        R_Texture2DBindTo(&depth_attachment, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, ((R_GL33Texture2D*)&depth_attachment)->handle, 0);
+    }
+    
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		LogError("Incomplete framebuffer with code %x", glCheckFramebufferStatus(GL_FRAMEBUFFER));
+	}
+}
+
+void R_FramebufferBind(R_Framebuffer* _framebuffer) {
+	R_GL33Framebuffer* framebuffer = (R_GL33Framebuffer*) _framebuffer;
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->handle);
+}
+
+void R_FramebufferBindScreen(void) {
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void R_FramebufferBlitToScreen(OS_Window* window, R_Framebuffer* _framebuffer) {
+	R_GL33Framebuffer* framebuffer = (R_GL33Framebuffer*) _framebuffer;
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer->handle);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glBlitFramebuffer(0, 0, framebuffer->width, framebuffer->height, 0, 0, window->width, window->height,
+					  GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+}
+
+void R_FramebufferReadPixel(R_Framebuffer* _framebuffer, u32 attachment, u32 x, u32 y,
+							void* data) {
+	R_GL33Framebuffer* framebuffer = (R_GL33Framebuffer*) _framebuffer;
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->handle);
+    glReadBuffer(GL_COLOR_ATTACHMENT0 + attachment);
+	R_TextureFormat format = framebuffer->color_attachments[attachment].format;
+    glReadPixels(x, y, 1, 1, get_texture_format_type_of(format), get_texture_datatype_of(format), data);
+}
+
+static void R_FramebufferDeleteInternal(R_Framebuffer* _framebuffer) {
+	R_GL33Framebuffer* framebuffer = (R_GL33Framebuffer*) _framebuffer;
+	for (u32 i = 0; i < framebuffer->color_attachment_count; i++) {
+        R_Texture2DFree(&framebuffer->color_attachments[i]);
+    }
+    if (framebuffer->depth_attachment.format != TextureFormat_Invalid)
+        R_Texture2DFree(&framebuffer->depth_attachment);
+    glDeleteFramebuffers(1, &framebuffer->handle);
+}
+
+void R_FramebufferResize(R_Framebuffer* _framebuffer, u32 new_width, u32 new_height) {
+	R_FramebufferDeleteInternal(_framebuffer);
+	R_GL33Framebuffer* framebuffer = (R_GL33Framebuffer*) _framebuffer;
+    
+	if (!new_width) new_width = 1;
+    if (!new_height) new_height = 1;
+    glGenFramebuffers(1, &framebuffer->handle);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->handle);
+    framebuffer->width = new_width;
+    framebuffer->height = new_height;
+	
+    for (u32 i = 0; i < framebuffer->color_attachment_count; i++) {
+        R_Texture2D old_spec = framebuffer->color_attachments[i];
+		R_Texture2DAlloc(&framebuffer->color_attachments[i], old_spec.format, new_width, new_height, old_spec.min, old_spec.mag, old_spec.wrap_s, old_spec.wrap_t);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, ((R_GL33Texture2D*)&framebuffer->color_attachments[i])->handle, 0);
+    }
+    
+    if (framebuffer->depth_attachment.format != TextureFormat_Invalid) {
+        AssertTrue(framebuffer->depth_attachment.format == TextureFormat_DepthStencil, "Depth Texture format is not TextureFormat_DepthStencil");
+        
+        R_Texture2D old_spec = framebuffer->depth_attachment;
+		R_Texture2DAlloc(&framebuffer->depth_attachment, old_spec.format, new_width, new_height, old_spec.min, old_spec.mag, old_spec.wrap_s, old_spec.wrap_t);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, ((R_GL33Texture2D*)&framebuffer->depth_attachment)->handle, 0);
+    }
+    
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        AssertTrue(false, "Framebuffer Incomplete");
+    }
+}
+
+void R_FramebufferFree(R_Framebuffer* _framebuffer) {
+	R_GL33Framebuffer* framebuffer = (R_GL33Framebuffer*) _framebuffer;
+	for (u32 i = 0; i < framebuffer->color_attachment_count; i++) {
+        R_Texture2DFree(&framebuffer->color_attachments[i]);
+    }
+	free(framebuffer->color_attachments);
+    if (framebuffer->depth_attachment.format != TextureFormat_Invalid)
+        R_Texture2DFree(&framebuffer->depth_attachment);
+    glDeleteFramebuffers(1, &framebuffer->handle);
+}
+
 
 //~ Other
 

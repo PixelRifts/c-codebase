@@ -7,6 +7,7 @@
 #include "base/str.h"
 #include "base/ds.h"
 #include "base/vmath.h"
+#include "os/window.h"
 
 //~ Buffers
 
@@ -128,6 +129,8 @@ enum {
 
 typedef u32 R_TextureFormat;
 enum {
+	TextureFormat_Invalid,
+	
 	TextureFormat_RInteger,
 	TextureFormat_R,
 	TextureFormat_RG,
@@ -136,6 +139,17 @@ enum {
 	TextureFormat_DepthStencil,
 	
 	TextureFormat_MAX,
+};
+
+typedef i32 R_TextureChannel;
+enum {
+	TextureChannel_Zero,
+	TextureChannel_One,
+	TextureChannel_R,
+	TextureChannel_G,
+	TextureChannel_B,
+	TextureChannel_A,
+	TextureChannel_MAX,
 };
 
 typedef struct R_Texture2D {
@@ -159,6 +173,28 @@ b8   R_Texture2DEquals(R_Texture2D* a, R_Texture2D* b);
 
 void R_Texture2DBindTo(R_Texture2D* texture, u32 slot);
 void R_Texture2DFree(R_Texture2D* texture);
+
+//~ Framebuffer
+
+typedef struct R_Framebuffer {
+	u32 width;
+	u32 height;
+	
+	R_Texture2D* color_attachments;
+	u32 color_attachment_count;
+	R_Texture2D depth_attachment;
+	
+	u64 v[1];
+} R_Framebuffer;
+
+void R_FramebufferCreate(R_Framebuffer* _framebuffer, u32 width, u32 height, R_Texture2D* color_attachments, u32 color_attachment_count, R_Texture2D depth_attachment);
+void R_FramebufferBind(R_Framebuffer* framebuffer);
+void R_FramebufferBindScreen(void);
+void R_FramebufferBlitToScreen(OS_Window* window, R_Framebuffer* framebuffer);
+void R_FramebufferReadPixel(R_Framebuffer* _framebuffer, u32 attachment, u32 x, u32 y,
+							void* data);
+void R_FramebufferResize(R_Framebuffer* framebuffer, u32 new_width, u32 new_height);
+void R_FramebufferFree(R_Framebuffer* framebuffer);
 
 //~ Other
 

@@ -115,6 +115,9 @@ typedef u64 GLuint64EXT;
 
 #define GL_RED_INTEGER 0x8D94
 #define GL_RED 0x1903
+#define GL_GREEN 0x1904
+#define GL_BLUE 0x1905
+#define GL_ALPHA 0x1906
 #define GL_RG 0x8227
 #define GL_RGB 0x1907
 #define GL_RGBA 0x1908
@@ -126,6 +129,53 @@ typedef u64 GLuint64EXT;
 #define GL_RGB8 0x8051
 #define GL_RGBA8 0x8058
 #define GL_DEPTH24_STENCIL8 0x88F0
+
+#define GL_BLEND 0x0BE2
+#define GL_BLEND_SRC 0x0BE1
+#define GL_BLEND_DST 0x0BE0
+#define GL_ZERO 0x0
+#define GL_ONE 0x1
+#define GL_SRC_COLOR 0x0300
+#define GL_ONE_MINUS_SRC_COLOR 0x0301
+#define GL_SRC_ALPHA 0x0302
+#define GL_ONE_MINUS_SRC_ALPHA 0x0303
+#define GL_DST_ALPHA 0x0304
+#define GL_ONE_MINUS_DST_ALPHA 0x0305
+#define GL_DST_COLOR 0x0306
+#define GL_ONE_MINUS_DST_COLOR 0x0307
+#define GL_SRC_ALPHA_SATURATE 0x0308
+
+#define GL_TEXTURE_SWIZZLE_R 0x8E42
+#define GL_TEXTURE_SWIZZLE_G 0x8E43
+#define GL_TEXTURE_SWIZZLE_B 0x8E44
+#define GL_TEXTURE_SWIZZLE_A 0x8E45
+#define GL_TEXTURE_SWIZZLE_RGBA 0x8E46
+
+#define GL_FRAMEBUFFER 0x8D40
+#define GL_READ_FRAMEBUFFER 0x8CA8
+#define GL_DRAW_FRAMEBUFFER 0x8CA9
+#define GL_COLOR_ATTACHMENT0 0x8CE0
+#define GL_DEPTH_STENCIL_ATTACHMENT 0x821A
+
+#define GL_FRAMEBUFFER_COMPLETE 0x8CD5
+#define GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT 0x8CD6
+#define GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT 0x8CD7
+#define GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER 0x8CDB
+#define GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER 0x8CDC
+
+#define GL_DEPTH_TEST 0x0B71
+
+#define GL_CULL_FACE 0x0B44
+#define GL_NONE 0
+#define GL_FRONT_LEFT 0x0400
+#define GL_FRONT_RIGHT 0x0401
+#define GL_BACK_LEFT 0x0402
+#define GL_BACK_RIGHT 0x0403
+#define GL_FRONT 0x0404
+#define GL_BACK 0x0405
+#define GL_LEFT 0x0406
+#define GL_RIGHT 0x0407
+#define GL_FRONT_AND_BACK 0x0408
 
 #if defined(BACKEND_GL33)
 
@@ -167,11 +217,25 @@ X(glGenTextures, void, (GLsizei count, GLuint* texture_handles))\
 X(glBindTexture, void, (GLenum target, GLuint texture_handle))\
 X(glTexImage2D, void, (GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void* data))\
 X(glTexParameteri, void, (GLenum target, GLenum pname, GLint param))\
+X(glTexParameteriv, void, (GLenum target, GLenum pname, GLint* params))\
 X(glActiveTexture, void, (GLenum texture_handle))\
 X(glTexSubImage2D, void, (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void* data))\
 X(glDeleteTextures, void, (GLsizei count, GLuint* texture_handles))\
 X(glFlush, void, (void))\
 X(glViewport, void, (GLint x, GLint y, GLsizei w, GLsizei h))\
+X(glEnable, void, (GLenum feature))\
+X(glDisable, void, (GLenum feature))\
+X(glBlendFunc, void, (GLenum src_factor, GLenum dst_factor))\
+X(glGenFramebuffers, void, (GLsizei count, GLuint* fbo_handles))\
+X(glFramebufferTexture2D, void, (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level))\
+X(glDrawBuffers, void, (GLsizei count, GLenum* draw_buffers))\
+X(glReadBuffer, void, (GLenum read_buffer))\
+X(glReadPixels, void, (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, void *pixels))\
+X(glCheckFramebufferStatus, GLenum, (GLenum target))\
+X(glBindFramebuffer, void, (GLenum target, GLuint framebuffer_handle))\
+X(glBlitFramebuffer, void, (GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter))\
+X(glDeleteFramebuffers, void, (GLsizei count, GLuint* fbo_handles))\
+X(glCullFace, void, (GLenum mode))\
 
 #elif defined(BACKEND_GL46)
 
@@ -214,11 +278,25 @@ X(glCreateTextures, void, (GLenum type, GLsizei count, GLuint* texture_handles))
 X(glBindTextureUnit, void, (GLint slot, GLuint texture_handle))\
 X(glTextureStorage2D, void, (GLuint texture_handle, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height))\
 X(glTextureParameteri, void, (GLuint texture_handle, GLenum pname, GLint param))\
+X(glTextureParameteriv, void, (GLuint texture_handle, GLenum pname, GLint* params))\
 X(glTextureSubImage2D, void, (GLuint texture_handle, GLint level, GLint xoffset, GLint yoffset, GLsizei width,\
 GLsizei height, GLenum format, GLenum type, const void* data))\
 X(glDeleteTextures, void, (GLsizei count, GLuint* texture_handles))\
 X(glFlush, void, (void))\
 X(glViewport, void, (GLint x, GLint y, GLsizei w, GLsizei h))\
+X(glEnable, void, (GLenum feature))\
+X(glDisable, void, (GLenum feature))\
+X(glBlendFunc, void, (GLenum src_factor, GLenum dst_factor))\
+X(glCreateFramebuffers, void, (GLsizei count, GLuint* fbo_handles))\
+X(glNamedFramebufferTexture, void, (GLuint fbo_handle, GLenum attachment, GLuint texture, GLint level, GLint layer))\
+X(glNamedFramebufferDrawBuffers, void, (GLuint fbo_handle, GLsizei count, GLenum* draw_buffers))\
+X(glNamedFramebufferReadBuffer, void, (GLuint fbo_handle, GLenum read_buffer))\
+X(glReadPixels, void, (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, void *pixels))\
+X(glCheckNamedFramebufferStatus, GLenum, (GLuint fbo_handle, GLenum target))\
+X(glBindFramebuffer, void, (GLenum target, GLuint framebuffer_handle))\
+X(glBlitNamedFramebuffer, void, (GLuint read_fbo_handle, GLuint draw_fbo_handle, GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter))\
+X(glDeleteFramebuffers, void, (GLsizei count, GLuint* fbo_handles))\
+X(glCullFace, void, (GLenum mode))\
 
 #endif
 
