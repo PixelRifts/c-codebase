@@ -19,6 +19,11 @@ typedef struct M_Arena {
 #define M_ARENA_MAX Gigabytes(1)
 #define M_ARENA_COMMIT_SIZE Kilobytes(8)
 
+M_Arena* arena_make(void);
+M_Arena* arena_make_sized(u64 max);
+void arena_clear(M_Arena* arena);
+void arena_free(M_Arena* arena);
+
 void* arena_alloc(M_Arena* arena, u64 size);
 void* arena_alloc_zero(M_Arena* arena, u64 size);
 void  arena_dealloc(M_Arena* arena, u64 size);
@@ -28,11 +33,6 @@ void* arena_alloc_array_sized(M_Arena* arena, u64 elem_size, u64 count);
 
 #define arena_alloc_array(arena, elem_type, count) \
 arena_alloc_array_sized(arena, sizeof(elem_type), count)
-
-M_Arena* arena_make();
-M_Arena* arena_make_sized(u64 max);
-void arena_clear(M_Arena* arena);
-void arena_free(M_Arena* arena);
 
 typedef struct M_ArenaTemp {
     M_Arena* arena;
@@ -50,13 +50,28 @@ M_Scratch scratch_get(void);
 void scratch_reset(M_Scratch* scratch);
 void scratch_return(M_Scratch* scratch);
 
-//~ Heap Allocator
+//~ Pool Allocator
 
-typedef struct M_ {
-	u8* memory;
+typedef struct M_PoolFreeNode M_PoolFreeNode;
+struct M_PoolFreeNode { M_PoolFreeNode* next; };
+
+typedef struct M_Pool {
 	u64 max;
 	u64 commit_position;
-	b8  static_size;
-} M_Heap;
+	u64 element_size;
+	
+	M_PoolFreeNode* head;
+} M_Pool;
+
+#define M_POOL_MAX Gigabytes(1)
+#define M_POOL_COMMIT_CHUNK 32
+
+M_Pool* pool_make(u64 element_size);
+void pool_clear(M_Pool* pool);
+void pool_free(M_Pool* pool);
+
+void* pool_alloc(M_Pool* pool);
+void  pool_dealloc(M_Pool* pool, void* ptr);
+void  pool_dealloc_range(M_Pool* pool, void* ptr, u64 count);
 
 #endif //MEM_H

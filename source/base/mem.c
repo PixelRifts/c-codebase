@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include "base/log.h"
+
 // Dependency on the OS. Although it is generic
 #include "os/os.h"
 
@@ -92,7 +94,7 @@ void* arena_alloc(M_Arena* arena, u64 size) {
             if (arena->commit_position >= arena->max) {
                 assert(0 && "Arena is out of memory");
             } else {
-                OS_MemoryCommit(arena + sizeof(M_Arena) + arena->commit_position, commit_size);
+                OS_MemoryCommit(((void*)arena) + sizeof(M_Arena) + arena->commit_position, commit_size);
                 arena->commit_position += commit_size;
             }
         } else {
@@ -186,4 +188,63 @@ void scratch_reset(M_Scratch* scratch) {
 void scratch_return(M_Scratch* scratch) {
 	ThreadContext* ctx = (ThreadContext*) OS_ThreadContextGet();
 	return tctx_scratch_return(ctx, scratch);
+}
+
+//~ Pool Allocator
+
+M_Pool* pool_make(u64 element_size) {
+	M_Pool* pool = OS_MemoryReserve(sizeof(M_Pool) + M_POOL_MAX);
+	OS_MemoryCommit(pool, sizeof(M_Pool));
+	pool->max = M_POOL_MAX;
+	pool->commit_position = 0;
+	pool->element_size = align_forward_u64(element_size, DEFAULT_ALIGNMENT);
+	pool->head = nullptr;
+	return pool;
+}
+
+void pool_clear(M_Pool* pool) {
+	for (void *it = (void*)pool + sizeof(M_Pool), *preit = it;
+		 it <= (void*)pool + sizeof(M_Pool) + pool->commit_position;
+		 preit = it, it += pool->element_size) {
+		((M_PoolFreeNode*)preit)->next = (M_PoolFreeNode*)it;
+	}
+	pool->head = (void*)pool + sizeof(M_Pool);
+}
+
+void pool_free(M_Pool* pool) {
+	OS_MemoryRelease(pool, sizeof(M_Pool) + pool->max);
+}
+
+void* pool_alloc(M_Pool* pool) {
+	if (pool->head) {
+		void* ret = pool->head;
+		pool->head = pool->head->next;
+		return ret;
+	} else {
+		Log("Commit");
+		
+		if (pool->commit_position + M_POOL_COMMIT_CHUNK * pool->element_size >= pool->max) {
+			assert(0 && "Pool is out of memory");
+			return nullptr;
+		}
+		void* commit_ptr = pool + sizeof(M_Pool) + pool->commit_position;
+		OS_MemoryCommit(commit_ptr, M_POOL_COMMIT_CHUNK * pool->element_size);
+		pool_dealloc_range(pool, commit_ptr, M_POOL_COMMIT_CHUNK);
+		
+		return pool_alloc(pool);
+	}
+}
+
+void  pool_dealloc(M_Pool* pool, void* ptr) {
+	((M_PoolFreeNode*)ptr)->next = pool->head;
+	pool->head = ptr;
+}
+
+void  pool_dealloc_range(M_Pool* pool, void* ptr, u64 count) {
+	void* it = ptr;
+	for (u64 k = 0; k < count; k++) {
+		((M_PoolFreeNode*)it)->next = pool->head;
+		pool->head = it;
+		it += pool->element_size;
+	}
 }

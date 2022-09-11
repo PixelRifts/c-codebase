@@ -5,8 +5,6 @@
 
 #include "defines.h"
 
-#define M_SCRATCH_SIZE Kilobytes(16)
-
 typedef struct M_ArenaTemp M_Scratch;
 
 typedef struct ThreadContext {
