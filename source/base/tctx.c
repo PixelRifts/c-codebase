@@ -3,51 +3,27 @@
 #include "os/os.h"
 
 void tctx_init(ThreadContext* ctx) {
-	arena_init(&ctx->arena);
+	ctx->arena = arena_make();
 	OS_ThreadContextSet(ctx);
 }
 
 void tctx_free(ThreadContext* ctx) {
-	arena_free(&ctx->arena);
+	arena_free(ctx->arena);
 	OS_ThreadContextSet(ctx);
 }
 
 M_Scratch tctx_scratch_get(ThreadContext* ctx) {
-	if (!ctx->free_list) {
-        M_Scratch scratch = {0};
-        
-        scratch.index = ctx->max_created;
-        void* ptr = arena_alloc(&ctx->arena, M_SCRATCH_SIZE);
-        scratch.arena.memory = ptr;
-        scratch.arena.max = M_SCRATCH_SIZE;
-        scratch.arena.alloc_position = 0;
-        scratch.arena.commit_position = M_SCRATCH_SIZE;
-        scratch.arena.static_size = true;
-        
-        ctx->max_created++;
-        return scratch;
-    } else {
-        M_Scratch scratch = {0};
-        scratch.index = ctx->free_list->index;
-        
-        scratch.arena.memory = (u8*) ctx->free_list;
-        scratch.arena.max = M_SCRATCH_SIZE;
-        scratch.arena.alloc_position = 0;
-        scratch.arena.commit_position = M_SCRATCH_SIZE;
-        scratch.arena.static_size = true;
-        
-        ctx->free_list = ctx->free_list->next;
-        return scratch;
-    }
+	ctx->pop_to = ctx->arena->alloc_position;
+	return (M_Scratch) {
+		.arena = ctx->arena,
+		.pos = ctx->pop_to,
+	};
 }
 
 void tctx_scratch_reset(ThreadContext* ctx, M_Scratch* scratch) {
-	scratch->arena.alloc_position = 0;
+	arena_clear(scratch->arena);
 }
 
 void tctx_scratch_return(ThreadContext* ctx, M_Scratch* scratch) {
-	scratch_free_list_node* prev_head = ctx->free_list;
-    ctx->free_list = (scratch_free_list_node*) scratch->arena.memory;
-    ctx->free_list->next = prev_head;
-    ctx->free_list->index = scratch->index;
+	arena_dealloc_to(scratch->arena, scratch->pos);
 }

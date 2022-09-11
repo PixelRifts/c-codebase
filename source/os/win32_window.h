@@ -3,6 +3,8 @@
 #ifndef WIN32_WINDOW_H
 #define WIN32_WINDOW_H
 
+#include "defines.h"
+
 typedef struct W32_Window {
 	u32 width;
 	u32 height;

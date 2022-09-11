@@ -260,11 +260,10 @@ void R_ShaderAlloc(R_Shader* _shader, string data, R_ShaderType type) {
 }
 
 void R_ShaderAllocLoad(R_Shader* _shader, string fp, R_ShaderType type) {
-	M_Arena arena = {0};
-	arena_init(&arena);
-	string source_code = OS_FileRead(&arena, fp);
+	M_Arena* arena = arena_make();
+	string source_code = OS_FileRead(arena, fp);
 	R_ShaderAlloc(_shader, source_code, type);
-	arena_free(&arena);
+	arena_free(arena);
 }
 
 void R_ShaderFree(R_Shader* _shader) {
@@ -305,11 +304,11 @@ void R_ShaderPackAlloc(R_ShaderPack* _pack, R_Shader* shaders, u32 shader_count)
 void R_ShaderPackAllocLoad(R_ShaderPack* _pack, string fp_prefix) {
 	M_Scratch scratch = scratch_get();
 	
-	string vsfp = str_cat(&scratch.arena, fp_prefix, str_lit(".vert.glsl"));
-	string fsfp = str_cat(&scratch.arena, fp_prefix, str_lit(".frag.glsl"));
-	string gsfp = str_cat(&scratch.arena, fp_prefix, str_lit(".geom.glsl"));
+	string vsfp = str_cat(scratch.arena, fp_prefix, str_lit(".vert.glsl"));
+	string fsfp = str_cat(scratch.arena, fp_prefix, str_lit(".frag.glsl"));
+	string gsfp = str_cat(scratch.arena, fp_prefix, str_lit(".geom.glsl"));
 	
-	R_Shader* shader_buffer = arena_alloc(&scratch.arena, sizeof(R_Shader) * 3);
+	R_Shader* shader_buffer = arena_alloc(scratch.arena, sizeof(R_Shader) * 3);
 	u32 shader_count = 0;
 	
 	if (!OS_FileExists(vsfp))

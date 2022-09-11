@@ -92,7 +92,7 @@ void* arena_alloc(M_Arena* arena, u64 size) {
             if (arena->commit_position >= arena->max) {
                 assert(0 && "Arena is out of memory");
             } else {
-                OS_MemoryCommit(arena->memory + arena->commit_position, commit_size);
+                OS_MemoryCommit(arena + sizeof(M_Arena) + arena->commit_position, commit_size);
                 arena->commit_position += commit_size;
             }
         } else {
@@ -100,7 +100,7 @@ void* arena_alloc(M_Arena* arena, u64 size) {
         }
     }
     
-    memory = arena->memory + arena->alloc_position;
+    memory = arena + sizeof(M_Arena) + arena->alloc_position;
     arena->alloc_position += size;
     return memory;
 }
@@ -133,20 +133,24 @@ void* arena_alloc_array_sized(M_Arena* arena, u64 elem_size, u64 count) {
     return arena_alloc(arena, elem_size * count);
 }
 
-void arena_init(M_Arena* arena) {
+M_Arena* arena_make() {
+    M_Arena* arena = OS_MemoryReserve(sizeof(M_Arena) + M_ARENA_MAX);
+	OS_MemoryCommit(arena, sizeof(M_Arena));
     arena->max = M_ARENA_MAX;
-    arena->memory = OS_MemoryReserve(arena->max);
     arena->alloc_position = 0;
     arena->commit_position = 0;
     arena->static_size = false;
+	return arena;
 }
 
-void arena_init_sized(M_Arena* arena, u64 max) {
+M_Arena* arena_make_sized(u64 max) {
+    M_Arena* arena = OS_MemoryReserve(sizeof(M_Arena) + max);
+	OS_MemoryCommit(arena, sizeof(M_Arena));
 	arena->max = max;
-    arena->memory = OS_MemoryReserve(arena->max);
     arena->alloc_position = 0;
     arena->commit_position = 0;
     arena->static_size = false;
+	return arena;
 }
 
 void arena_clear(M_Arena* arena) {
@@ -154,7 +158,7 @@ void arena_clear(M_Arena* arena) {
 }
 
 void arena_free(M_Arena* arena) {
-    OS_MemoryRelease(arena->memory, arena->max);
+    OS_MemoryRelease(arena, sizeof(M_Arena) + arena->max);
 }
 
 //~ Temp arena

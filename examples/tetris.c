@@ -62,8 +62,7 @@ int main() {
 	ThreadContext context = {0};
 	tctx_init(&context);
 	
-	M_Arena global_arena = {0};
-	arena_init(&global_arena);
+	M_Arena* global_arena = arena_make();
 	
 	OS_Window* window = OS_WindowCreate(1080, 720, str_lit("This should work"));
 	B_BackendInit(window);
@@ -93,7 +92,7 @@ int main() {
 	string_array_add(&tetrominos, str_lit("...." ".XX." "..X." "..X."));
 	string_array_add(&tetrominos, str_lit("...." ".XX." ".X.." ".X.."));
 	
-	field = arena_alloc(&global_arena, sizeof(u8) * field_width * field_height);
+	field = arena_alloc(global_arena, sizeof(u8) * field_width * field_height);
 	
 	for (u32 y = 0; y < field_height; y++) {
 		for (u32 x = 0; x < field_width; x++) {
@@ -215,7 +214,7 @@ int main() {
 	B_BackendFree(window);
 	OS_WindowClose(window);
 	
-	arena_free(&global_arena);
+	arena_free(global_arena);
 	
 	tctx_free(&context);
 }

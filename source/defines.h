@@ -119,7 +119,7 @@ flush;\
 #define MemoryCopy(d,s,z) memmove((d), (s), (z))
 #define MemoryCopyStruct(d,s) MemoryCopy((d),(s), Min(sizeof(*(d)) , sizeof(*(s))))
 #define MemoryZero(d,z) memset((d), 0, (z))
-#define MemoryZeroStruct(d,s) MemoryZero((d),sizeof((s)))
+#define MemoryZeroStruct(d,s) MemoryZero((d),sizeof(s))
 
 #define ArrayCount(a) (sizeof(a) / sizeof(a[0]))
 

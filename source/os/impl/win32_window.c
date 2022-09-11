@@ -3,8 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "os/input.h"
 #include "os/win32_window.h"
+#include "os/input.h"
+
 
 static void CALLBACK OS_PollEvents_Fiber(W32_Window* param);
 
@@ -24,8 +25,8 @@ OS_Window* OS_WindowCreate(u32 width, u32 height, string title) {
 	
 	if (_window_ct == 0) {
 		string prefix = str_lit("ClassOf_");
-		string final = str_cat(&scratch.arena, prefix, title);
-		final = str_copy(&scratch.arena, final);
+		string final = str_cat(scratch.arena, prefix, title);
+		final = str_copy(scratch.arena, final);
 		_classname_buffer = calloc(final.size + 1, sizeof(char));
 		_classname_buffer = memmove(_classname_buffer, final.str, final.size + 1);
 		
@@ -45,10 +46,10 @@ OS_Window* OS_WindowCreate(u32 width, u32 height, string title) {
 	}
 	
 	W32_Window* window = malloc(sizeof(W32_Window));
+	MemoryZeroStruct(window, W32_Window);
 	window->width = width;
 	window->height = height;
 	window->title = title;
-	window->resize_callback = nullptr;
 	
 	RECT r = {
 		.right = width,

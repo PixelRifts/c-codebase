@@ -9,11 +9,11 @@
 //~ Arena (Linear Allocator)
 
 typedef struct M_Arena {
-    u8* memory;
     u64 max;
     u64 alloc_position;
     u64 commit_position;
     b8 static_size;
+	// u8* memory starts from this point
 } M_Arena;
 
 #define M_ARENA_MAX Gigabytes(1)
@@ -29,8 +29,8 @@ void* arena_alloc_array_sized(M_Arena* arena, u64 elem_size, u64 count);
 #define arena_alloc_array(arena, elem_type, count) \
 arena_alloc_array_sized(arena, sizeof(elem_type), count)
 
-void arena_init(M_Arena* arena);
-void arena_init_sized(M_Arena* arena, u64 max);
+M_Arena* arena_make();
+M_Arena* arena_make_sized(u64 max);
 void arena_clear(M_Arena* arena);
 void arena_free(M_Arena* arena);
 
@@ -49,5 +49,14 @@ void        arena_end_temp(M_ArenaTemp temp);
 M_Scratch scratch_get(void);
 void scratch_reset(M_Scratch* scratch);
 void scratch_return(M_Scratch* scratch);
+
+//~ Heap Allocator
+
+typedef struct M_ {
+	u8* memory;
+	u64 max;
+	u64 commit_position;
+	b8  static_size;
+} M_Heap;
 
 #endif //MEM_H

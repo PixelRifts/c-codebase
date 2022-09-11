@@ -8,7 +8,7 @@ static R2D_Batch* R2D_NextBatch(R2D_Renderer* renderer) {
     if (renderer->current_batch >= renderer->batches.len) {
 		R2D_BatchArray_add(&renderer->batches, (R2D_Batch) {});
 		next = &renderer->batches.elems[renderer->current_batch];
-        next->cache = R2D_VertexCacheCreate(&renderer->arena, R2D_MAX_INTERNAL_CACHE_VCOUNT);
+        next->cache = R2D_VertexCacheCreate(renderer->arena, R2D_MAX_INTERNAL_CACHE_VCOUNT);
     }
     return next;
 }
@@ -63,13 +63,13 @@ b8 R2D_VertexCachePush(R2D_VertexCache* cache, R2D_Vertex* vertices, u32 vertex_
 //~ Renderer Core
 
 void R2D_Init(OS_Window* window, R2D_Renderer* renderer) {
-	arena_init(&renderer->arena);
+	renderer->arena = arena_make();
 	
 	renderer->current_batch = 0;
 	renderer->cull_quad = (rect) { 0, 0, window->width, window->height };
     renderer->offset = (vec2) { 0.f, 0.f };
 	R2D_BatchArray_add(&renderer->batches, (R2D_Batch) {0});
-	renderer->batches.elems[renderer->current_batch].cache = R2D_VertexCacheCreate(&renderer->arena, R2D_MAX_INTERNAL_CACHE_VCOUNT);
+	renderer->batches.elems[renderer->current_batch].cache = R2D_VertexCacheCreate(renderer->arena, R2D_MAX_INTERNAL_CACHE_VCOUNT);
 	
 	R_ShaderPackAllocLoad(&renderer->shader, str_lit("res/render_2d"));
 	R_Attribute attributes[] = { Attribute_Float2, Attribute_Float2, Attribute_Float1, Attribute_Float4 };
@@ -92,7 +92,7 @@ void R2D_Free(R2D_Renderer* renderer) {
 	R_BufferFree(&renderer->buffer);
 	R_PipelineFree(&renderer->pipeline);
 	R_ShaderPackFree(&renderer->shader);
-	arena_free(&renderer->arena);
+	arena_free(renderer->arena);
 }
 
 void R2D_ResizeProjection(R2D_Renderer* renderer, vec2 render_size) {

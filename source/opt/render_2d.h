@@ -36,7 +36,7 @@ typedef struct R2D_Batch {
 Array_Prototype(R2D_BatchArray, R2D_Batch);
 
 typedef struct R2D_Renderer {
-	M_Arena arena;
+	M_Arena* arena;
 	
 	R2D_BatchArray batches;
     u8 current_batch;

@@ -8,11 +8,13 @@ SET cc=clang
 REM ==============
 REM Gets list of all C files
 SET c_filenames= 
-FOR %%f in (source\*.c) do SET c_filenames=!c_filenames! %%f
+REM FOR %%f in (source\*.c) do SET c_filenames=!c_filenames! %%f
 FOR %%f in (source\base\*.c) do SET c_filenames=!c_filenames! %%f
 FOR %%f in (source\impl\*.c) do SET c_filenames=!c_filenames! %%f
 FOR %%f in (source\core\*.c) do SET c_filenames=!c_filenames! %%f
 FOR %%f in (source\os\*.c) do SET c_filenames=!c_filenames! %%f
+
+FOR %%f in (examples\*.c) do SET c_filenames=!c_filenames! %%f
 REM ==============
 
 
@@ -20,11 +22,8 @@ REM ==============
 REM ==============
 REM optional layers
 
-REM ECHO Optional Layer Selected: Render2D
-REM SET c_filenames=!c_filenames! source\opt\render_2d.c
-
-REM ECHO Optional Layer Selected: UI
-REM SET c_filenames=!c_filenames! source\opt\ui.c
+ ECHO Optional Layer Selected: Render2D
+ SET c_filenames=!c_filenames! source\opt\render_2d.c
 
 REM ==============
 

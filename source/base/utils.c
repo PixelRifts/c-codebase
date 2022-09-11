@@ -48,7 +48,7 @@ string U_FixFilepath(M_Arena* arena, string filepath) {
     M_Scratch scratch = scratch_get();
 	
     string fixed = filepath;
-    fixed = str_replace_all(&scratch.arena, fixed, str_lit("\\"), str_lit("/"));
+    fixed = str_replace_all(scratch.arena, fixed, str_lit("\\"), str_lit("/"));
     fixed = str_replace_all(arena, fixed, str_lit("/./"), str_lit("/"));
     while (true) {
         u64 dotdot = str_find_first(fixed, str_lit(".."), 0);
@@ -58,7 +58,7 @@ string U_FixFilepath(M_Arena* arena, string filepath) {
 		
         u64 range = (dotdot + 3) - last_slash;
         string old = fixed;
-        fixed = str_alloc(&scratch.arena, fixed.size - range);
+        fixed = str_alloc(scratch.arena, fixed.size - range);
         memcpy(fixed.str, old.str, last_slash);
         memcpy(fixed.str + last_slash, old.str + dotdot + 3, old.size - range - last_slash + 1);
     }
@@ -76,8 +76,8 @@ string U_GetFullFilepath(M_Arena* arena, string filename) {
     get_cwd(buffer, PATH_MAX);
     string cwd = { .str = (u8*) buffer, .size = strlen(buffer) };
 	
-    string finalized = str_cat(&scratch.arena, cwd, str_lit("/"));
-    finalized = str_cat(&scratch.arena, finalized, filename);
+    string finalized = str_cat(scratch.arena, cwd, str_lit("/"));
+    finalized = str_cat(scratch.arena, finalized, filename);
     finalized = U_FixFilepath(arena, finalized);
 	
     scratch_return(&scratch);
