@@ -36,7 +36,7 @@ SET output=-obin/codebase.exe
 SET backend=-DBACKEND_GL46
 REM ==============
 
-
+REM SET compiler_flags=!compiler_flags! -fsanitize=address
 
 ECHO "Building codebase.exe..."
 %cc% %c_filenames% %compiler_flags% %defines% %backend% %include_flags% %linker_flags% %output%

@@ -74,4 +74,26 @@ void* pool_alloc(M_Pool* pool);
 void  pool_dealloc(M_Pool* pool, void* ptr);
 void  pool_dealloc_range(M_Pool* pool, void* ptr, u64 count);
 
+//~ Heap Allocator
+
+typedef struct M_HeapFreeNode M_HeapFreeNode;
+struct M_HeapFreeNode { M_HeapFreeNode* next; u64 size; };
+
+typedef struct M_Heap {
+	u64 max;
+	u64 commit_position;
+	
+	M_HeapFreeNode* head;
+} M_Heap;
+
+#define M_HEAP_MAX Gigabytes(1)
+#define M_HEAP_COMMIT_SIZE Kilobytes(8)
+
+M_Heap* heap_make(void);
+void heap_clear(M_Heap* heap);
+void heap_free(M_Heap* heap);
+
+void* heap_alloc(M_Heap* heap, u64 size);
+void  heap_dealloc(M_Heap* heap, void* ptr, u64 size);
+
 #endif //MEM_H

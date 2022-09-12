@@ -18,6 +18,7 @@ int main() {
 	ThreadContext context = {0};
 	tctx_init(&context);
 	
+	Log("====== Pool ======");
 	M_Pool* pool = pool_make(sizeof(foo));
 	for (u32 i = 0; i < 36; i++) {
 		foo* f = pool_alloc(pool);
@@ -28,6 +29,16 @@ int main() {
 	}
 	pool_clear(pool);
 	pool_free(pool);
+	
+	Log("");
+	Log("====== Heap ======");
+	
+	M_Heap* heap = heap_make();
+	foo* f = heap_alloc(heap, sizeof(foo));
+	heap_alloc(heap, sizeof(float) * 64);
+	heap_dealloc(heap, f, sizeof(foo));
+	foo* f2 = heap_alloc(heap, sizeof(foo));
+	heap_free(heap);
 	
 	tctx_free(&context);
 }

@@ -221,13 +221,11 @@ void* pool_alloc(M_Pool* pool) {
 		pool->head = pool->head->next;
 		return ret;
 	} else {
-		Log("Commit");
-		
 		if (pool->commit_position + M_POOL_COMMIT_CHUNK * pool->element_size >= pool->max) {
 			assert(0 && "Pool is out of memory");
 			return nullptr;
 		}
-		void* commit_ptr = pool + sizeof(M_Pool) + pool->commit_position;
+		void* commit_ptr = ((void*)pool) + sizeof(M_Pool) + pool->commit_position;
 		OS_MemoryCommit(commit_ptr, M_POOL_COMMIT_CHUNK * pool->element_size);
 		pool_dealloc_range(pool, commit_ptr, M_POOL_COMMIT_CHUNK);
 		
@@ -246,5 +244,140 @@ void  pool_dealloc_range(M_Pool* pool, void* ptr, u64 count) {
 		((M_PoolFreeNode*)it)->next = pool->head;
 		pool->head = it;
 		it += pool->element_size;
+	}
+}
+
+//~ Heap Allocator
+
+M_Heap* heap_make(void) {
+	M_Heap* heap = OS_MemoryReserve(sizeof(M_Heap) + M_HEAP_MAX);
+	OS_MemoryCommit(heap, sizeof(M_Heap));
+	heap->max = M_HEAP_MAX;
+	heap->commit_position = 0;
+	heap->head = nullptr;
+	return heap;
+}
+
+void heap_clear(M_Heap* heap) {
+	heap->head = ((void*)heap) + sizeof(M_Heap);
+	heap->head->next = nullptr;
+	heap->head->size = heap->commit_position;
+}
+
+void heap_free(M_Heap* heap) {
+	OS_MemoryRelease(heap, sizeof(M_Heap) + M_HEAP_MAX);
+}
+
+void* heap_alloc(M_Heap* heap, u64 size) {
+	size += sizeof(M_HeapFreeNode) - 1;
+	size -= size % sizeof(M_HeapFreeNode);
+	
+	if (heap->head) {
+		i64 delta = heap->head->size - size;
+		if (delta < 0) {
+			M_HeapFreeNode* it = heap->head;
+			M_HeapFreeNode* prev_it = heap->head;
+			while (delta < 0) {
+				prev_it = it;
+				it = it->next;
+				if (!it) goto commit_more;
+				
+				delta = it->size - size;
+			}
+			
+			if (delta >= 0 && delta < sizeof(M_HeapFreeNode)) {
+				void* ret = it;
+				prev_it->next = it->next;
+				//memset(ret, 0, size);
+				return ret;
+			} else {
+				void* ret = it;
+				u64 new_size = it->size - size;
+				M_HeapFreeNode* splitter = ret + size;
+				splitter->next = it->next;
+				prev_it->next = splitter;
+				splitter->size = new_size;
+				//memset(ret, 0, size);
+				return ret;
+			}
+		} else if (delta >= 0 && delta < sizeof(M_HeapFreeNode)) {
+			void* ret = heap->head;
+			heap->head = heap->head->next;
+			//memset(ret, 0, size);
+			return ret;
+		} else {
+			void* ret = heap->head;
+			u64 new_size = heap->head->size - size;
+			M_HeapFreeNode* splitter = ret + size;
+			splitter->next = heap->head->next;
+			heap->head = splitter;
+			splitter->size = new_size;
+			//memset(ret, 0, size);
+			return ret;
+		}
+	}
+	
+	commit_more:
+	{
+		if (heap->commit_position + size >= heap->max) {
+			assert(0 && "Heap is out of memory");
+			return nullptr;
+		}
+		
+		u64 commit_size = size;
+		commit_size += M_HEAP_COMMIT_SIZE - 1;
+		commit_size -= commit_size % M_HEAP_COMMIT_SIZE;
+		commit_size += M_HEAP_COMMIT_SIZE; // Add a bit more space for the heap
+		
+		Log("Commit %llu", commit_size);
+		
+		void* commit_ptr = ((void*)heap) + sizeof(M_Heap) + heap->commit_position;
+		OS_MemoryCommit(commit_ptr, commit_size);
+		heap->head = commit_ptr;
+		heap->head->size = commit_size;
+		heap->head->next = nullptr;
+		
+		heap->commit_position += commit_size;
+		return heap_alloc(heap, size);
+	}
+}
+
+void  heap_dealloc(M_Heap* heap, void* ptr, u64 size) {
+	size += sizeof(M_HeapFreeNode) - 1;
+	size -= size % sizeof(M_HeapFreeNode);
+	
+	void* tester = ptr - 1;
+	b8 coalesced = true;
+	b8 coalesced_once = false;
+	
+	while (coalesced) {
+		M_HeapFreeNode* it = heap->head;
+		M_HeapFreeNode* prev_it = heap->head;
+		coalesced = false;
+		
+		while (it) {
+			if (((void*)it) + it->size == tester) {
+				// Coalesce
+				coalesced = true;
+				it->size += size;
+				tester = ((void*)it) - 1;
+				
+				coalesced_once = true;
+			}
+			
+			prev_it = it;
+			it = it->next;
+		}
+	}
+	
+	if (!coalesced_once) {
+		// Accept Dead Section :(
+		// Not much we can do there
+		if (size < sizeof(M_HeapFreeNode)) return;
+		
+		M_HeapFreeNode* new_free_node = (M_HeapFreeNode*)ptr;
+		new_free_node->next = heap->head;
+		new_free_node->size = size;
+		heap->head = new_free_node;
 	}
 }
