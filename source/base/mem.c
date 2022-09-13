@@ -346,38 +346,51 @@ void  heap_dealloc(M_Heap* heap, void* ptr, u64 size) {
 	size += sizeof(M_HeapFreeNode) - 1;
 	size -= size % sizeof(M_HeapFreeNode);
 	
-	void* tester = ptr - 1;
-	b8 coalesced = true;
-	b8 coalesced_once = false;
+	M_HeapFreeNode* it = heap->head;
+	M_HeapFreeNode* prev_it = nullptr;
 	
-	while (coalesced) {
-		M_HeapFreeNode* it = heap->head;
-		M_HeapFreeNode* prev_it = heap->head;
-		coalesced = false;
-		
-		while (it) {
-			if (((void*)it) + it->size == tester) {
-				// Coalesce
-				coalesced = true;
-				it->size += size;
-				tester = ((void*)it) - 1;
-				
-				coalesced_once = true;
-			}
-			
-			prev_it = it;
-			it = it->next;
+	M_HeapFreeNode* back = nullptr;
+	M_HeapFreeNode* front = nullptr;
+	M_HeapFreeNode* front_prev = nullptr;
+	
+	while (it) {
+		if (((void*)it) + it->size == ptr) {
+			back = it;
+		} else if (ptr + size == it) {
+			front = it;
+			front_prev = prev_it;
 		}
+		
+		if (back && front) break;
+		
+		prev_it = it;
+		it = it->next;
 	}
 	
-	if (!coalesced_once) {
+	M_HeapFreeNode* new_free_node = (M_HeapFreeNode*)ptr;
+	new_free_node->next = heap->head;
+	new_free_node->size = size;
+	
+	// Coalesce
+	if (front) {
+		new_free_node->next = front->next;
+		new_free_node->size += front->size;
+		if (front_prev) {
+			front_prev->next = new_free_node;
+		} else heap->head = new_free_node;
+	}
+	if (back) {
+		if (front) {
+			front_prev->next = nullptr;
+		}
+		back->size += new_free_node->size;
+	}
+	
+	if (!(front || back)) {
 		// Accept Dead Section :(
-		// Not much we can do there
+		// Not much we can do there, but alignment should stop this from ever happening
 		if (size < sizeof(M_HeapFreeNode)) return;
 		
-		M_HeapFreeNode* new_free_node = (M_HeapFreeNode*)ptr;
-		new_free_node->next = heap->head;
-		new_free_node->size = size;
 		heap->head = new_free_node;
 	}
 }

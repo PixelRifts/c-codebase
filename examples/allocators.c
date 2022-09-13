@@ -18,6 +18,9 @@ int main() {
 	ThreadContext context = {0};
 	tctx_init(&context);
 	
+	Log("====== Arena ======");
+	M_Arena* arena = arena_make();
+	
 	Log("====== Pool ======");
 	M_Pool* pool = pool_make(sizeof(foo));
 	for (u32 i = 0; i < 36; i++) {
@@ -35,12 +38,11 @@ int main() {
 	
 	M_Heap* heap = heap_make();
 	foo* f = heap_alloc(heap, sizeof(foo));
-	foo* f2 = heap_alloc(heap, sizeof(foo));
-	float* buf = heap_alloc(heap, sizeof(float) * 64);
+	Log("f: %llu", (u64)f);
+	heap_alloc(heap, sizeof(float) * 64);
 	heap_dealloc(heap, f, sizeof(foo));
-	heap_dealloc(heap, f2, sizeof(foo));
-	heap_dealloc(heap, buf, sizeof(float) * 64);
-	Log("%llu", (u64)heap->head->next);
+	foo* f2 = heap_alloc(heap, sizeof(foo));
+	Log("f2: %llu", (u64)f2);
 	heap_free(heap);
 	
 	tctx_free(&context);
