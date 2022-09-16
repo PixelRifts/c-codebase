@@ -76,7 +76,7 @@ u64 align_forward_u64(u64 ptr, u64 align) {
 }
 
 
-//~ Arena (No alignment)
+//~ Arena
 
 void* arena_alloc(M_Arena* arena, u64 size) {
     void* memory = 0;

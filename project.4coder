@@ -19,7 +19,11 @@ blacklist_patterns = {
 };
 
 load_paths_custom = {
-	{ "." }
+	{ "./source" },
+	{ "./third_party/include/KHR" },
+	{ "./third_party/include/md" },
+	{ "./third_party/include/stb" },
+	{ "./third_party/source" },
 };
 
 load_paths = {

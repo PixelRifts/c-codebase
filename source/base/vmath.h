@@ -4,6 +4,7 @@
 #define VMATH_H
 
 #include "defines.h"
+#include <math.h>
 
 #define EPSILON 0.001f
 #define PI 3.141592653589f
@@ -69,18 +70,32 @@ static inline f32 degrees(f64 rad) { return (f32) (rad * RAD_TO_DEG); }
 
 //~ Vector Functions
 
-vec2 vec2_add(vec2 a, vec2 b);
-vec2 vec2_sub(vec2 a, vec2 b);
-vec2 vec2_scale(vec2 a, f32 s);
+static inline vec2 vec2_add(vec2 a, vec2 b) { return (vec2) { .x = a.x + b.x, .y = a.y + b.y }; }
+static inline vec2 vec2_sub(vec2 a, vec2 b) { return (vec2) { .x = a.x - b.x, .y = a.y - b.y }; }
+static inline vec2 vec2_scale(vec2 a, f32 s) { return (vec2) { .x = a.x * s, .y = a.y * s }; }
+static inline f32  vec2_mag(vec2 v) { return sqrtf(v.x * v.x + v.y * v.y); }
+static inline f32  vec2_magsq(vec2 v) { return v.x * v.x + v.y * v.y; }
+static inline vec2 vec2_normalize(vec2 v) { return vec2_scale(v, 1.f / vec2_mag(v)); }
+static inline vec2 vec2_neg(vec2 v) { return (vec2) { .x = -v.x, .y = -v.y }; }
+static inline f32  vec2_dot(vec2 a, vec2 b) { return a.x * b.x + a.y * b.y; }
+vec2 vec2_triple_product(vec2 a, vec2 b, vec2 c);
 vec2 vec2_clamp(vec2 vec, rect quad);
 
-vec3 vec3_add(vec3 a, vec3 b);
-vec3 vec3_sub(vec3 a, vec3 b);
-vec3 vec3_scale(vec3 a, f32 s);
+static inline
+vec3 vec3_add(vec3 a, vec3 b) { return (vec3) { .x = a.x + b.x, .y = a.y + b.y, .z = a.z + b.z }; }
+static inline
+vec3 vec3_sub(vec3 a, vec3 b) { return (vec3) { .x = a.x - b.x, .y = a.y - b.y, .z = a.z - b.z }; }
+static inline
+vec3 vec3_scale(vec3 a, f32 s) { return (vec3) { .x = a.x * s, .y = a.y * s, .z = a.z * s }; }
+static inline
+vec3 vec3_cross(vec3 a, vec3 b) { return (vec3) { .x = a.y * b.z - b.y * a.z, .y = a.x * b.z - b.x * a.z, .z = a.x * b.y + b.x * a.y }; }
 
-vec4 vec4_add(vec4 a, vec4 b);
-vec4 vec4_sub(vec4 a, vec4 b);
-vec4 vec4_scale(vec4 a, f32 s);
+static inline
+vec4 vec4_add(vec4 a, vec4 b) { return (vec4) { .x = a.x + b.x, .y = a.y + b.y, .z = a.z + b.z, .w = a.w + b.w }; }
+static inline
+vec4 vec4_sub(vec4 a, vec4 b) { return (vec4) { .x = a.x - b.x, .y = a.y - b.y, .z = a.z - b.z, .w = a.w - b.w }; }
+static inline
+vec4 vec4_scale(vec4 a, f32 s) { return (vec4) { .x = a.x * s, .y = a.y * s, .z = a.z * s, .w = a.w * s }; }
 
 vec3 vec3_mul(vec3 a, mat3 m);
 vec4 vec4_mul(vec4 a, mat4 m);

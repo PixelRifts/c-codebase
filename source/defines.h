@@ -123,4 +123,10 @@ flush;\
 
 #define ArrayCount(a) (sizeof(a) / sizeof(a[0]))
 
+#define Slice_Prototype(type) typedef struct type##_slice { type* elems; u32 len; } type##_slice;
+#define slice(type) type##_slice
+
+#define Iterate(array, var) for (int var = 0; var < array.len; var++)
+#define IteratePtr(array, var) for (int var = 0; var < array->len; var++)
+
 #endif //DEFINES_H

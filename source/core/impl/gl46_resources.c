@@ -3,11 +3,11 @@
 
 #include "gl_functions.h"
 
-HashTable_Prototype(uniform, string, i32);
+HashTable_Prototype(string, i32);
 b8 str_is_null(string k)  { return k.str == 0 && k.size == 0; }
 b8 i32_is_null(i32 value) { return value == 0;  }
 b8 i32_is_tomb(i32 value) { return value == 69; }
-HashTable_Impl(uniform, str_is_null, str_eq, str_hash, 69, i32_is_null, i32_is_tomb);
+HashTable_Impl(string, i32, str_is_null, str_eq, str_hash, 69, i32_is_null, i32_is_tomb);
 
 typedef struct R_GL46Buffer {
 	R_BufferFlags flags;
@@ -20,7 +20,7 @@ typedef struct R_GL46Shader {
 } R_GL46Shader;
 
 typedef struct R_GL46ShaderPack {
-	uniform_hash_table uniforms;
+	hash_table(string, i32) uniforms;
 	u32 handle;
 } R_GL46ShaderPack;
 
@@ -273,7 +273,7 @@ void R_ShaderFree(R_Shader* _shader) {
 
 void R_ShaderPackAlloc(R_ShaderPack* _pack, R_Shader* shaders, u32 shader_count) {
 	R_GL46ShaderPack* pack = (R_GL46ShaderPack*) _pack;
-	uniform_hash_table_init(&pack->uniforms);
+	hash_table_init(string, i32, &pack->uniforms);
 	
 	pack->handle = glCreateProgram();
 	for (u32 i = 0; i < shader_count; i++) {
@@ -339,9 +339,9 @@ void R_ShaderPackAllocLoad(R_ShaderPack* _pack, string fp_prefix) {
 void R_ShaderPackUploadMat4(R_ShaderPack* _pack, string name, mat4 mat) {
 	R_GL46ShaderPack* pack = (R_GL46ShaderPack*) _pack;
 	i32 loc;
-    if (!uniform_hash_table_get(&pack->uniforms, name, &loc)) {
+    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
         loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
-        uniform_hash_table_set(&pack->uniforms, name, loc);
+        hash_table_set(string, i32, &pack->uniforms, name, loc);
     }
     glUniformMatrix4fv(loc, 1, GL_TRUE, mat.a);
 }
@@ -349,9 +349,9 @@ void R_ShaderPackUploadMat4(R_ShaderPack* _pack, string name, mat4 mat) {
 void R_ShaderPackUploadInt(R_ShaderPack* _pack, string name, i32 val) {
 	R_GL46ShaderPack* pack = (R_GL46ShaderPack*) _pack;
 	i32 loc;
-    if (!uniform_hash_table_get(&pack->uniforms, name, &loc)) {
+    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
         loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
-        uniform_hash_table_set(&pack->uniforms, name, loc);
+        hash_table_set(string, i32, &pack->uniforms, name, loc);
     }
     glUniform1i(loc, val);
 }
@@ -359,9 +359,9 @@ void R_ShaderPackUploadInt(R_ShaderPack* _pack, string name, i32 val) {
 void R_ShaderPackUploadIntArray(R_ShaderPack* _pack, string name, i32* vals, u32 count) {
 	R_GL46ShaderPack* pack = (R_GL46ShaderPack*) _pack;
 	i32 loc;
-    if (!uniform_hash_table_get(&pack->uniforms, name, &loc)) {
+    if (!hash_table_get(string, i32,&pack->uniforms, name, &loc)) {
         loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
-        uniform_hash_table_set(&pack->uniforms, name, loc);
+        hash_table_set(string, i32, &pack->uniforms, name, loc);
     }
     glUniform1iv(loc, count, vals);
 }
@@ -369,9 +369,9 @@ void R_ShaderPackUploadIntArray(R_ShaderPack* _pack, string name, i32* vals, u32
 void R_ShaderPackUploadFloat(R_ShaderPack* _pack, string name, f32 val) {
 	R_GL46ShaderPack* pack = (R_GL46ShaderPack*) _pack;
 	i32 loc;
-    if (!uniform_hash_table_get(&pack->uniforms, name, &loc)) {
+    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
         loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
-        uniform_hash_table_set(&pack->uniforms, name, loc);
+        hash_table_set(string, i32, &pack->uniforms, name, loc);
     }
     glUniform1f(loc, val);
 }
@@ -379,9 +379,9 @@ void R_ShaderPackUploadFloat(R_ShaderPack* _pack, string name, f32 val) {
 void R_ShaderPackUploadVec4(R_ShaderPack* _pack, string name, vec4 val) {
 	R_GL46ShaderPack* pack = (R_GL46ShaderPack*) _pack;
 	i32 loc;
-    if (!uniform_hash_table_get(&pack->uniforms, name, &loc)) {
+    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
         loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
-        uniform_hash_table_set(&pack->uniforms, name, loc);
+        hash_table_set(string, i32, &pack->uniforms, name, loc);
     }
     glUniform4f(loc, val.x, val.y, val.z, val.w);
 }
@@ -389,7 +389,7 @@ void R_ShaderPackUploadVec4(R_ShaderPack* _pack, string name, vec4 val) {
 
 void R_ShaderPackFree(R_ShaderPack* _pack) {
 	R_GL46ShaderPack* pack = (R_GL46ShaderPack*) _pack;
-	uniform_hash_table_free(&pack->uniforms);
+	hash_table_free(string, i32, &pack->uniforms);
 	glDeleteProgram(pack->handle);
 }
 

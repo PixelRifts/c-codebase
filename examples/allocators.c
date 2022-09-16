@@ -20,6 +20,7 @@ int main() {
 	
 	Log("====== Arena ======");
 	M_Arena* arena = arena_make();
+	arena_free(arena);
 	
 	Log("====== Pool ======");
 	M_Pool* pool = pool_make(sizeof(foo));

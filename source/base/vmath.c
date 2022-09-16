@@ -1,6 +1,5 @@
 #include "vmath.h"
 
-#include <math.h>
 #include <stdio.h>
 
 void animate_f32exp(f32* val, f32 target, f32 speed, f32 dt) {
@@ -8,16 +7,10 @@ void animate_f32exp(f32* val, f32 target, f32 speed, f32 dt) {
     *val += delta * dt * speed;
 }
 
-vec2 vec2_add(vec2 a, vec2 b) {
-    return (vec2) { .x = a.x + b.x, .y = a.y + b.y };
-}
-
-vec2 vec2_sub(vec2 a, vec2 b) {
-    return (vec2) { .x = a.x - b.x, .y = a.y - b.y };
-}
-
-vec2 vec2_scale(vec2 a, f32 s) {
-    return (vec2) { .x = a.x * s, .y = a.y * s };
+vec2 vec2_triple_product(vec2 a, vec2 b, vec2 c) {
+	vec3 p = vec3_cross((vec3) { a.x, a.y, 0.0 }, (vec3) { b.x, b.y, 0.0 });
+	vec3 q = vec3_cross(p, (vec3) { c.x, c.y, 0.0 });
+	return (vec2) { q.x, q.y };
 }
 
 vec2 vec2_clamp(vec2 vec, rect quad) {
@@ -25,30 +18,6 @@ vec2 vec2_clamp(vec2 vec, rect quad) {
         .x = Clamp(quad.x, vec.x, quad.x + quad.w),
         .y = Clamp(quad.y, vec.y, quad.y + quad.h)
     };
-}
-
-vec3 vec3_add(vec3 a, vec3 b) {
-    return (vec3) { .x = a.x + b.x, .y = a.y + b.y, .z = a.z + b.z };
-}
-
-vec3 vec3_sub(vec3 a, vec3 b) {
-    return (vec3) { .x = a.x - b.x, .y = a.y - b.y, .z = a.z - b.z };
-}
-
-vec3 vec3_scale(vec3 a, f32 s) {
-    return (vec3) { .x = a.x * s, .y = a.y * s, .z = a.z * s };
-}
-
-vec4 vec4_add(vec4 a, vec4 b) {
-    return (vec4) { .x = a.x + b.x, .y = a.y + b.y, .z = a.z + b.z, .w = a.w + b.w };
-}
-
-vec4 vec4_sub(vec4 a, vec4 b) {
-    return (vec4) { .x = a.x - b.x, .y = a.y - b.y, .z = a.z - b.z, .w = a.w - b.w };
-}
-
-vec4 vec4_scale(vec4 a, f32 s) {
-    return (vec4) { .x = a.x * s, .y = a.y * s, .z = a.z * s, .w = a.w * s };
 }
 
 vec3 vec3_mul(vec3 a, mat3 m) {

@@ -6,6 +6,8 @@
 #include "core/backend.h"
 #include "core/resources.h"
 
+#include "opt/phys_2d.h"
+
 typedef struct foo {
 	i32 a;
 	b32 b;
@@ -18,30 +20,17 @@ int main() {
 	ThreadContext context = {0};
 	tctx_init(&context);
 	
-	Log("====== Pool ======");
-	M_Pool* pool = pool_make(sizeof(foo));
-	for (u32 i = 0; i < 36; i++) {
-		foo* f = pool_alloc(pool);
-		Log("%d: %llu", i, (u64)f);
-		
-		if (i % 2 == 0)
-			pool_dealloc(pool, f);
-	}
-	pool_clear(pool);
-	pool_free(pool);
+	M_Arena* global_arena = arena_make();
 	
-	Log("");
-	Log("====== Heap ======");
+	P2D_Collider* a = P2D_ColliderAllocAARect(global_arena, (rect) { 0, 0, 10, 10 });
+	P2D_Collider* b = P2D_ColliderAllocRotatedRect(global_arena, (rect) { 0, 0, 10, 10 }, HALF_PI);
+	P2D_Collider* c = P2D_ColliderAllocCircle(global_arena, (vec2) { 50, 10 }, 15);
 	
-	M_Heap* heap = heap_make();
-	foo* f = heap_alloc(heap, sizeof(foo));
-	foo* f2 = heap_alloc(heap, sizeof(foo));
-	float* buf = heap_alloc(heap, sizeof(float) * 64);
-	heap_dealloc(heap, f, sizeof(foo));
-	heap_dealloc(heap, f2, sizeof(foo));
-	heap_dealloc(heap, buf, sizeof(float) * 64);
-	Log("%llu", (u64)heap->head->next);
-	heap_free(heap);
+	Log("A, B: %d", P2D_CheckCollision(a, b));
+	Log("B, C: %d", P2D_CheckCollision(b, c));
+	Log("C, A: %d", P2D_CheckCollision(c, a));
+	
+	arena_free(global_arena);
 	
 	tctx_free(&context);
 }

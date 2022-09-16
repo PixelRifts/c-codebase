@@ -23,6 +23,9 @@ REM optional layers
 REM ECHO Optional Layer Selected: Render2D
 REM SET c_filenames=!c_filenames! source\opt\render_2d.c
 
+ECHO Optional Layer Selected: Physics2D
+SET c_filenames=!c_filenames! source\opt\phys_2d.c
+
 REM ==============
 
 
