@@ -24,6 +24,7 @@ load_paths_custom = {
 	{ "./third_party/include/md" },
 	{ "./third_party/include/stb" },
 	{ "./third_party/source" },
+	{ "./", .recursive = false },
 };
 
 load_paths = {

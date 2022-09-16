@@ -8,8 +8,8 @@ void animate_f32exp(f32* val, f32 target, f32 speed, f32 dt) {
 }
 
 vec2 vec2_triple_product(vec2 a, vec2 b, vec2 c) {
-	vec3 p = vec3_cross((vec3) { a.x, a.y, 0.0 }, (vec3) { b.x, b.y, 0.0 });
-	vec3 q = vec3_cross(p, (vec3) { c.x, c.y, 0.0 });
+	vec3 p = vec3_cross((vec3) { b.x, b.y, 0.0 }, (vec3) { c.x, c.y, 0.0 });
+	vec3 q = vec3_cross((vec3) { a.x, a.y, 0.0 }, p);
 	return (vec2) { q.x, q.y };
 }
 

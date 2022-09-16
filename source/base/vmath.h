@@ -26,6 +26,8 @@
 #define Color_PureBlue vec4_init(0.0f, 0.0f, 1.0f, 1.f)
 #define Color_White vec4_init(1.0f, 1.0f, 1.0f, 1.f)
 
+#define EpsilonEquals(x, y) ((fabs((x) - (y)) <= EPSILON) ? true : false)
+
 typedef struct vec2 { f32 x; f32 y;               } vec2;
 typedef struct vec3 { f32 x; f32 y; f32 z;        } vec3;
 typedef struct vec4 { f32 x; f32 y; f32 z; f32 w; } vec4;
@@ -51,6 +53,7 @@ typedef u32 axis3;
 enum {
 	axis3_x,
 	axis3_y,
+	axis3_z,
 	axis3_count,
 };
 

@@ -1,12 +1,12 @@
 #include "render_2d.h"
 
-Array_Impl(R2D_BatchArray, R2D_Batch);
+DArray_Impl(R2D_Batch);
 
 static R2D_Batch* R2D_NextBatch(R2D_Renderer* renderer) {
     R2D_Batch* next = &renderer->batches.elems[++renderer->current_batch];
     
     if (renderer->current_batch >= renderer->batches.len) {
-		R2D_BatchArray_add(&renderer->batches, (R2D_Batch) {});
+		darray_add(R2D_Batch, &renderer->batches, (R2D_Batch) {});
 		next = &renderer->batches.elems[renderer->current_batch];
         next->cache = R2D_VertexCacheCreate(renderer->arena, R2D_MAX_INTERNAL_CACHE_VCOUNT);
     }
@@ -68,7 +68,7 @@ void R2D_Init(OS_Window* window, R2D_Renderer* renderer) {
 	renderer->current_batch = 0;
 	renderer->cull_quad = (rect) { 0, 0, window->width, window->height };
     renderer->offset = (vec2) { 0.f, 0.f };
-	R2D_BatchArray_add(&renderer->batches, (R2D_Batch) {0});
+	darray_add(R2D_Batch, &renderer->batches, (R2D_Batch) {0});
 	renderer->batches.elems[renderer->current_batch].cache = R2D_VertexCacheCreate(renderer->arena, R2D_MAX_INTERNAL_CACHE_VCOUNT);
 	
 	R_ShaderPackAllocLoad(&renderer->shader, str_lit("res/render_2d"));
@@ -200,7 +200,156 @@ void R2D_DrawQuadT(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, vec4
 	R2D_DrawQuad(renderer, quad, texture, rect_init(0.f, 0.f, 1.f, 1.f), tint);
 }
 
+void R2D_DrawQuadRotated(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, rect uvs,
+						 vec4 color, f32 theta) {
+	quad.x += renderer->offset.x;
+	quad.y += renderer->offset.y;
+	
+	vec2 vertices[4] = {
+		{ -quad.w / 2.f, -quad.h / 2.f },
+		{  quad.w / 2.f, -quad.h / 2.f },
+		{  quad.w / 2.f,  quad.h / 2.f },
+		{ -quad.w / 2.f,  quad.h / 2.f },
+	};
+	for (u32 i = 0; i < 4; i++) {
+		vec2 old = vertices[i];
+		vertices[i].x = quad.x + quad.w / 2.f + (cosf(theta) * old.x - sinf(theta) * old.y);
+		vertices[i].y = quad.y + quad.h / 2.f + (sinf(theta) * old.x + cosf(theta) * old.y);
+	}
+	
+	if (!rect_overlaps(quad, renderer->cull_quad)) return;
+	
+	R2D_Batch* batch = R2D_BatchGetCurrent(renderer, 6, texture);
+	i32 idx = R2D_BatchAddTexture(renderer, batch, texture);
+	rect uv_culled = rect_uv_cull(quad, uvs, renderer->cull_quad);
+	
+	R2D_Vertex vertices_to_batch[] = {
+		{
+            .pos = vec2_clamp(vertices[0], renderer->cull_quad),
+            .tex_index = idx,
+            .tex_coords = vec2_init(uv_culled.x, uv_culled.y),
+            .color = color,
+		},
+        {
+            .pos = vec2_clamp(vertices[1], renderer->cull_quad),
+            .tex_index = idx,
+            .tex_coords = vec2_init(uv_culled.x + uv_culled.w, uv_culled.y),
+            .color = color,
+		},
+        {
+            .pos = vec2_clamp(vertices[2], renderer->cull_quad),
+            .tex_index = idx,
+            .tex_coords = vec2_init(uv_culled.x + uv_culled.w, uv_culled.y + uv_culled.h),
+            .color = color,
+		},
+        {
+            .pos = vec2_clamp(vertices[0], renderer->cull_quad),
+            .tex_index = idx,
+            .tex_coords = vec2_init(uv_culled.x, uv_culled.y),
+            .color = color,
+		},
+        {
+            .pos = vec2_clamp(vertices[2], renderer->cull_quad),
+            .tex_index = idx,
+            .tex_coords = vec2_init(uv_culled.x + uv_culled.w, uv_culled.y + uv_culled.h),
+            .color = color,
+        },
+        {
+            .pos = vec2_clamp(vertices[3], renderer->cull_quad),
+            .tex_index = idx,
+            .tex_coords = vec2_init(uv_culled.x, uv_culled.y + uv_culled.h),
+            .color = color,
+        },
+	};
+	R2D_VertexCachePush(&batch->cache, vertices_to_batch, 6);
+}
+
 void R2D_DrawQuadST(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, rect uvs, vec4 tint) {
 	R2D_DrawQuad(renderer, quad, texture, uvs, tint);
 }
 
+
+
+
+void R2D_DrawQuadRotatedC(R2D_Renderer* renderer, rect quad, vec4 color, f32 theta) {
+	R2D_DrawQuadRotated(renderer, quad, &renderer->white_texture, rect_init(0.f, 0.f, 1.f, 1.f), color, theta);
+}
+
+void R2D_DrawQuadRotatedT(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, vec4 tint, f32 theta) {
+	R2D_DrawQuadRotated(renderer, quad, texture, rect_init(0.f, 0.f, 1.f, 1.f), tint, theta);
+}
+
+void R2D_DrawQuadRotatedST(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, rect uvs, vec4 tint, f32 theta) {
+	R2D_DrawQuadRotated(renderer, quad, texture, uvs, tint, theta);
+}
+
+// NO CULLING FOR LINES
+
+void R2D_DrawLine(R2D_Renderer* renderer, vec2 start, vec2 end, f32 thickness, R_Texture2D* texture, rect uvs, vec4 color) {
+	start.x += renderer->offset.x;
+	end.x += renderer->offset.x;
+	start.y += renderer->offset.y;
+	end.y += renderer->offset.y;
+	
+	vec2 line_vector = vec2_sub(end, start);
+	vec2 r = { -line_vector.y,  line_vector.x };
+	vec2 l = {  line_vector.y, -line_vector.x };
+	r = vec2_scale(vec2_normalize(r), thickness / 2.f);
+	l = vec2_scale(vec2_normalize(l), thickness / 2.f);
+	
+	vec2 vertices[4] = {
+		vec2_add(start, l),
+		vec2_add(start, r),
+		vec2_add(end, r),
+		vec2_add(end, l),
+	};
+	
+	
+	R2D_Batch* batch = R2D_BatchGetCurrent(renderer, 6, texture);
+	i32 idx = R2D_BatchAddTexture(renderer, batch, texture);
+	rect uv_culled = uvs;
+	
+	R2D_Vertex vertices_to_batch[] = {
+		{
+            .pos = vec2_clamp(vertices[0], renderer->cull_quad),
+            .tex_index = idx,
+            .tex_coords = vec2_init(uv_culled.x, uv_culled.y),
+            .color = color,
+		},
+        {
+            .pos = vec2_clamp(vertices[1], renderer->cull_quad),
+            .tex_index = idx,
+            .tex_coords = vec2_init(uv_culled.x + uv_culled.w, uv_culled.y),
+            .color = color,
+		},
+        {
+            .pos = vec2_clamp(vertices[2], renderer->cull_quad),
+            .tex_index = idx,
+            .tex_coords = vec2_init(uv_culled.x + uv_culled.w, uv_culled.y + uv_culled.h),
+            .color = color,
+		},
+        {
+            .pos = vec2_clamp(vertices[0], renderer->cull_quad),
+            .tex_index = idx,
+            .tex_coords = vec2_init(uv_culled.x, uv_culled.y),
+            .color = color,
+		},
+        {
+            .pos = vec2_clamp(vertices[2], renderer->cull_quad),
+            .tex_index = idx,
+            .tex_coords = vec2_init(uv_culled.x + uv_culled.w, uv_culled.y + uv_culled.h),
+            .color = color,
+        },
+        {
+            .pos = vec2_clamp(vertices[3], renderer->cull_quad),
+            .tex_index = idx,
+            .tex_coords = vec2_init(uv_culled.x, uv_culled.y + uv_culled.h),
+            .color = color,
+        },
+	};
+	R2D_VertexCachePush(&batch->cache, vertices_to_batch, 6);
+}
+
+void R2D_DrawLineC(R2D_Renderer* renderer, vec2 start, vec2 end, f32 thickness, vec4 color) {
+	R2D_DrawLine(renderer, start, end, thickness, &renderer->white_texture, rect_init(0.f, 0.f, 1.f, 1.f), color);
+}

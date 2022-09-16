@@ -33,12 +33,12 @@ typedef struct R2D_Batch {
     u8 tex_count;
 } R2D_Batch;
 
-Array_Prototype(R2D_BatchArray, R2D_Batch);
+DArray_Prototype(R2D_Batch);
 
 typedef struct R2D_Renderer {
 	M_Arena* arena;
 	
-	R2D_BatchArray batches;
+	darray(R2D_Batch) batches;
     u8 current_batch;
     rect cull_quad;
     vec2 offset;
@@ -66,5 +66,14 @@ void R2D_DrawQuad(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, rect 
 void R2D_DrawQuadC(R2D_Renderer* renderer, rect quad, vec4 color);
 void R2D_DrawQuadT(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, vec4 tint);
 void R2D_DrawQuadST(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, rect uvs, vec4 tint);
+
+void R2D_DrawQuadRotated(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, rect uvs, vec4 color, f32 theta);
+void R2D_DrawQuadRotatedC(R2D_Renderer* renderer, rect quad, vec4 color, f32 theta);
+void R2D_DrawQuadRotatedT(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, vec4 tint, f32 theta);
+void R2D_DrawQuadRotatedST(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, rect uvs, vec4 tint, f32 theta);
+
+// NO CULLING FOR LINES
+void R2D_DrawLine(R2D_Renderer* renderer, vec2 start, vec2 end, f32 thickness, R_Texture2D* texture, rect uvs, vec4 color);
+void R2D_DrawLineC(R2D_Renderer* renderer, vec2 start, vec2 end, f32 thickness, vec4 color);
 
 #endif //RENDER_2D_H
