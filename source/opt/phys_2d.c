@@ -66,7 +66,9 @@ static b8 P2D_GJK_HandleSimplex(darray(vec2)* simplex, vec2* d) {
 }
 
 b8 P2D_CheckCollision(P2D_Collider* a, P2D_Collider* b) {
-	vec2 d = vec2_normalize(vec2_sub(b->center_pos, a->center_pos));
+	vec2 d = vec2_sub(b->center_pos, a->center_pos);
+	if (d.x || d.y) d = vec2_normalize(d);
+	else d = (vec2) { 1, 0 };
 	
 	darray(vec2) simplex = {0};
 	darray_reserve(vec2, &simplex, 3);
@@ -94,7 +96,9 @@ P2D_Collision P2D_GetCollision(P2D_Collider* a, P2D_Collider* b) {
 	b8 colliding = false;
 	vec2 resolution = {0};
 	
-	vec2 d = vec2_normalize(vec2_sub(b->center_pos, a->center_pos));
+	vec2 d = vec2_sub(b->center_pos, a->center_pos);
+	if (d.x || d.y) d = vec2_normalize(d);
+	else d = (vec2) { 1, 0 };
 	
 	darray(vec2) simplex = {0};
 	darray_reserve(vec2, &simplex, 3);

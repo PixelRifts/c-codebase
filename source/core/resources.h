@@ -88,16 +88,25 @@ enum {
 	Attribute_MAX,
 };
 
+typedef u32 R_BlendMode;
+enum {
+	BlendMode_None,
+	BlendMode_Alpha,
+	
+	BlendMode_MAX,
+};
+
 typedef struct R_Pipeline {
 	R_InputAssembly assembly;
 	R_Attribute* attributes;
 	R_ShaderPack* shader;
+	R_BlendMode blend_mode;
 	u32 attribute_count;
 	
 	u64 v[2];
 } R_Pipeline;
 
-void R_PipelineAlloc(R_Pipeline* _in, R_InputAssembly assembly, R_Attribute* attributes, u32 attribute_count, R_ShaderPack* shader);
+void R_PipelineAlloc(R_Pipeline* _in, R_InputAssembly assembly, R_Attribute* attributes, u32 attribute_count, R_ShaderPack* shader, R_BlendMode blending);
 void R_PipelineAddBuffer(R_Pipeline* in, R_Buffer* _buf, u32 attribute_count);
 void R_PipelineBind(R_Pipeline* in);
 void R_PipelineFree(R_Pipeline* in);

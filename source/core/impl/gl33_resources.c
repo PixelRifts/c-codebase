@@ -28,6 +28,7 @@ typedef struct R_GL33Pipeline {
 	R_InputAssembly assembly;
 	R_Attribute* attributes;
 	R_GL33ShaderPack* shader;
+	R_BlendMode blend_mode;
 	u32 attribute_count;
 	
 	u32 bindpoint;
@@ -392,12 +393,13 @@ void R_ShaderPackFree(R_ShaderPack* _pack) {
 
 //~ Pipeline (VAOs)
 
-void R_PipelineAlloc(R_Pipeline* _in, R_InputAssembly assembly, R_Attribute* attributes, u32 attribute_count, R_ShaderPack* shader) {
+void R_PipelineAlloc(R_Pipeline* _in, R_InputAssembly assembly, R_Attribute* attributes, u32 attribute_count, R_ShaderPack* shader, R_BlendMode blending) {
 	R_GL33Pipeline* in = (R_GL33Pipeline*) _in;
 	in->assembly = assembly;
 	in->attributes = attributes;
 	in->shader = (R_GL33ShaderPack*) shader;
 	in->attribute_count = attribute_count;
+	in->blend_mode = blending;
 	glGenVertexArrays(1, &in->handle);
 }
 
@@ -424,6 +426,21 @@ void R_PipelineBind(R_Pipeline* _in) {
 	R_GL33Pipeline* in = (R_GL33Pipeline*) _in;
 	glUseProgram(in->shader->handle);
 	glBindVertexArray(in->handle);
+	switch (in->blend_mode) {
+		case BlendMode_None: {
+			glDisable(GL_BLEND);
+			break;
+		}
+		
+		case BlendMode_Alpha: {
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		} break;
+		
+		default: {
+			glDisable(GL_BLEND);
+		} break;
+	}
 }
 
 void R_PipelineFree(R_Pipeline* _in) {

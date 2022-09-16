@@ -17,15 +17,11 @@ int main() {
 	
 	M_Arena* global_arena = arena_make();
 	
+	vec2 actual_position = { OS_InputGetMouseX(), OS_InputGetMouseY() };
+	vec2 corrected_position = { OS_InputGetMouseX(), OS_InputGetMouseY() };
 	
-	P2D_Collider* a = P2D_ColliderAllocAARect(global_arena, (rect) { 0, 0, 100, 100 });
-	P2D_Collider* b = P2D_ColliderAllocRotatedRect(global_arena, (rect) { 50, 50, 100, 100 }, HALF_PI / 2.f);
-	
-	Log("A, B: %d", P2D_CheckCollision(a, b));
-	
-	P2D_Collision ab_resolver = P2D_GetCollision(a, b);
-	Log("AB-Resolution: (%2.3f, %2.3f)", ab_resolver.resolution.x, ab_resolver.resolution.y);
-	
+	P2D_Collider* a = P2D_ColliderAllocAARect(global_arena, (rect) { 200, 200, 100, 100 });
+	P2D_Collider* b = P2D_ColliderAllocCircle(global_arena, actual_position, 25);
 	
 	OS_Window* window = OS_WindowCreate(1080, 720, str_lit("This should work"));
 	B_BackendInit(window);
@@ -37,13 +33,19 @@ int main() {
 	while (OS_WindowIsOpen(window)) {
 		OS_PollEvents();
 		
+		actual_position = (vec2) { OS_InputGetMouseX(), OS_InputGetMouseY() };
+		b->center_pos = actual_position;
+		P2D_Collision ab_resolver = P2D_GetCollision(a, b);
+		corrected_position = vec2_add(actual_position, ab_resolver.resolution);
+		
 		R_Viewport(0, 0, window->width, window->height);
 		R_Clear(BufferMask_Color);
 		
 		R2D_BeginDraw(&renderer);
-		R2D_DrawQuadC(&renderer, (rect) { 0, 0, 100, 100 }, Color_Red);
-		R2D_DrawQuadRotatedC(&renderer, (rect) { 50, 50, 100, 100 }, Color_Blue, HALF_PI / 2.f);
-		R2D_DrawLineC(&renderer, b->center_pos, vec2_add(b->center_pos, ab_resolver.resolution), 5, Color_Green);
+		R2D_DrawQuadC(&renderer, (rect) { 200, 200, 100, 100 }, Color_Red);
+		R2D_DrawCircle(&renderer, actual_position, 25, Color_Blue);
+		R2D_DrawCircle(&renderer, corrected_position, 25, Color_Green);
+		/*R2D_DrawLineC(&renderer, b->center_pos, vec2_add(b->center_pos, ab_resolver.resolution), 5, Color_Green);*/
 		R2D_EndDraw(&renderer);
 		
 		B_BackendSwapchainNext(window);

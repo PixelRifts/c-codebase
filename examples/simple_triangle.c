@@ -22,7 +22,7 @@ int main() {
 	R_Attribute attribs[] = { Attribute_Float2, Attribute_Float4 };
 	
 	R_Pipeline vin = {0};
-	R_PipelineAlloc(&vin, InputAssembly_Triangles, attribs, ArrayCount(attribs), &program);
+	R_PipelineAlloc(&vin, InputAssembly_Triangles, attribs, ArrayCount(attribs), &program, BlendMode_None);
 	
 	float verts[] = {
 		-.5f, -.5f, 0.8f, 0.2f, 0.3f, 1.f,

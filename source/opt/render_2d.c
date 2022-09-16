@@ -73,7 +73,7 @@ void R2D_Init(OS_Window* window, R2D_Renderer* renderer) {
 	
 	R_ShaderPackAllocLoad(&renderer->shader, str_lit("res/render_2d"));
 	R_Attribute attributes[] = { Attribute_Float2, Attribute_Float2, Attribute_Float1, Attribute_Float4 };
-	R_PipelineAlloc(&renderer->pipeline, InputAssembly_Triangles, attributes, ArrayCount(attributes), &renderer->shader);
+	R_PipelineAlloc(&renderer->pipeline, InputAssembly_Triangles, attributes, ArrayCount(attributes), &renderer->shader, BlendMode_Alpha);
 	R_BufferAlloc(&renderer->buffer, BufferFlag_Dynamic | BufferFlag_Type_Vertex);
 	R_BufferData(&renderer->buffer, R2D_MAX_INTERNAL_CACHE_VCOUNT * sizeof(R2D_Vertex), nullptr);
 	R_PipelineAddBuffer(&renderer->pipeline, &renderer->buffer, ArrayCount(attributes));
@@ -85,6 +85,7 @@ void R2D_Init(OS_Window* window, R2D_Renderer* renderer) {
 	R_ShaderPackUploadMat4(&renderer->shader, str_lit("u_projection"), projection);
 	
 	R_Texture2DWhite(&renderer->white_texture);
+	R_Texture2DAllocLoad(&renderer->circle_texture, str_lit("res/circle.png"), TextureResize_Linear, TextureResize_Linear, TextureWrap_ClampToEdge, TextureWrap_ClampToEdge);
 }
 
 void R2D_Free(R2D_Renderer* renderer) {
@@ -200,6 +201,16 @@ void R2D_DrawQuadT(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, vec4
 	R2D_DrawQuad(renderer, quad, texture, rect_init(0.f, 0.f, 1.f, 1.f), tint);
 }
 
+void R2D_DrawQuadST(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, rect uvs, vec4 tint) {
+	R2D_DrawQuad(renderer, quad, texture, uvs, tint);
+}
+
+void R2D_DrawCircle(R2D_Renderer* renderer, vec2 pos, f32 radius, vec4 color) {
+	R2D_DrawQuad(renderer, (rect) { pos.x - radius, pos.y - radius, radius * 2.f, radius * 2.f }, &renderer->circle_texture, rect_init(0.f, 0.f, 1.f, 1.f), color);
+}
+
+
+
 void R2D_DrawQuadRotated(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, rect uvs,
 						 vec4 color, f32 theta) {
 	quad.x += renderer->offset.x;
@@ -263,13 +274,6 @@ void R2D_DrawQuadRotated(R2D_Renderer* renderer, rect quad, R_Texture2D* texture
 	};
 	R2D_VertexCachePush(&batch->cache, vertices_to_batch, 6);
 }
-
-void R2D_DrawQuadST(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, rect uvs, vec4 tint) {
-	R2D_DrawQuad(renderer, quad, texture, uvs, tint);
-}
-
-
-
 
 void R2D_DrawQuadRotatedC(R2D_Renderer* renderer, rect quad, vec4 color, f32 theta) {
 	R2D_DrawQuadRotated(renderer, quad, &renderer->white_texture, rect_init(0.f, 0.f, 1.f, 1.f), color, theta);

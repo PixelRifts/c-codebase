@@ -44,6 +44,7 @@ typedef struct R2D_Renderer {
     vec2 offset;
     
 	R_Texture2D white_texture;
+	R_Texture2D circle_texture;
 	
 	R_Pipeline pipeline;
 	R_Buffer buffer;
@@ -66,6 +67,8 @@ void R2D_DrawQuad(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, rect 
 void R2D_DrawQuadC(R2D_Renderer* renderer, rect quad, vec4 color);
 void R2D_DrawQuadT(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, vec4 tint);
 void R2D_DrawQuadST(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, rect uvs, vec4 tint);
+
+void R2D_DrawCircle(R2D_Renderer* renderer, vec2 pos, f32 radius, vec4 color);
 
 void R2D_DrawQuadRotated(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, rect uvs, vec4 color, f32 theta);
 void R2D_DrawQuadRotatedC(R2D_Renderer* renderer, rect quad, vec4 color, f32 theta);
