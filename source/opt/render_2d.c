@@ -354,6 +354,17 @@ void R2D_DrawLine(R2D_Renderer* renderer, vec2 start, vec2 end, f32 thickness, R
 	R2D_VertexCachePush(&batch->cache, vertices_to_batch, 6);
 }
 
+void R2D_DrawPolygonWireframe(R2D_Renderer* renderer, vec2* verts, u32 vert_count, vec4 color) {
+	for (u32 i = 0; i < vert_count; i++) {
+		u32 j = (i + 1) % vert_count;
+		//Log("%2.3f %2.3f", verts[i].x, verts[i].y);
+		R2D_DrawLineC(renderer,
+					  vec2_add((vec2) { 540, 360 }, verts[i]),
+					  vec2_add((vec2) { 540, 360 }, verts[j]), 2, color);
+	}
+	//Log("===");
+}
+
 void R2D_DrawLineC(R2D_Renderer* renderer, vec2 start, vec2 end, f32 thickness, vec4 color) {
 	R2D_DrawLine(renderer, start, end, thickness, &renderer->white_texture, rect_init(0.f, 0.f, 1.f, 1.f), color);
 }

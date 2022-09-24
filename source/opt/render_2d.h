@@ -75,6 +75,8 @@ void R2D_DrawQuadRotatedC(R2D_Renderer* renderer, rect quad, vec4 color, f32 the
 void R2D_DrawQuadRotatedT(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, vec4 tint, f32 theta);
 void R2D_DrawQuadRotatedST(R2D_Renderer* renderer, rect quad, R_Texture2D* texture, rect uvs, vec4 tint, f32 theta);
 
+void R2D_DrawPolygonWireframe(R2D_Renderer* renderer, vec2* verts, u32 vert_count, vec4 color);
+
 // NO CULLING FOR LINES
 void R2D_DrawLine(R2D_Renderer* renderer, vec2 start, vec2 end, f32 thickness, R_Texture2D* texture, rect uvs, vec4 color);
 void R2D_DrawLineC(R2D_Renderer* renderer, vec2 start, vec2 end, f32 thickness, vec4 color);

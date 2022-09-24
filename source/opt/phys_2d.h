@@ -29,6 +29,8 @@ typedef struct P2D_Collider {
 typedef struct P2D_Collision {
 	vec2 resolution;
 	b8 is_colliding;
+	vec2* simplex_verts;
+	u32 simplex_vert_count;
 } P2D_Collision;
 
 b8 P2D_CheckCollision(P2D_Collider* a, P2D_Collider* b);
@@ -37,5 +39,7 @@ P2D_Collision P2D_GetCollision(P2D_Collider* a, P2D_Collider* b);
 P2D_Collider* P2D_ColliderAllocAARect(M_Arena* arena, rect r);
 P2D_Collider* P2D_ColliderAllocRotatedRect(M_Arena* arena, rect r, f32 theta);
 P2D_Collider* P2D_ColliderAllocCircle(M_Arena* arena, vec2 c, f32 r);
+
+void P2D_ColliderMoveTo(P2D_Collider* collider, vec2 new_pos);
 
 #endif //PHYS_2D_H

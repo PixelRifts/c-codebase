@@ -78,15 +78,18 @@ b8 P2D_CheckCollision(P2D_Collider* a, P2D_Collider* b) {
 	
 	while (true) {
 		vec2 A = P2D_GJK_Support(a, b, d);
-		if (vec2_dot(A, d) < 0) {
+		if (vec2_dot(A, d) <= 0) {
+			darray_free(vec2, &simplex);
 			return false;
 		}
 		darray_add(vec2, &simplex, A);
 		if (P2D_GJK_HandleSimplex(&simplex, &d)) {
+			darray_free(vec2, &simplex);
 			return true;
 		}
 	}
 	
+	darray_free(vec2, &simplex);
 	return false;
 }
 
@@ -108,7 +111,7 @@ P2D_Collision P2D_GetCollision(P2D_Collider* a, P2D_Collider* b) {
 	
 	while (true) {
 		vec2 A = P2D_GJK_Support(a, b, d);
-		if (vec2_dot(A, d) < 0) {
+		if (vec2_dot(A, d) <= 0) {
 			colliding = false;
 			break;
 		}
@@ -131,10 +134,13 @@ P2D_Collision P2D_GetCollision(P2D_Collider* a, P2D_Collider* b) {
 				u32 j = (i + 1) % simplex.len;
 				
 				vec2 vert_i = simplex.elems[i];
+				if (!vert_i.x && !vert_i.y) break;
 				vec2 vert_j = simplex.elems[j];
+				if (!vert_j.x && !vert_j.y) break;
 				
 				vec2 ij = vec2_sub(vert_j, vert_i);
-				vec2 normal = { ij.y, -ij.x };
+				vec2 normal = { -ij.y, ij.x };
+				
 				normal = vec2_normalize(normal);
 				f32 dist = vec2_dot(normal, vert_i);
 				if (dist < 0) {
@@ -163,6 +169,8 @@ P2D_Collision P2D_GetCollision(P2D_Collider* a, P2D_Collider* b) {
 	return (P2D_Collision) {
 		.is_colliding = colliding,
 		.resolution = resolution,
+		.simplex_verts = simplex.elems,
+		.simplex_vert_count = simplex.len,
 	};
 }
 
@@ -203,4 +211,15 @@ P2D_Collider* P2D_ColliderAllocCircle(M_Arena* arena, vec2 c, f32 r) {
 	collider->circle.radius = r;
 	collider->center_pos = c;
 	return collider;
+}
+
+void P2D_ColliderMoveTo(P2D_Collider* collider, vec2 new_pos) {
+	switch (collider->type) {
+		case ColliderType_Polygon: {
+			for (u32 i = 0; i < collider->polygon.vert_count; i++) {
+				collider->polygon.vertices[i] = vec2_add(new_pos, vec2_sub(collider->polygon.vertices[i], collider->center_pos));
+			}
+		} break;
+	}
+	collider->center_pos = new_pos;
 }
