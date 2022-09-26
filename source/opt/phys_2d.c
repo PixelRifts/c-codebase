@@ -7,6 +7,12 @@ DArray_Impl(vec2);
 
 Slice_Prototype(vec2);
 
+typedef struct P2D_EPA_Edge {
+	vec2 normal;
+	f32 distance;
+	u32 index;
+} P2D_EPA_Edge;
+
 static vec2 P2D_GJK_FurthestPoint(P2D_Collider* c, vec2 d) {
 	switch (c->type) {
 		case ColliderType_Polygon: {
@@ -63,6 +69,43 @@ static b8 P2D_GJK_HandleSimplex(darray(vec2)* simplex, vec2* d) {
 		} else return true;
 	}
 	return false;
+}
+
+static b8 P2D_EPA_IsWindingCounterClockwise(darray(vec2)* simplex) {
+	f32 smn = 0;
+	IteratePtr(simplex, i) {
+		int j = i + 1 == simplex->len ? 0 : i + 1;
+		vec2 a = simplex->elems[i];
+		vec2 b = simplex->elems[j];
+		
+		smn += (b.x - a.x) * (b.y + a.y);
+	}
+	return smn > 0.f;
+}
+
+static P2D_EPA_Edge P2D_EPA_FindClosestEdge(darray(vec2)* simplex) {
+	P2D_EPA_Edge res = {0};
+	res.distance = FLOAT_MAX;
+	IteratePtr(simplex, i) {
+		int j = i + 1 == simplex->len ? 0 : i + 1;
+		vec2 a = simplex->elems[i];
+		if (a.x == 0 && a.y == 0) break;
+		vec2 b = simplex->elems[j];
+		if (b.x == 0 && b.y == 0) break;
+		
+		vec2 e = vec2_sub(b, a);
+		vec2 normal = { e.y, -e.x };
+		
+		normal = vec2_normalize(normal);
+		f32 d = vec2_dot(normal, a);
+		
+		if (d < res.distance) {
+			res.distance = d;
+			res.normal = normal;
+			res.index = j;
+		}
+	}
+	return res;
 }
 
 b8 P2D_CheckCollision(P2D_Collider* a, P2D_Collider* b) {
@@ -124,45 +167,21 @@ P2D_Collision P2D_GetCollision(P2D_Collider* a, P2D_Collider* b) {
 	
 	// EPA
 	if (colliding) {
-		
-		u32 min_index = 0;
-		f32 min_distance = FLOAT_MAX;
 		vec2 min_normal = {0};
-		
-		while (EpsilonEquals(min_distance, FLOAT_MAX)) {
-			for (u32 i = 0; i < simplex.len; i++) {
-				u32 j = (i + 1) % simplex.len;
-				
-				vec2 vert_i = simplex.elems[i];
-				if (!vert_i.x && !vert_i.y) break;
-				vec2 vert_j = simplex.elems[j];
-				if (!vert_j.x && !vert_j.y) break;
-				
-				vec2 ij = vec2_sub(vert_j, vert_i);
-				vec2 normal = { -ij.y, ij.x };
-				
-				normal = vec2_normalize(normal);
-				f32 dist = vec2_dot(normal, vert_i);
-				if (dist < 0) {
-					dist *= -1;
-					normal = vec2_neg(normal);
-				}
-				
-				if (dist < min_distance) {
-					min_distance = dist;
-					min_normal = normal;
-					min_index = j;
-				}
-			}
+		f32 min_distance = FLOAT_MAX;
+		while (true) {
+			P2D_EPA_Edge e = P2D_EPA_FindClosestEdge(&simplex);
+			vec2 p = P2D_GJK_Support(a, b, e.normal);
+			f32 d = vec2_dot(p, e.normal);
 			
-			vec2 support = P2D_GJK_Support(a, b, min_normal);
-			f32 s_dist = vec2_dot(min_normal, support);
-			if (!EpsilonEquals(s_dist, min_distance)) {
-				min_distance = FLOAT_MAX;
-				darray_add_at(vec2, &simplex, support, min_index);
+			if (d - e.distance < EPSILON) {
+				min_normal = e.normal;
+				min_distance = d;
+				break;
+			} else {
+				darray_add_at(vec2, &simplex, p, e.index);
 			}
 		}
-		
 		resolution = vec2_scale(min_normal, min_distance + EPSILON);
 	}
 	
