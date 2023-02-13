@@ -29,8 +29,6 @@ typedef struct P2D_Collider {
 typedef struct P2D_Collision {
 	vec2 resolution;
 	b8 is_colliding;
-	vec2* simplex_verts;
-	u32 simplex_vert_count;
 } P2D_Collision;
 
 b8 P2D_CheckCollision(P2D_Collider* a, P2D_Collider* b);

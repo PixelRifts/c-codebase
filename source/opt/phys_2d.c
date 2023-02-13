@@ -185,11 +185,11 @@ P2D_Collision P2D_GetCollision(P2D_Collider* a, P2D_Collider* b) {
 		resolution = vec2_scale(min_normal, min_distance + EPSILON);
 	}
 	
+	darray_free(vec2, &simplex);
+	
 	return (P2D_Collision) {
 		.is_colliding = colliding,
 		.resolution = resolution,
-		.simplex_verts = simplex.elems,
-		.simplex_vert_count = simplex.len,
 	};
 }
 
