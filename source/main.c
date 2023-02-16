@@ -15,13 +15,16 @@ int main() {
 	ThreadContext context = {0};
 	tctx_init(&context);
 	
-	M_Arena* global_arena = arena_make();
+	M_Arena global_arena;
+	arena_init(&global_arena);
+	u32* k = arena_alloc(&global_arena, sizeof(u32) * 360);
+	k[10] = 50;
 	
 	vec2 actual_position = { OS_InputGetMouseX(), OS_InputGetMouseY() };
 	vec2 corrected_position = { OS_InputGetMouseX(), OS_InputGetMouseY() };
 	
-	P2D_Collider* a = P2D_ColliderAllocAARect(global_arena, (rect) { 200, 200, 100, 100 });
-	P2D_Collider* b = P2D_ColliderAllocCircle(global_arena, actual_position, 25);
+	P2D_Collider* a = P2D_ColliderAllocAARect(&global_arena, (rect) { 200, 200, 100, 100 });
+	P2D_Collider* b = P2D_ColliderAllocCircle(&global_arena, actual_position, 25);
 	
 	OS_Window* window = OS_WindowCreate(1080, 720, str_lit("This should work"));
 	B_BackendInit(window);
@@ -56,6 +59,6 @@ int main() {
 	
 	OS_WindowClose(window);
 	
-	arena_free(global_arena);
+	arena_free(&global_arena);
 	tctx_free(&context);
 }

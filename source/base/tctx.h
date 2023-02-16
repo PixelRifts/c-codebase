@@ -8,7 +8,7 @@
 typedef struct M_ArenaTemp M_Scratch;
 
 typedef struct ThreadContext {
-	M_Arena* arena;
+	M_Arena arena;
 	u64 pop_to;
 } ThreadContext;
 

@@ -261,10 +261,11 @@ void R_ShaderAlloc(R_Shader* _shader, string data, R_ShaderType type) {
 }
 
 void R_ShaderAllocLoad(R_Shader* _shader, string fp, R_ShaderType type) {
-	M_Arena* arena = arena_make();
-	string source_code = OS_FileRead(arena, fp);
+	M_Arena arena;
+	arena_init(&arena);
+	string source_code = OS_FileRead(&arena, fp);
 	R_ShaderAlloc(_shader, source_code, type);
-	arena_free(arena);
+	arena_free(&arena);
 }
 
 void R_ShaderFree(R_Shader* _shader) {

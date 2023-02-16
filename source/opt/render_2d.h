@@ -36,7 +36,7 @@ typedef struct R2D_Batch {
 DArray_Prototype(R2D_Batch);
 
 typedef struct R2D_Renderer {
-	M_Arena* arena;
+	M_Arena arena;
 	
 	darray(R2D_Batch) batches;
     u8 current_batch;
