@@ -4,9 +4,11 @@
 #define DS_H
 
 #include "defines.h"
+#include "os/os.h"
 #include <string.h>
 
 #define DoubleCapacity(x) ((x) <= 0 ? 8 : x * 2)
+#define DoubleCapacityBigInit(x) ((x) <= 0 ? 64 : x * 2)
 
 #define darray(type) type##_array
 
@@ -82,10 +84,11 @@ free(array->elems);\
 
 #define dstack(type) type##_stack
 
-#define dstack_push(type, stack, data) Data##_stack##_push(stack, data)
-#define dstack_pop(type, stack, data) Data##_stack##_pop(stack)
-#define dstack_peek(type, stack, data) Data##_stack##_peek(stack)
-#define dstack_free(type, stack, data) Data##_stack##_free(stack)
+#define dstack_push(type, stack, data) type##_stack##_push(stack, data)
+#define dstack_pop(type, stack) type##_stack##_pop(stack)
+#define dstack_peek(type, stack) type##_stack##_peek(stack)
+#define dstack_clear(type, stack) type##_stack##_clear(stack)
+#define dstack_free(type, stack) type##_stack##_free(stack)
 
 #define Stack_Prototype(Data)\
 typedef struct Data##_stack {\
@@ -96,6 +99,7 @@ Data* elems;\
 void Data##_stack##_push(Data##_stack* stack, Data data);\
 Data Data##_stack##_pop(Data##_stack* stack);\
 Data Data##_stack##_peek(Data##_stack* stack);\
+void Data##_stack##_clear(Data##_stack* stack);\
 void Data##_stack##_free(Data##_stack* stack);
 
 #define Stack_Impl(Data)\
@@ -117,6 +121,9 @@ Data Data##_stack##_peek(Data##_stack* stack) {\
 if (stack->len == 0) return (Data){0};\
 return stack->elems[stack->len - 1];\
 }\
+void Data##_stack##_clear(Data##_stack* stack) {\
+stack->len = 0;\
+}\
 void Data##_stack##_free(Data##_stack* stack) {\
 stack->cap = 0;\
 stack->len = 0;\
@@ -133,7 +140,10 @@ free(stack->elems);\
 #define hash_table_init(key_t, value_t, table) key_t##_##value_t##_hash_table_init(table)
 #define hash_table_set(key_t, value_t, table, key, val) key_t##_##value_t##_hash_table_set(table, key, val)
 #define hash_table_get(key_t, value_t, table, key, val) key_t##_##value_t##_hash_table_get(table, key, val)
-#define hash_table_del(key_t, value_t, table, key, val) key_t##_##value_t##_hash_table_del(table, key)
+#define hash_table_get_ptr(key_t, value_t, table, key, val) key_t##_##value_t##_hash_table_get_ptr(table, key, val)
+#define hash_table_get_ptr_guarantee(key_t, value_t, table, key, val)\
+key_t##_##value_t##_hash_table_get_ptr_guarantee(table, key, val)
+#define hash_table_del(key_t, value_t, table, key) key_t##_##value_t##_hash_table_del(table, key)
 #define hash_table_add_all(key_t, value_t, to, from) key_t##_##value_t##_hash_table_del(to, from)
 #define hash_table_free(key_t, value_t, table) key_t##_##value_t##_hash_table_free(table)
 
@@ -145,13 +155,15 @@ Key##_##Value##_hash_table_key key;\
 Key##_##Value##_hash_table_value value;\
 } Key##_##Value##_hash_table_entry;\
 typedef struct Key##_##Value##_hash_table {\
-u32 cap;\
-u32 len;\
+u64 cap;\
+u64 len;\
 Key##_##Value##_hash_table_entry* elems;\
 } Key##_##Value##_hash_table;\
 void Key##_##Value##_hash_table_init(Key##_##Value##_hash_table* table);\
 void Key##_##Value##_hash_table_free(Key##_##Value##_hash_table* table);\
 b8 Key##_##Value##_hash_table_get(Key##_##Value##_hash_table* table, Key##_##Value##_hash_table_key key, Key##_##Value##_hash_table_value* val);\
+b8 Key##_##Value##_hash_table_get_ptr(Key##_##Value##_hash_table* table, Key##_##Value##_hash_table_key key, Key##_##Value##_hash_table_value** val);\
+void Key##_##Value##_hash_table_get_ptr_guarantee(Key##_##Value##_hash_table* table, Key##_##Value##_hash_table_key key, Key##_##Value##_hash_table_value** val);\
 b8 Key##_##Value##_hash_table_set(Key##_##Value##_hash_table* table, Key##_##Value##_hash_table_key key, Key##_##Value##_hash_table_value  val);\
 b8 Key##_##Value##_hash_table_del(Key##_##Value##_hash_table* table, Key##_##Value##_hash_table_key key);\
 void Key##_##Value##_hash_table_add_all(Key##_##Value##_hash_table* to, Key##_##Value##_hash_table* from);
@@ -169,8 +181,8 @@ table->cap = 0;\
 table->len = 0;\
 table->elems = nullptr;\
 }\
-static Key##_##Value##_hash_table_entry* Key##_##Value##_hash_table_find_entry(Key##_##Value##_hash_table_entry* entries, u32 cap,  Key##_##Value##_hash_table_key key) {\
-u32 index = HashKey(key) % cap;\
+static Key##_##Value##_hash_table_entry* Key##_##Value##_hash_table_find_entry(Key##_##Value##_hash_table_entry* entries, u64 cap,  Key##_##Value##_hash_table_key key) {\
+u64 index = HashKey(key) % cap;\
 Key##_##Value##_hash_table_entry* tombstone = nullptr;\
 while (true) {\
 Key##_##Value##_hash_table_entry* entry = &entries[index];\
@@ -185,10 +197,10 @@ return entry;\
 index = (index + 1) % cap;\
 }\
 }\
-static void Key##_##Value##_hash_table_adjust_cap(Key##_##Value##_hash_table* table, u32 cap) {\
+static void Key##_##Value##_hash_table_adjust_cap(Key##_##Value##_hash_table* table, u64 cap) {\
 Key##_##Value##_hash_table_entry* entries = calloc(cap, sizeof(Key##_##Value##_hash_table_entry));\
 table->len = 0;\
-for (u32 i = 0; i < table->cap; i++) {\
+for (u64 i = 0; i < table->cap; i++) {\
 Key##_##Value##_hash_table_entry* curr = &table->elems[i];\
 if (KeyIsNull(curr->key)) continue;\
 Key##_##Value##_hash_table_entry* dest = Key##_##Value##_hash_table_find_entry(entries, cap, curr->key);\
@@ -226,6 +238,24 @@ if (KeyIsNull(entry->key)) return false;\
 if (val != nullptr) *val = entry->value;\
 return true;\
 }\
+b8 Key##_##Value##_hash_table_get_ptr(Key##_##Value##_hash_table* table, Key##_##Value##_hash_table_key key, Key##_##Value##_hash_table_value** val) {\
+if (table->len == 0) return false;\
+Key##_##Value##_hash_table_entry* entry = Key##_##Value##_hash_table_find_entry(table->elems, table->cap, key);\
+if (KeyIsNull(entry->key)) return false;\
+if (val != nullptr) *val = &entry->value;\
+return true;\
+}\
+void Key##_##Value##_hash_table_get_ptr_guarantee(Key##_##Value##_hash_table* table, Key##_##Value##_hash_table_key key, Key##_##Value##_hash_table_value** val) {\
+if (table->len == 0) {\
+Key##_##Value##_hash_table_set(table, key, (Key##_##Value##_hash_table_value){0});\
+}\
+Key##_##Value##_hash_table_entry* entry = Key##_##Value##_hash_table_find_entry(table->elems, table->cap, key);\
+if (KeyIsNull(entry->key)) {\
+Key##_##Value##_hash_table_set(table, key, (Key##_##Value##_hash_table_value){0});\
+entry = Key##_##Value##_hash_table_find_entry(table->elems, table->cap, key);\
+}\
+if (val != nullptr) *val = &entry->value;\
+}\
 b8 Key##_##Value##_hash_table_del(Key##_##Value##_hash_table* table, Key##_##Value##_hash_table_key key) {\
 if (table->len == 0) return false;\
 Key##_##Value##_hash_table_entry* entry = Key##_##Value##_hash_table_find_entry(table->elems, table->cap, key);\
@@ -233,6 +263,147 @@ if (KeyIsNull(entry->key)) return false;\
 entry->key = (Key##_##Value##_hash_table_key) {0};\
 entry->value = Key##_##Value##_hash_table_tombstone;\
 return true;\
+}
+
+// More specialized form of hash table which doesn't grow and provides stable pointers
+// It allows semi-infinite allocations using a Memory Pool
+// Due to this, we have a few requirements for the value type
+// @requirement a key member
+// @requirement hash_next and hash_prev pointer fields
+
+#define stable_table_key(key, value) key##_##value##_stable_table_key
+#define stable_table_value(key, value) key##_##value##_stable_table_value
+#define stable_table(key, value) key##_##value##_stable_table
+
+#define stable_table_init(key_t, value_t, table, num_slots) key_t##_##value_t##_stable_table_init(table, num_slots)
+#define stable_table_set(key_t, value_t, table, key, val) key_t##_##value_t##_stable_table_set(table, key, val)
+#define stable_table_get(key_t, value_t, table, key, val) key_t##_##value_t##_stable_table_get(table, key, val)
+#define stable_table_get_guarantee(key_t, value_t, table, key, val)\
+key_t##_##value_t##_stable_table_get_guarantee(table, key, val)
+#define stable_table_del(key_t, value_t, table, key) key_t##_##value_t##_stable_table_del(table, key)
+#define stable_table_free(key_t, value_t, table) key_t##_##value_t##_stable_table_free(table)
+
+#define StableTable_Prototype(Key, Value)\
+typedef Key Key##_##Value##_stable_table_key;\
+typedef Value Key##_##Value##_stable_table_value;\
+typedef struct Key##_##Value##_stable_table {\
+M_Pool element_pool;\
+u64 len;\
+Key##_##Value##_stable_table_value* elems;\
+} Key##_##Value##_stable_table;\
+void Key##_##Value##_stable_table_init(Key##_##Value##_stable_table* table, u64 num_slots);\
+void Key##_##Value##_stable_table_free(Key##_##Value##_stable_table* table);\
+b8 Key##_##Value##_stable_table_get(Key##_##Value##_stable_table* table, Key##_##Value##_stable_table_key key, Key##_##Value##_stable_table_value** val);\
+void Key##_##Value##_stable_table_get_guarantee(Key##_##Value##_stable_table* table, Key##_##Value##_stable_table_key key, Key##_##Value##_stable_table_value** val);\
+void Key##_##Value##_stable_table_set(Key##_##Value##_stable_table* table, Key##_##Value##_stable_table_key key, Key##_##Value##_stable_table_value val);\
+b8 Key##_##Value##_stable_table_del(Key##_##Value##_stable_table* table, Key##_##Value##_stable_table_key key);\
+
+#define StableTable_Impl(Key, Value, KeyIsNull, KeyIsEqual, HashKey)\
+void Key##_##Value##_stable_table_init(Key##_##Value##_stable_table* table, u64 num_slots) {\
+pool_init(&table->element_pool, sizeof(Key##_##Value##_stable_table_value));\
+table->len = num_slots;\
+table->elems = OS_MemoryReserve(sizeof(Key##_##Value##_stable_table_value) * num_slots);\
+OS_MemoryCommit(table->elems, sizeof(Key##_##Value##_stable_table_value) * num_slots);\
 }\
+void Key##_##Value##_stable_table_free(Key##_##Value##_stable_table* table) {\
+OS_MemoryRelease(table->elems, sizeof(Key##_##Value##_stable_table_value) * table->len);\
+pool_free(&table->element_pool);\
+}\
+b8 Key##_##Value##_stable_table_get(Key##_##Value##_stable_table* table, Key##_##Value##_stable_table_key key, Key##_##Value##_stable_table_value** val) {\
+u64 slot = HashKey(key) % table->len;\
+Key##_##Value##_stable_table_value* curr = &table->elems[slot];\
+if (KeyIsNull(curr->key)) return false;\
+while (curr) {\
+if (KeyIsEqual(curr->key, key)) {\
+*val = curr;\
+return true;\
+}\
+curr = curr->hash_next;\
+}\
+return false;\
+}\
+void Key##_##Value##_stable_table_get_guarantee(Key##_##Value##_stable_table* table, Key##_##Value##_stable_table_key key, Key##_##Value##_stable_table_value** val) {\
+u64 slot = HashKey(key) % table->len;\
+Key##_##Value##_stable_table_value* curr = &table->elems[slot];\
+Key##_##Value##_stable_table_value* one_before_curr = curr;\
+if (!KeyIsNull(curr->key)) {\
+while (curr) {\
+if (!KeyIsNull(curr->key)) {\
+if (KeyIsEqual(curr->key, key)) {\
+*val = curr;\
+return;\
+}\
+}\
+one_before_curr = curr;\
+curr = curr->hash_next;\
+}\
+curr = pool_alloc(&table->element_pool);\
+curr->hash_prev = one_before_curr;\
+one_before_curr->hash_next = curr;\
+curr->key = key;\
+*val = curr;\
+} else {\
+MemoryZeroStruct(curr, Key##_##Value##_stable_table_value);\
+curr->key = key;\
+*val = curr;\
+}\
+}\
+void Key##_##Value##_stable_table_set(Key##_##Value##_stable_table* table, Key##_##Value##_stable_table_key key, Key##_##Value##_stable_table_value val) {\
+u64 slot = HashKey(key) % table->len;\
+Key##_##Value##_stable_table_value* curr = &table->elems[slot];\
+Key##_##Value##_stable_table_value* one_before_curr = curr;\
+if (!KeyIsNull(curr->key)) {\
+while (curr) {\
+if (!KeyIsNull(curr->key)) {\
+if (KeyIsEqual(curr->key, key)) {\
+*curr = val;\
+return;\
+}\
+}\
+one_before_curr = curr;\
+curr = curr->hash_next;\
+}\
+curr = pool_alloc(&table->element_pool);\
+curr->hash_prev = one_before_curr;\
+one_before_curr->hash_next = curr;\
+*curr = val;\
+curr->key = key;\
+} else {\
+MemoryZeroStruct(curr, Key##_##Value##_stable_table_value);\
+*curr = val;\
+curr->key = key;\
+}\
+}\
+b8 Key##_##Value##_stable_table_del(Key##_##Value##_stable_table* table, Key##_##Value##_stable_table_key key) {\
+u64 slot = HashKey(key) % table->len;\
+Key##_##Value##_stable_table_value* curr = &table->elems[slot];\
+Key##_##Value##_stable_table_value* one_before_curr = curr;\
+if (KeyIsNull(curr->key)) return false;\
+while (curr) {\
+if (!KeyIsNull(curr->key)) {\
+if (KeyIsEqual(curr->key, key)) {\
+if (curr->hash_prev) {\
+curr->hash_prev->hash_next = curr->hash_next;\
+if (curr->hash_next) curr->hash_next->hash_prev = curr->hash_prev;\
+return true;\
+} else {\
+if (curr->hash_next) {\
+MemoryCopyStruct(curr, curr->hash_next);\
+if (curr->hash_next->hash_next)\
+curr->hash_next->hash_next->hash_prev = curr;\
+pool_dealloc(&table->element_pool, curr->hash_next);\
+return true;\
+} else {\
+MemoryZeroStruct(curr, Key##_##Value##_stable_table_value);\
+return true;\
+}\
+}\
+}\
+one_before_curr = curr;\
+curr = curr->hash_next;\
+}\
+}\
+return false;\
+}
 
 #endif //DS_H

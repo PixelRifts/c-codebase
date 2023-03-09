@@ -51,6 +51,7 @@ u64 str_substr_count(string_const str, string_const needle);
 u64 str_find_first(string_const str, string_const needle, u32 offset);
 u64 str_find_last(string_const str, string_const needle, u32 offset);
 u32 str_hash(string_const str);
+u64 str_hash_64(string_const str);
 
 b8 str_eq(string_const a, string_const b);
 

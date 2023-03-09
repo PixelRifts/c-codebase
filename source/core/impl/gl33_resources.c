@@ -430,8 +430,7 @@ void R_PipelineBind(R_Pipeline* _in) {
 	switch (in->blend_mode) {
 		case BlendMode_None: {
 			glDisable(GL_BLEND);
-			break;
-		}
+		} break;
 		
 		case BlendMode_Alpha: {
 			glEnable(GL_BLEND);
@@ -478,7 +477,7 @@ void R_Texture2DAlloc(R_Texture2D* _texture, R_TextureFormat format, u32 width, 
 
 void R_Texture2DAllocLoad(R_Texture2D* _texture, string filepath, R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t) {
 	i32 width, height, channels;
-	//stbi_set_flip_vertically_on_load(true);
+	stbi_set_flip_vertically_on_load(true);
 	u8* data = stbi_load((const char*)filepath.str, &width, &height, &channels, 0);
 	
 	if (channels == 3) {

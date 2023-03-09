@@ -74,7 +74,7 @@ u64 align_forward_u64(u64 ptr, u64 align) {
 }
 
 
-//~ Arena (No alignment)
+//~ Arena
 
 void* arena_alloc(M_Arena* arena, u64 size) {
     void* memory = 0;
@@ -184,4 +184,60 @@ void scratch_reset(M_Scratch* scratch) {
 void scratch_return(M_Scratch* scratch) {
 	ThreadContext* ctx = (ThreadContext*) OS_ThreadContextGet();
 	return tctx_scratch_return(ctx, scratch);
+}
+
+//~ Pool
+
+void pool_init(M_Pool* pool, u64 element_size) {
+	MemoryZeroStruct(pool, M_Pool);
+	pool->memory = OS_MemoryReserve(M_POOL_MAX);
+	pool->max = M_POOL_MAX;
+	pool->commit_position = 0;
+	pool->element_size = align_forward_u64(element_size, DEFAULT_ALIGNMENT);
+	pool->head = nullptr;
+}
+
+void pool_clear(M_Pool* pool) {
+	for (void *it = (void*)pool + sizeof(M_Pool), *preit = it;
+		 it <= (void*)pool->memory + pool->commit_position;
+		 preit = it, it += pool->element_size) {
+		((M_PoolFreeNode*)preit)->next = (M_PoolFreeNode*)it;
+	}
+	pool->head = (M_PoolFreeNode*)pool->memory;
+}
+
+void pool_free(M_Pool* pool) {
+	OS_MemoryRelease(pool->memory, pool->max);
+}
+
+void* pool_alloc(M_Pool* pool) {
+	if (pool->head) {
+		void* ret = pool->head;
+		pool->head = pool->head->next;
+		return ret;
+	} else {
+		if (pool->commit_position + M_POOL_COMMIT_CHUNK * pool->element_size >= pool->max) {
+			assert(0 && "Pool is out of memory");
+			return nullptr;
+		}
+		void* commit_ptr = pool->memory + pool->commit_position;
+		OS_MemoryCommit(commit_ptr, M_POOL_COMMIT_CHUNK * pool->element_size);
+		pool_dealloc_range(pool, commit_ptr, M_POOL_COMMIT_CHUNK);
+		
+		return pool_alloc(pool);
+	}
+}
+
+void pool_dealloc(M_Pool* pool, void* ptr) {
+	((M_PoolFreeNode*)ptr)->next = pool->head;
+	pool->head = ptr;
+}
+
+void pool_dealloc_range(M_Pool* pool, void* ptr, u64 count) {
+	void* it = ptr;
+	for (u64 k = 0; k < count; k++) {
+		((M_PoolFreeNode*)it)->next = pool->head;
+		pool->head = it;
+		it += pool->element_size;
+	}
 }

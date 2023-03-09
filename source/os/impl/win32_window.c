@@ -1,11 +1,17 @@
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <Windowsx.h>
+#include <uxtheme.h>
+#include <dwmapi.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "os/win32_window.h"
 #include "os/input.h"
 
+
+#include "core/impl/gl_functions.h"
 
 static void CALLBACK OS_PollEvents_Fiber(W32_Window* param);
 
@@ -36,7 +42,6 @@ OS_Window* OS_WindowCreate(u32 width, u32 height, string title) {
 			.hInstance = hinstance,
 			.hCursor = LoadCursor(0, IDC_ARROW),
 			.hIcon = LoadIcon(0, IDI_APPLICATION),
-			.hbrBackground = 0,
 			.lpszClassName = _classname_buffer,
 		};
 		
@@ -121,7 +126,7 @@ static void CALLBACK OS_PollEvents_Fiber(W32_Window* param) {
 	}
 }
 
-void OS_PollEvents() {
+void OS_PollEvents(void) {
 	__OS_InputReset();
 	SwitchToFiber(_event_fibre);
 }
@@ -156,12 +161,31 @@ static LRESULT CALLBACK Win32Proc(HWND window, UINT msg, WPARAM wparam, LPARAM l
 		
 		case WM_EXITSIZEMOVE: {
 			KillTimer(window, 1);
+			
+			RECT r;
+			GetClientRect(window, &r);
+			int width = r.right - r.left;
+			int height = r.bottom - r.top;
+			
+			DefaultResizeCallback(os_window, width, height);
+		} break;
+		
+		case WM_SIZE: {
+			if (wparam == SIZE_MAXIMIZED || wparam == SIZE_RESTORED) {
+				RECT r;
+				GetClientRect(window, &r);
+				int width = r.right - r.left;
+				int height = r.bottom - r.top;
+				
+				DefaultResizeCallback(os_window, width, height);
+			}
 		} break;
 		
 		case WM_SYSKEYDOWN:
         case WM_KEYDOWN: {
 			__OS_InputKeyCallback((u8)wparam, (lparam >> 30) & 0x01 ? Input_Repeat : Input_Press);
-			if (os_window->key_callback) os_window->key_callback(os_window, (u8)wparam, (lparam >> 30) & 0x01 ? Input_Repeat : Input_Press);
+			if (os_window->key_callback) os_window->key_callback(os_window, (u8)wparam, (lparam >> 30) & 0x01 ?
+																 Input_Repeat : Input_Press);
         } break;
 		
 		case WM_SYSKEYUP:
@@ -208,7 +232,6 @@ static LRESULT CALLBACK Win32Proc(HWND window, UINT msg, WPARAM wparam, LPARAM l
 		default: {
 			result = DefWindowProcA(window, msg, wparam, lparam);
 		} break;
-		
 	}
 	
 	return result;

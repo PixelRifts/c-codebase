@@ -101,3 +101,25 @@ string U_GetDirectoryFromFilepath(string filepath) {
     if (last_slash == 0) last_slash = str_find_last(filepath, str_lit("\\"), 0);
     return (string) { .str = filepath.str, .size = last_slash - 1 };
 }
+
+//~ Frame Arena
+
+// Just a global. Maybe should be a thread local but /shrug
+M_Arena frame_arena;
+
+void U_FrameArenaInit(void) {
+	arena_init(&frame_arena);
+}
+
+void U_FrameArenaFree(void) {
+	arena_free(&frame_arena);
+}
+
+M_Arena* U_GetFrameArena(void) {
+	return &frame_arena;
+}
+
+void U_ResetFrameArena(void) {
+	arena_dealloc_to(&frame_arena, 0);
+}
+

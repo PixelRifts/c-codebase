@@ -12,6 +12,7 @@ typedef struct W32_Window {
 	ResizeCallback* resize_callback;
 	KeyCallback* key_callback;
 	ButtonCallback* button_callback;
+	void* user_data;
 	HWND handle;
 	HGLRC glrc;
 	u64 v[6];

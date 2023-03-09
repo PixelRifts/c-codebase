@@ -6,6 +6,8 @@
 #include "defines.h"
 #include <math.h>
 
+//~ Constants and Defines
+
 #define EPSILON 0.001f
 #define PI 3.141592653589f
 #define PHI 1.61803399f
@@ -15,18 +17,9 @@
 #define FLOAT_MAX 340282346638528859811704183484516925440.0000000000000000
 #define FLOAT_MIN -FLOAT_MAX
 
-#define Color_Red vec4_init(0.8f, 0.3f, 0.2f, 1.f)
-#define Color_Green vec4_init(0.2f, 0.8f, 0.3f, 1.f)
-#define Color_Blue vec4_init(0.3f, 0.2f, 0.8f, 1.f)
-#define Color_Magenta vec4_init(0.8f, 0.3f, 0.7f, 1.f)
-#define Color_Cyan vec4_init(0.3f, 0.8f, 0.7f, 1.f)
-#define Color_Yellow vec4_init(0.8f, 0.7f, 0.3f, 1.f)
-#define Color_PureGreen vec4_init(0.0f, 1.0f, 0.0f, 1.f)
-#define Color_PureRed vec4_init(1.0f, 0.0f, 0.0f, 1.f)
-#define Color_PureBlue vec4_init(0.0f, 0.0f, 1.0f, 1.f)
-#define Color_White vec4_init(1.0f, 1.0f, 1.0f, 1.f)
-
 #define EpsilonEquals(x, y) ((fabs((x) - (y)) <= EPSILON) ? true : false)
+
+//~ Linear algebra
 
 typedef struct vec2 { f32 x; f32 y;               } vec2;
 typedef struct vec3 { f32 x; f32 y; f32 z;        } vec3;
@@ -37,6 +30,35 @@ typedef struct mat4 { f32 a[4*4]; } mat4;
 
 typedef struct rect { f32 x; f32 y; f32 w; f32 h; } rect;
 typedef struct quat { f32 s; f32 i; f32 j; f32 k; } quat;
+
+//~ Helpful Color things
+
+#define Color_Red vec4_init(0.8f, 0.3f, 0.2f, 1.f)
+#define Color_Green vec4_init(0.2f, 0.8f, 0.3f, 1.f)
+#define Color_Blue vec4_init(0.3f, 0.2f, 0.8f, 1.f)
+#define Color_Magenta vec4_init(0.8f, 0.3f, 0.7f, 1.f)
+#define Color_Cyan vec4_init(0.3f, 0.8f, 0.7f, 1.f)
+#define Color_Yellow vec4_init(0.8f, 0.7f, 0.3f, 1.f)
+#define Color_PureRed vec4_init(1.0f, 0.0f, 0.0f, 1.f)
+#define Color_PureGreen vec4_init(0.0f, 1.0f, 0.0f, 1.f)
+#define Color_PureBlue vec4_init(0.0f, 0.0f, 1.0f, 1.f)
+#define Color_White vec4_init(1.0f, 1.0f, 1.0f, 1.f)
+
+#define ColorCode_Red 0xCC4D33FF
+#define ColorCode_Green 0x33CC4DFF
+#define ColorCode_Blue 0x4D33CCFF
+#define ColorCode_Magenta 0xCC4DB1FF
+#define ColorCode_Purple 0x8B46B3FF
+#define ColorCode_Cyan 0x4DCCB1FF
+#define ColorCode_Yellow 0xCCB14DFF
+#define ColorCode_PureRed 0xFF0000FF
+#define ColorCode_PureGreen 0x00FF00FF
+#define ColorCode_PureBlue 0x0000FFFF
+#define ColorCode_White 0xFFFFFFFF
+
+static inline vec4 color_code_to_vec4(u32 code) {
+	return (vec4) { .x=((code >> 24)&0xFF)/255.f, .y=((code>>16)&0xFF)/255.f, .z=((code>>8)&0xFF)/255.f, .w=(code&0xFF)/255.f };
+}
 
 //~ Math Utilities
 
@@ -59,6 +81,10 @@ enum {
 
 //~ Inline Initializers
 
+#define v2(x, y) ((vec2) { (x), (y) })
+#define v3(x, y, z) ((vec3) { (x), (y), (z) })
+#define v4(x, y, z, w) ((vec4) { (x), (y), (z), (w) })
+
 static inline vec2 vec2_init(f32 x, f32 y) { return (vec2) { x, y }; }
 static inline vec3 vec3_init(f32 x, f32 y, f32 z) { return (vec3) { x, y, z }; }
 static inline vec4 vec4_init(f32 x, f32 y, f32 z, f32 w) { return (vec4) { x, y, z, w }; }
@@ -70,6 +96,7 @@ static inline u16 mat4_idx(u16 x, u16 y) { return y * 4 + x; }
 
 static inline f64 radians(f32 deg) { return (f64) (deg * DEG_TO_RAD); }
 static inline f32 degrees(f64 rad) { return (f32) (rad * RAD_TO_DEG); }
+static inline f32 lerp(f32 a, f32 b, f32 t) { return a * (1-t) + b * t; }
 
 //~ Vector Functions
 
@@ -99,6 +126,8 @@ static inline
 vec4 vec4_sub(vec4 a, vec4 b) { return (vec4) { .x = a.x - b.x, .y = a.y - b.y, .z = a.z - b.z, .w = a.w - b.w }; }
 static inline
 vec4 vec4_scale(vec4 a, f32 s) { return (vec4) { .x = a.x * s, .y = a.y * s, .z = a.z * s, .w = a.w * s }; }
+static inline
+vec4 vec4_lerp(vec4 a, vec4 b, f32 t) { return (vec4) { lerp(a.x, b.x, t), lerp(a.y, b.y, t), lerp(a.z, b.z, t), lerp(a.w, b.w, t) }; }
 
 vec3 vec3_mul(vec3 a, mat3 m);
 vec4 vec4_mul(vec4 a, mat4 m);

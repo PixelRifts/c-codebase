@@ -42,7 +42,7 @@ typedef void (*void_func_ptr)(void);
 #define u32_max 4294967295
 
 #ifndef __cplusplus
-#define nullptr (void*)0
+#define nullptr ((void*)0)
 #endif
 
 #if defined(__clang__)
@@ -128,5 +128,9 @@ flush;\
 
 #define Iterate(array, var) for (int var = 0; var < array.len; var++)
 #define IteratePtr(array, var) for (int var = 0; var < array->len; var++)
+
+// TODO(voxel): // TODO(voxel): 
+// TODO(voxel): // TODO(voxel): 
+// Add macros for Linked Lists
 
 #endif //DEFINES_H

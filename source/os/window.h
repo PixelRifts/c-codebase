@@ -18,13 +18,14 @@ struct OS_Window {
 	ResizeCallback* resize_callback;
 	KeyCallback* key_callback;
 	ButtonCallback* button_callback;
+	void* user_data;
 	u64 v[8];
 };
 
 OS_Window* OS_WindowCreate(u32 width, u32 height, string title);
 void OS_WindowShow(OS_Window* window);
 b8   OS_WindowIsOpen(OS_Window* window);
-void OS_PollEvents();
+void OS_PollEvents(void);
 void OS_WindowClose(OS_Window* window);
 
 #endif //WINDOW_H
