@@ -150,6 +150,7 @@ struct UI_Box {
 	UI_QuadColorSet hot_color;
 	f32 active_t;
 	UI_QuadColorSet active_color;
+	b8 is_on;
 	
 	UI_FontInfo* font;
 	UI_QuadColorSet color;
@@ -334,6 +335,7 @@ void UI_ButtonEvent(UI_Cache* ui_cache, i32 button, i32 action);
 //~ UI Builder Layer
 
 UI_Signal UI_Button(UI_Cache* ui_cache, string id);
+b8        UI_RadioButton(UI_Cache* ui_cache, string id);
 void      UI_Spacer(UI_Cache* ui_cache, UI_Size size);
 
 

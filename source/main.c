@@ -82,8 +82,12 @@ int main() {
 				}
 				
 				if (show_btn) {
-					if (UI_Button(ui_cache, str_lit("fooE")).double_clicked) {
-						Log("YES!");
+					UI_PrefWidth(ui_cache, UI_Pixels(50))
+						UI_PrefHeight(ui_cache, UI_Pixels(50))
+						UI_ActiveColor(ui_cache, ColorCode_Red) {
+						if (UI_RadioButton(ui_cache, str_lit("fooE"))) {
+							Log("Test");
+						}
 					}
 				}
 			}

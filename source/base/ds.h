@@ -400,8 +400,8 @@ return true;\
 }\
 }\
 one_before_curr = curr;\
-curr = curr->hash_next;\
 }\
+curr = curr->hash_next;\
 }\
 return false;\
 }

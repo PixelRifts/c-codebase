@@ -235,7 +235,8 @@ UI_QuadVec4ColorSet UI_ColorSetLerp(UI_QuadVec4ColorSet* a, UI_QuadVec4ColorSet*
 }
 
 static b8 UI_RecurseCheckChildrenMouseTest(UI_Box* box) {
-	if (rect_contains_point(box->bounds, v2(OS_InputGetMouseX(), OS_InputGetMouseY())))
+	if (box->flags & BoxFlag_Clickable &&
+		rect_contains_point(box->bounds, v2(OS_InputGetMouseX(), OS_InputGetMouseY())))
 		return true;
 	UI_Box* curr = box->first;
 	while (curr) {
@@ -735,16 +736,17 @@ void UI_Resize(UI_Cache* ui_cache, i32 w, i32 h) {
 
 void UI_BeginFrame(OS_Window* window, UI_Cache* ui_cache) {
 	// NOTE(voxel): EVICTION PASS
-	
 	Iterate (ui_cache->cache, i) {
 		UI_Box* curr = &ui_cache->cache.elems[i];
+		if (UI_KeyIsNull(curr->key)) continue;
 		while (curr) {
-			if (UI_KeyIsNull(curr->key) && curr->hash_next == nullptr) break;
-			if (curr->last_frame_touched_index < ui_cache->current_frame_index) {
-				UI_Key todel = curr->key;
-				curr = curr->hash_next;
-				stable_table_del(UI_Key, UI_Box, &ui_cache->cache, todel);
-				continue;
+			if (!UI_KeyIsNull(curr->key)) {
+				if (curr->last_frame_touched_index < ui_cache->current_frame_index) {
+					UI_Key todel = curr->key;
+					curr = curr->hash_next;
+					stable_table_del(UI_Key, UI_Box, &ui_cache->cache, todel);
+					continue;
+				}
 			}
 			
 			curr = curr->hash_next;
@@ -833,16 +835,16 @@ void UI_EndFrame(UI_Cache* ui_cache, f32 delta_time) {
 	
 	// UI_Animate inlined
 	f32 fast_rate = 1 - pow(2.f, -50.f * delta_time);
-	f32 slow_rate = 1 - pow(2.f, -20.f * delta_time);
 	Iterate (ui_cache->cache, i) {
 		UI_Box* curr = &ui_cache->cache.elems[i];
+		if (UI_KeyIsNull(curr->key)) continue;
 		while (curr) {
-			if (UI_KeyIsNull(curr->key) && curr->hash_next == nullptr) break;
-			b8 is_hot        = UI_KeyEquals(ui_cache->hot_key, curr->key);
-			b8 is_active     = UI_KeyEquals(ui_cache->active_key, curr->key);
-			curr->hot_t     += ((f32)!!is_hot - curr->hot_t) * fast_rate;
-			curr->active_t  += ((f32)!!is_active - curr->active_t) * fast_rate;
-			
+			if (!UI_KeyIsNull(curr->key)) {
+				b8 is_hot        = UI_KeyEquals(ui_cache->hot_key, curr->key);
+				b8 is_active     = UI_KeyEquals(ui_cache->active_key, curr->key);
+				curr->hot_t     += ((f32)!!is_hot - curr->hot_t) * fast_rate;
+				curr->active_t  += ((f32)!!is_active - curr->active_t) * fast_rate;
+			}
 			curr = curr->hash_next;
 		}
 	}
@@ -908,6 +910,24 @@ UI_Signal UI_Button(UI_Cache* ui_cache, string id) {
 				   BoxFlag_DrawText | BoxFlag_CustomRenderer, id);
 	UI_PopBoxRenderFunction(ui_cache);
 	return UI_SignalFromBox(the_box);
+}
+
+b8 UI_RadioButton(UI_Cache* ui_cache, string id) {
+	UI_Box* outer = UI_BoxMake(ui_cache, BoxFlag_DrawBackground | BoxFlag_DrawBorder | BoxFlag_HotAnimation | BoxFlag_Clickable, str_cat(U_GetFrameArena(), id, str_lit("_outer")));
+	if (outer->is_on) {
+		UI_Parent(ui_cache, outer)
+			UI_ColorSet(ui_cache, outer->active_color)
+			UI_PrefWidth(ui_cache, UI_Percentage(100))
+			UI_PrefHeight(ui_cache, UI_Percentage(100)) {
+			UI_BoxMake(ui_cache, BoxFlag_DrawBackground,
+					   str_cat(U_GetFrameArena(), id, str_lit("_inner")));
+		}
+	}
+	
+	if (UI_SignalFromBox(outer).clicked)
+		outer->is_on = !outer->is_on;
+	
+	return outer->is_on;
 }
 
 void UI_Spacer(UI_Cache* ui_cache, UI_Size size) {
