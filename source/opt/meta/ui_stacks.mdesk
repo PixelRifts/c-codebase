@@ -1,0 +1,99 @@
+@table(name, member, type)
+UI_Stacks:
+{
+	{ Parent,               parent,          `UI_Box*`            }
+	{ Font,                 font,            `UI_FontInfo*`       }
+	{ BoxColor,             bg_color,        `u32`                }
+	{ HotColor,             hot_color,       `u32`                }
+	{ ActiveColor,          active_color,    `u32`                }
+	{ Rounding,             rounding,        `f32`                }
+	{ EdgeSoftness,         softness,        `f32`                }
+	{ EdgeSize,             edge_size,       `f32`                }
+	{ EdgeColor,            edge_color,      `u32`                }
+	{ TextColor,            text_color,      `u32`                }
+	{ PrefWidth,            pref_width,      `UI_Size`            }
+	{ PrefHeight,           pref_height,     `UI_Size`            }
+	{ LayoutAxis,           layout_axis,     `axis2`              }
+	{ CustomRenderFunction, render_function, `UI_RenderFunction*` }
+	{ ClippingRect,         clipping_rect,   `rect`               }
+}
+
+
+
+@generator
+StackDecls:
+{
+	`#define UI_STACK_MAX 64`
+	`#define UI_STACK_DECLS \\`
+    `struct {\\`
+    @expander(UI_Stacks)
+    `struct { $(type) elems[UI_STACK_MAX]; $(type) *top; u64 len; b32 auto_pop; } $(member)_stack;\\`
+    `}`
+}
+
+@generator
+PopAllStacksToOne:
+{
+    `#define UI_POP_ALL_STACKS_TO_ONE \\`
+    @expander(UI_Stacks)
+    `{ ui_cache->$(member)_stack.top = &ui_cache->$(member)_stack.elems[1]; ui_cache->$(member)_stack.len = 1; }\\`
+    ``
+}
+
+@generator
+AutoPopStacks:
+{
+    `#define UI_AUTOPOP_IF_REQ \\`
+    @expander(UI_Stacks)
+    `if (ui_cache->$(member)_stack.auto_pop) { UI_$(name)Pop(ui_cache); ui_cache->$(member)_stack.auto_pop = false; }\\`
+}
+
+@generator
+InitStacks:
+{
+    `#define UI_INIT_STACKS \\`
+    @expander(UI_Stacks) {
+        `{ ui_cache->$(member)_stack.top = ui_cache->$(member)_stack.elems;\\`
+        ` ui_cache->$(member)_stack.len = 0; }\\`
+    }
+}
+
+@generator
+NormalFunctionPrototypes:
+{
+    @expander(UI_Stacks)
+    `$(type) UI_$(name)Peek(UI_Cache* cache);`
+    ``
+    @expander(UI_Stacks)
+    `$(type) UI_$(name)Push(UI_Cache* cache, $(type) $(member));`
+    ``
+    @expander(UI_Stacks)
+    `$(type) UI_$(name)SetNext(UI_Cache* cache, $(type) $(member));`
+    ``
+    @expander(UI_Stacks)
+    `$(type) UI_$(name)Pop(UI_Cache* cache);`
+}
+
+@generator(C)
+NormalFunctionImpls:
+{
+    @expander(UI_Stacks)
+    `$(type) UI_$(name)Peek(UI_Cache* cache) { return *(cache->$(member)_stack.top-1); }`
+    ``
+    @expander(UI_Stacks)
+    `$(type) UI_$(name)Push(UI_Cache* cache, $(type) $(member)) { cache->$(member)_stack.len++; *cache->$(member)_stack.top=$(member); cache->$(member)_stack.top++; return $(member); }`
+    ``
+    @expander(UI_Stacks)
+    `$(type) UI_$(name)SetNext(UI_Cache* cache, $(type) $(member)) { *cache->$(member)_stack.top=$(member); cache->$(member)_stack.top++; cache->$(member)_stack.auto_pop=true; return $(member); }`
+    ``
+    @expander(UI_Stacks)
+    `$(type) UI_$(name)Pop(UI_Cache* cache) { cache->$(member)_stack.len--; cache->$(member)_stack.top--; return *cache->$(member)_stack.top; }`
+}
+
+@generator
+DeferLoops:
+{
+    `#define UI_DeferLoop(begin, end) for(int _i_ = ((begin), 0); !_i_; _i_ += 1, (end))`
+    @expander(UI_Stacks)
+    `#define UI_$(name)(ui_cache, $(member)) UI_DeferLoop(UI_$(name)Push(ui_cache, $(member)), UI_$(name)Pop(ui_cache))`
+}

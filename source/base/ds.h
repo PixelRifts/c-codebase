@@ -388,10 +388,11 @@ if (curr->hash_next) curr->hash_next->hash_prev = curr->hash_prev;\
 return true;\
 } else {\
 if (curr->hash_next) {\
-MemoryCopyStruct(curr, curr->hash_next);\
 if (curr->hash_next->hash_next)\
 curr->hash_next->hash_next->hash_prev = curr;\
+Key##_##Value##_stable_table_value v = *curr->hash_next;\
 pool_dealloc(&table->element_pool, curr->hash_next);\
+*curr = v;\
 return true;\
 } else {\
 MemoryZeroStruct(curr, Key##_##Value##_stable_table_value);\

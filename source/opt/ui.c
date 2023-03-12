@@ -66,6 +66,12 @@ UI_Key UI_KeyNull(void) {
 }
 
 UI_Key UI_KeyFromString(string s) {
+	u64 triple_loc = str_find_first(s, str_lit("###"), 0);
+	if (triple_loc != s.size) {
+		s.str += triple_loc + 3;
+		s.size -= triple_loc + 3;
+	}
+	
 	return (UI_Key) { str_hash_64(s) };
 }
 
@@ -85,7 +91,7 @@ UI_Box* UI_BoxMake(UI_Cache* ui_cache, UI_BoxFlags flags, string str) {
 		// If this is an ID-less Box, allocate it on the Frame Arena
 		UI_Box* to_ret = arena_alloc(U_GetFrameArena(), sizeof(UI_Box));
 		
-		UI_Box* parent = (UI_Box*) dstack_peek(u64, &ui_cache->parent_stack);
+		UI_Box* parent = UI_ParentPeek(ui_cache);
 		to_ret->parent = parent;
 		// Add this box to parent's children
 		if (!parent->first) {
@@ -103,12 +109,13 @@ UI_Box* UI_BoxMake(UI_Cache* ui_cache, UI_BoxFlags flags, string str) {
 		to_ret->first = nullptr;
 		to_ret->last  = nullptr;
 		
-		to_ret->semantic_size[axis2_x] = dstack_peek(UI_Size, &ui_cache->box_width_pref_stack);
-		to_ret->semantic_size[axis2_y] = dstack_peek(UI_Size, &ui_cache->box_height_pref_stack);
-		to_ret->layout_axis = dstack_peek(u32, &ui_cache->box_layout_axis_stack);
+		to_ret->semantic_size[axis2_x] = UI_PrefWidthPeek(ui_cache);
+		to_ret->semantic_size[axis2_y] = UI_PrefHeightPeek(ui_cache);
+		to_ret->layout_axis = UI_LayoutAxisPeek(ui_cache);
 		to_ret->identifier = str;
 		to_ret->key = (UI_Key) {0};
 		
+		UI_AUTOPOP_IF_REQ;
 		return to_ret;
 	}
 	
@@ -122,7 +129,7 @@ UI_Box* UI_BoxMake(UI_Cache* ui_cache, UI_BoxFlags flags, string str) {
 		
 		if (ui_cache->parent_stack.len != 0) {
 			// setting up box parent based on stack state
-			UI_Box* parent = (UI_Box*) dstack_peek(u64, &ui_cache->parent_stack);
+			UI_Box* parent = UI_ParentPeek(ui_cache);
 			to_ret->parent = parent;
 			// Add this box to parent's children
 			if (!parent->first) {
@@ -136,10 +143,13 @@ UI_Box* UI_BoxMake(UI_Cache* ui_cache, UI_BoxFlags flags, string str) {
 			parent->last = to_ret;
 		} else to_ret->prev = nullptr;
 		
+		to_ret->direct_set = false;
 		to_ret->next  = nullptr;
 		// clear children list
 		to_ret->first = nullptr;
 		to_ret->last  = nullptr;
+		
+		UI_AUTOPOP_IF_REQ;
 		return to_ret;
 	}
 	
@@ -151,10 +161,13 @@ UI_Box* UI_BoxMake(UI_Cache* ui_cache, UI_BoxFlags flags, string str) {
 	
 	if (ui_cache->parent_stack.len != 0) {
 		// setting up box properties based on stack states
-		UI_Box* parent = (UI_Box*) dstack_peek(u64, &ui_cache->parent_stack);
+		UI_Box* parent = UI_ParentPeek(ui_cache);
 		to_ret->parent = parent;
 		to_ret->flags = flags;
+		
+		// Assign the identifier, We need to clip everything after and including a ##
 		to_ret->identifier = str;
+		to_ret->identifier.size -= str.size - str_find_first(str, str_lit("##"), 0);
 		
 		// Add this box to parent's children
 		if (!parent->first) parent->first = to_ret;
@@ -164,23 +177,24 @@ UI_Box* UI_BoxMake(UI_Cache* ui_cache, UI_BoxFlags flags, string str) {
 		}
 		parent->last = to_ret;
 		
-		to_ret->font = (UI_FontInfo*) dstack_peek(u64, &ui_cache->font_stack);
-		to_ret->color = dstack_peek(UI_QuadColorSet, &ui_cache->box_color_stack);
-		to_ret->hot_color = dstack_peek(UI_QuadColorSet, &ui_cache->box_hot_color_stack);
-		to_ret->active_color = dstack_peek(UI_QuadColorSet, &ui_cache->box_active_color_stack);
-		to_ret->edge_color = dstack_peek(u32, &ui_cache->box_edge_color_stack);
-		to_ret->text_color = dstack_peek(u32, &ui_cache->box_text_color_stack);
-		to_ret->rounding = dstack_peek(f32, &ui_cache->box_rounding_stack);
-		to_ret->softness = dstack_peek(f32, &ui_cache->box_softness_stack);
-		to_ret->edge_size = dstack_peek(f32, &ui_cache->box_edge_size_stack);
-		to_ret->custom_render =
-		(UI_RenderFunction*) dstack_peek(u64, &ui_cache->box_custom_render_stack);
+		to_ret->direct_set = true;
+		to_ret->font = UI_FontPeek(ui_cache);
+		to_ret->color = UI_BoxColorPeek(ui_cache);
+		to_ret->hot_color = UI_HotColorPeek(ui_cache);
+		to_ret->active_color = UI_ActiveColorPeek(ui_cache);
+		to_ret->edge_color = UI_EdgeColorPeek(ui_cache);
+		to_ret->text_color = UI_TextColorPeek(ui_cache);
+		to_ret->rounding = UI_RoundingPeek(ui_cache);
+		to_ret->softness = UI_EdgeSoftnessPeek(ui_cache);
+		to_ret->edge_size = UI_EdgeSizePeek(ui_cache);
+		to_ret->custom_render = UI_CustomRenderFunctionPeek(ui_cache);
 		
-		to_ret->semantic_size[axis2_x] = dstack_peek(UI_Size, &ui_cache->box_width_pref_stack);
-		to_ret->semantic_size[axis2_y] = dstack_peek(UI_Size, &ui_cache->box_height_pref_stack);
-		to_ret->layout_axis = dstack_peek(u32, &ui_cache->box_layout_axis_stack);
+		to_ret->semantic_size[axis2_x] = UI_PrefWidthPeek(ui_cache);
+		to_ret->semantic_size[axis2_y] = UI_PrefHeightPeek(ui_cache);
+		to_ret->layout_axis = UI_LayoutAxisPeek(ui_cache);
 	}
 	
+	UI_AUTOPOP_IF_REQ;
 	return to_ret;
 }
 
@@ -275,161 +289,9 @@ UI_Signal UI_SignalFromBox(UI_Box* box) {
 	return ret;
 }
 
-//- Stack Manipulations 
-Stack_Impl(rect);
-Stack_Impl(u64);
-Stack_Impl(u32);
-Stack_Impl(f32);
-Stack_Impl(UI_Size);
-Stack_Impl(UI_QuadColorSet);
+//- Stack Functions 
 
-UI_Box* UI_PushParent(UI_Cache* ui_cache, UI_Box* parent) {
-	dstack_push(u64, &ui_cache->parent_stack, (u64)parent);
-	return parent;
-}
-UI_Box* UI_PopParent(UI_Cache* ui_cache) {
-	return (UI_Box*) dstack_pop(u64, &ui_cache->parent_stack);
-}
-
-
-UI_FontInfo* UI_PushFont(UI_Cache* ui_cache, UI_FontInfo* font) {
-	dstack_push(u64, &ui_cache->font_stack, (u64)font);
-	return font;
-}
-UI_FontInfo* UI_PopFont(UI_Cache* ui_cache) {
-	return (UI_FontInfo*) dstack_pop(u64, &ui_cache->font_stack);
-}
-
-
-u32 UI_PushBoxColor(UI_Cache* ui_cache, u32 color) {
-	dstack_push(UI_QuadColorSet, &ui_cache->box_color_stack,
-				((UI_QuadColorSet) { color, color, color, color }));
-	return color;
-}
-UI_QuadColorSet UI_PopBoxColor(UI_Cache* ui_cache) {
-	return dstack_pop(UI_QuadColorSet, &ui_cache->box_color_stack);
-}
-
-UI_QuadColorSet UI_PushBoxColorSet(UI_Cache* ui_cache, UI_QuadColorSet colors) {
-	dstack_push(UI_QuadColorSet, &ui_cache->box_color_stack, colors);
-	return colors;
-}
-UI_QuadColorSet UI_PopBoxColorSet(UI_Cache* ui_cache) {
-	return dstack_pop(UI_QuadColorSet, &ui_cache->box_color_stack);
-}
-
-
-u32 UI_PushBoxHotColor(UI_Cache* ui_cache, u32 color) {
-	dstack_push(UI_QuadColorSet, &ui_cache->box_hot_color_stack,
-				((UI_QuadColorSet) { color, color, color, color }));
-	return color;
-}
-UI_QuadColorSet UI_PopBoxHotColor(UI_Cache* ui_cache) {
-	return dstack_pop(UI_QuadColorSet, &ui_cache->box_hot_color_stack);
-}
-
-UI_QuadColorSet UI_PushBoxHotColorSet(UI_Cache* ui_cache, UI_QuadColorSet colors) {
-	dstack_push(UI_QuadColorSet, &ui_cache->box_hot_color_stack, colors);
-	return colors;
-}
-UI_QuadColorSet UI_PopBoxHotColorSet(UI_Cache* ui_cache) {
-	return dstack_pop(UI_QuadColorSet, &ui_cache->box_hot_color_stack);
-}
-
-
-u32 UI_PushBoxActiveColor(UI_Cache* ui_cache, u32 color) {
-	dstack_push(UI_QuadColorSet, &ui_cache->box_active_color_stack,
-				((UI_QuadColorSet) { color, color, color, color }));
-	return color;
-}
-UI_QuadColorSet UI_PopBoxActiveColor(UI_Cache* ui_cache) {
-	return dstack_pop(UI_QuadColorSet, &ui_cache->box_active_color_stack);
-}
-
-UI_QuadColorSet UI_PushBoxActiveColorSet(UI_Cache* ui_cache, UI_QuadColorSet colors) {
-	dstack_push(UI_QuadColorSet, &ui_cache->box_active_color_stack, colors);
-	return colors;
-}
-UI_QuadColorSet UI_PopBoxActiveColorSet(UI_Cache* ui_cache) {
-	return dstack_pop(UI_QuadColorSet, &ui_cache->box_active_color_stack);
-}
-
-
-u32 UI_PushBoxEdgeColor(UI_Cache* ui_cache, u32 edge_color) {
-	dstack_push(u32, &ui_cache->box_edge_color_stack, edge_color);
-	return edge_color;
-}
-u32 UI_PopBoxEdgeColor(UI_Cache* ui_cache) {
-	return dstack_pop(u32, &ui_cache->box_edge_color_stack);
-}
-
-u32 UI_PushBoxTextColor(UI_Cache* ui_cache, u32 text_color) {
-	dstack_push(u32, &ui_cache->box_text_color_stack, text_color);
-	return text_color;
-}
-u32 UI_PopBoxTextColor(UI_Cache* ui_cache) {
-	return dstack_pop(u32, &ui_cache->box_text_color_stack);
-}
-
-
-f32 UI_PushBoxRounding(UI_Cache* ui_cache, f32 rounding) {
-	dstack_push(f32, &ui_cache->box_rounding_stack, rounding);
-	return rounding;
-}
-f32 UI_PopBoxRounding(UI_Cache* ui_cache) {
-	return dstack_pop(f32, &ui_cache->box_rounding_stack);
-}
-
-
-f32 UI_PushBoxEdgeSoftness(UI_Cache* ui_cache, f32 softness) {
-	dstack_push(f32, &ui_cache->box_softness_stack, softness);
-	return softness;
-}
-f32 UI_PopBoxEdgeSoftness(UI_Cache* ui_cache) {
-	return dstack_pop(f32, &ui_cache->box_softness_stack);
-}
-
-f32 UI_PushBoxEdgeSize(UI_Cache* ui_cache, f32 size) {
-	dstack_push(f32, &ui_cache->box_edge_size_stack, size);
-	return size;
-}
-f32 UI_PopBoxEdgeSize(UI_Cache* ui_cache) {
-	return dstack_pop(f32, &ui_cache->box_edge_size_stack);
-}
-
-
-UI_Size UI_PushBoxPrefWidth(UI_Cache* ui_cache, UI_Size width) {
-	dstack_push(UI_Size, &ui_cache->box_width_pref_stack, width);
-	return width;
-}
-UI_Size UI_PopBoxPrefWidth(UI_Cache* ui_cache) {
-	return dstack_pop(UI_Size, &ui_cache->box_width_pref_stack);
-}
-
-UI_Size UI_PushBoxPrefHeight(UI_Cache* ui_cache, UI_Size height) {
-	dstack_push(UI_Size, &ui_cache->box_height_pref_stack, height);
-	return height;
-}
-UI_Size UI_PopBoxPrefHeight(UI_Cache* ui_cache) {
-	return dstack_pop(UI_Size, &ui_cache->box_height_pref_stack);
-}
-
-
-u32 UI_PushBoxLayoutAxis(UI_Cache* ui_cache, u32 layout_axis) {
-	dstack_push(u32, &ui_cache->box_layout_axis_stack, layout_axis);
-	return layout_axis;
-}
-u32 UI_PopBoxLayoutAxis(UI_Cache* ui_cache) {
-	return dstack_pop(u32, &ui_cache->box_layout_axis_stack);
-}
-
-UI_RenderFunction* UI_PushBoxRenderFunction(UI_Cache* ui_cache, UI_RenderFunction* fn) {
-	dstack_push(u64, &ui_cache->box_custom_render_stack, (u64)fn);
-	return fn;
-}
-UI_RenderFunction* UI_PopBoxRenderFunction(UI_Cache* ui_cache) {
-	return (UI_RenderFunction*) dstack_pop(u64, &ui_cache->box_custom_render_stack);
-}
+#include "meta/ui_stacks.c"
 
 //~ UI Rendering Layer
 
@@ -495,7 +357,7 @@ void UI_PushQuad(UI_Cache* ui_cache, rect bounds, rect uvs, R_Texture2D* texture
 		UI_BeginRendererFrame(ui_cache);
 	}
 	
-	rect clipping_quad = dstack_peek(rect, &ui_cache->clipping_stack);
+	rect clipping_quad = UI_ClippingRectPeek(ui_cache);
 	i32 tex_idx = UI_GetTextureIndex(ui_cache, texture);
 	vec2 size = (vec2) { bounds.w, bounds.h };
 	vec2 center = (vec2) { bounds.x + bounds.w/2.f, bounds.y + bounds.h/2.f };
@@ -541,13 +403,13 @@ static void UI_PushBox(UI_Cache* ui_cache, UI_Box* box) {
 	}
 	
 	if (box->flags & BoxFlag_DrawBackground) {
-		UI_QuadVec4ColorSet color = UI_ColorSetToVec4Set(box->color);
+		UI_QuadVec4ColorSet color = UI_ColorToVec4Set(box->color);
 		if (box->flags & BoxFlag_HotAnimation) {
-			UI_QuadVec4ColorSet hot_color = UI_ColorSetToVec4Set(box->hot_color);
+			UI_QuadVec4ColorSet hot_color = UI_ColorToVec4Set(box->hot_color);
 			color = UI_ColorSetLerp(&color, &hot_color, box->hot_t);
 		}
 		if (box->flags & BoxFlag_ActiveAnimation) {
-			UI_QuadVec4ColorSet active_color = UI_ColorSetToVec4Set(box->active_color);
+			UI_QuadVec4ColorSet active_color = UI_ColorToVec4Set(box->active_color);
 			color = UI_ColorSetLerp(&color, &active_color, box->active_t);
 		}
 		
@@ -589,9 +451,8 @@ static void UI_PushBox(UI_Cache* ui_cache, UI_Box* box) {
 	}
 }
 
-
 //- Layouting Helpers TODO(voxel): @rework replace recursives with queue/stack 
-
+//                                 Callstack size may become an issue
 static void UI_LayoutRecurseForward(UI_Cache* ui_cache, UI_Box* box, u32 axis) {
 	f32 edge_correction_factor = box->parent ?
 		box->parent->edge_size + (box->parent->edge_size)*0.25 : 0;
@@ -671,10 +532,10 @@ static void UI_LayoutRecurseCalculateBounds(UI_Cache* ui_cache, UI_Box* box, f32
 	xoff += box->computed_rel_position[axis2_x];
 	yoff += box->computed_rel_position[axis2_y];
 	
-	box->bounds.x = xoff;
-	box->bounds.y = yoff;
-	box->bounds.w = box->computed_size[axis2_x];
-	box->bounds.h = box->computed_size[axis2_y];
+	box->target_bounds.x = xoff;
+	box->target_bounds.y = yoff;
+	box->target_bounds.w = box->computed_size[axis2_x];
+	box->target_bounds.h = box->computed_size[axis2_y];
 	
 	rect clippable_bounds = box->bounds;
 	if (box->flags & BoxFlag_DrawBorder) {
@@ -685,11 +546,11 @@ static void UI_LayoutRecurseCalculateBounds(UI_Cache* ui_cache, UI_Box* box, f32
 		clippable_bounds.h -= box->edge_size * 2 + edge_correction_factor;
 	}
 	
-	rect clipping_quad = dstack_peek(rect, &ui_cache->clipping_stack);
+	rect clipping_quad = UI_ClippingRectPeek(ui_cache);
 	box->clipped_bounds = rect_get_overlap(clippable_bounds, clipping_quad);
 	
 	if (box->flags & BoxFlag_Clip) {
-		dstack_push(rect, &ui_cache->clipping_stack, box->clipped_bounds);
+		UI_ClippingRectPush(ui_cache, box->clipped_bounds);
 	}
 	
 	UI_Box* curr = box->first;
@@ -699,7 +560,7 @@ static void UI_LayoutRecurseCalculateBounds(UI_Cache* ui_cache, UI_Box* box, f32
 	}
 	
 	if (box->flags & BoxFlag_Clip) {
-		dstack_pop(rect, &ui_cache->clipping_stack);
+		UI_ClippingRectPop(ui_cache);
 	}
 }
 
@@ -712,8 +573,25 @@ void UI_Init(OS_Window* window, UI_Cache* ui_cache) {
 	MemoryZeroStruct(ui_cache, UI_Cache);
 	stable_table_init(UI_Key, UI_Box, &ui_cache->cache, 64);
 	UI_LoadFont(&ui_cache->default_font, str_lit("res/Inconsolata.ttf"), 24);
-	dstack_push(rect, &ui_cache->clipping_stack, rect_init(0, 0, window->width, window->height));
+	
+	UI_INIT_STACKS;
+	UI_ClippingRectPush(ui_cache, rect_init(0, 0, window->width, window->height));
+	
 	UI_InitializeRenderer(window, ui_cache);
+	
+	UI_FontPush(ui_cache, &ui_cache->default_font);
+	UI_BoxColorPush(ui_cache, 0x111111FF);
+	UI_HotColorPush(ui_cache, 0x333333FF);
+	UI_ActiveColorPush(ui_cache, 0x222222FF);
+	UI_EdgeColorPush(ui_cache, 0x9A5EBDFF);
+	UI_TextColorPush(ui_cache, 0xFFAAFFFF);
+	UI_RoundingPush(ui_cache, 5.f);
+	UI_EdgeSoftnessPush(ui_cache, 2.f);
+	UI_EdgeSizePush(ui_cache, 2.f);
+	UI_PrefWidthPush(ui_cache, UI_Pixels(100));
+	UI_PrefHeightPush(ui_cache, UI_Pixels(100));
+	UI_LayoutAxisPush(ui_cache, axis2_y);
+	UI_CustomRenderFunctionPush(ui_cache, nullptr);
 }
 
 void UI_Free(UI_Cache* ui_cache) {
@@ -727,8 +605,8 @@ void UI_Resize(UI_Cache* ui_cache, i32 w, i32 h) {
 	
 	ui_cache->root->computed_size[0] = w;
 	ui_cache->root->computed_size[1] = h;
-	ui_cache->clipping_stack.elems[0].w = w;
-	ui_cache->clipping_stack.elems[0].h = h;
+	ui_cache->clipping_rect_stack.elems[0].w = w;
+	ui_cache->clipping_rect_stack.elems[0].h = h;
 	
 	mat4 projection = mat4_transpose(mat4_ortho(0, w, 0, h, -1, 1000));
 	R_ShaderPackUploadMat4(&ui_cache->shaderpack, str_lit("u_projection"), projection);
@@ -755,45 +633,17 @@ void UI_BeginFrame(OS_Window* window, UI_Cache* ui_cache) {
 	ui_cache->current_frame_index++;
 	
 	// NOTE(voxel): Reset all the stacks and push default values
-	dstack_clear(u64, &ui_cache->parent_stack);
-	dstack_clear(u64, &ui_cache->font_stack);
-	dstack_clear(UI_QuadColorSet, &ui_cache->box_color_stack);
-	dstack_clear(UI_QuadColorSet, &ui_cache->box_hot_color_stack);
-	dstack_clear(UI_QuadColorSet, &ui_cache->box_active_color_stack);
-	dstack_clear(u32, &ui_cache->box_edge_color_stack);
-	dstack_clear(u32, &ui_cache->box_text_color_stack);
-	dstack_clear(f32, &ui_cache->box_rounding_stack);
-	dstack_clear(f32, &ui_cache->box_softness_stack);
-	dstack_clear(f32, &ui_cache->box_edge_size_stack);
-	dstack_clear(UI_Size, &ui_cache->box_width_pref_stack);
-	dstack_clear(UI_Size, &ui_cache->box_height_pref_stack);
-	dstack_clear(u32, &ui_cache->box_layout_axis_stack);
-	dstack_clear(u64, &ui_cache->box_custom_render_stack);
-	ui_cache->clipping_stack.len = 1;
+	UI_POP_ALL_STACKS_TO_ONE;
+	UI_ParentPop(ui_cache); // Reset parent stack
 	
-	// NOTE(voxel): Default stack states
+	// NOTE(voxel): Default parent
 	UI_Box* container = UI_BoxMake(ui_cache, BoxFlag_Clip, str_lit("__MainContainer"));
 	container->computed_size[0] = window->width;
 	container->computed_size[1] = window->height;
 	container->layout_axis = axis2_y;
 	container->bounds = (rect) { 0.f, 0.f, window->width, window->height };
-	UI_PushParent(ui_cache, container);
+	UI_ParentPush(ui_cache, container);
 	
-	UI_PushFont(ui_cache, &ui_cache->default_font);
-	UI_PushBoxColor(ui_cache, 0x111111FF);
-	UI_PushBoxHotColorSet(ui_cache,
-						  UI_QuadColorSetMake(0x111111FF, 0x111111FF, 0x232323FF, 0x232323FF));
-	UI_PushBoxActiveColorSet(ui_cache,
-							 UI_QuadColorSetMake(0x232323FF, 0x232323FF, 0x111111FF, 0x111111FF));
-	UI_PushBoxEdgeColor(ui_cache, 0x9A5EBDFF);
-	UI_PushBoxTextColor(ui_cache, 0xFFAAFFFF);
-	UI_PushBoxRounding(ui_cache, 5.f);
-	UI_PushBoxEdgeSoftness(ui_cache, 2.f);
-	UI_PushBoxEdgeSize(ui_cache, 2.f);
-	UI_PushBoxPrefWidth(ui_cache, UI_Pixels(100));
-	UI_PushBoxPrefHeight(ui_cache, UI_Pixels(100));
-	UI_PushBoxLayoutAxis(ui_cache, axis2_y);
-	UI_PushBoxRenderFunction(ui_cache, nullptr);
 	
 	ui_cache->root = container;
 }
@@ -802,7 +652,7 @@ static void UI_PushBoxRecursive(UI_Cache* ui_cache, UI_Box* box) {
 	UI_PushBox(ui_cache, box);
 	
 	if (box->flags & BoxFlag_Clip) {
-		dstack_push(rect, &ui_cache->clipping_stack, box->clipped_bounds);
+		UI_ClippingRectPush(ui_cache, box->clipped_bounds);
 	}
 	
 	UI_Box* curr = box->first;
@@ -812,7 +662,7 @@ static void UI_PushBoxRecursive(UI_Cache* ui_cache, UI_Box* box) {
 	}
 	
 	if (box->flags & BoxFlag_Clip) {
-		dstack_pop(rect, &ui_cache->clipping_stack);
+		UI_ClippingRectPop(ui_cache);
 	}
 }
 
@@ -835,6 +685,7 @@ void UI_EndFrame(UI_Cache* ui_cache, f32 delta_time) {
 	
 	// UI_Animate inlined
 	f32 fast_rate = 1 - pow(2.f, -50.f * delta_time);
+	f32 slow_rate = 1 - pow(2.f, -30.f * delta_time);
 	Iterate (ui_cache->cache, i) {
 		UI_Box* curr = &ui_cache->cache.elems[i];
 		if (UI_KeyIsNull(curr->key)) continue;
@@ -844,6 +695,18 @@ void UI_EndFrame(UI_Cache* ui_cache, f32 delta_time) {
 				b8 is_active     = UI_KeyEquals(ui_cache->active_key, curr->key);
 				curr->hot_t     += ((f32)!!is_hot - curr->hot_t) * fast_rate;
 				curr->active_t  += ((f32)!!is_active - curr->active_t) * fast_rate;
+				
+				if (curr->direct_set) {
+					curr->bounds.x += curr->target_bounds.x;
+					curr->bounds.y += curr->target_bounds.y;
+					curr->bounds.w += curr->target_bounds.w;
+					curr->bounds.h += curr->target_bounds.h;
+				} else {
+					curr->bounds.x += (curr->target_bounds.x - curr->bounds.x) * slow_rate;
+					curr->bounds.y += (curr->target_bounds.y - curr->bounds.y) * slow_rate;
+					curr->bounds.w += (curr->target_bounds.w - curr->bounds.w) * slow_rate;
+					curr->bounds.h += (curr->target_bounds.h - curr->bounds.h) * slow_rate;
+				}
 			}
 			curr = curr->hash_next;
 		}
@@ -857,26 +720,42 @@ void UI_EndFrame(UI_Cache* ui_cache, f32 delta_time) {
 
 //~ UI Builder
 
+static void UI_WhitenTopColors(UI_QuadVec4ColorSet* set) {
+	set->tl.x += 0.1f;
+	set->tl.y += 0.1f;
+	set->tl.z += 0.1f;
+	set->tl.w += 0.1f;
+	
+	set->tr.x += 0.1f;
+	set->tr.y += 0.1f;
+	set->tr.z += 0.1f;
+	set->tr.w += 0.1f;
+}
+
 static void UI_ButtonRenderFunction(UI_Cache* ui_cache, UI_Box* box) {
 	UI_PushQuad(ui_cache, (rect) {box->bounds.x + 5, box->bounds.y + 5, box->bounds.w, box->bounds.h}, rect_init(0, 0, 1, 1),
 				&ui_cache->white_texture, UI_Vec4ColorSetUniform(v4(0.05, 0.05, 0.05, 1.0)),
 				box->rounding, 5,
 				0.f);
 	
-	UI_QuadVec4ColorSet color = UI_ColorSetToVec4Set(box->color);
-	UI_QuadVec4ColorSet hot_color = UI_ColorSetToVec4Set(box->hot_color);
+	UI_QuadVec4ColorSet color = UI_ColorToVec4Set(box->color);
+	UI_QuadVec4ColorSet hot_color = UI_ColorToVec4Set(box->hot_color);
+	UI_WhitenTopColors(&hot_color);
 	color = UI_ColorSetLerp(&color, &hot_color, box->hot_t);
-	UI_QuadVec4ColorSet active_color = UI_ColorSetToVec4Set(box->active_color);
+	UI_QuadVec4ColorSet active_color = UI_ColorToVec4Set(box->active_color);
+	UI_WhitenTopColors(&active_color);
 	color = UI_ColorSetLerp(&color, &active_color, box->active_t);
 	
 	UI_PushQuad(ui_cache, box->bounds, rect_init(0, 0, 1, 1),
 				&ui_cache->white_texture, color, box->rounding, box->softness,
 				0.f);
 	
+	b8 is_hot = UI_KeyEquals(ui_cache->hot_key, box->key);
+	
 	f32 string_size = UI_GetStringSize(box->font, box->identifier);
 	vec2 pos = v2(box->bounds.x + (box->bounds.w / 2.f), box->bounds.y + (box->bounds.h / 2.f));
 	pos.x -= string_size / 2.f;
-	pos.y += box->hot_t ? box->font->baseline / 2.f - 2.f : box->font->baseline / 2.f;
+	pos.y += is_hot ? box->font->baseline / 2.f - 2.f : box->font->baseline / 2.f;
 	vec4 vcolor = color_code_to_vec4(box->text_color);
 	
 	for (u32 i = 0; i < box->identifier.size; i++) {
@@ -903,20 +782,31 @@ static void UI_ButtonRenderFunction(UI_Cache* ui_cache, UI_Box* box) {
 }
 
 UI_Signal UI_Button(UI_Cache* ui_cache, string id) {
-	UI_PushBoxRenderFunction(ui_cache, UI_ButtonRenderFunction);
+	UI_CustomRenderFunctionSetNext(ui_cache, UI_ButtonRenderFunction);
 	UI_Box* the_box =
 		UI_BoxMake(ui_cache, BoxFlag_DrawBackground | BoxFlag_DrawBorder | BoxFlag_HotAnimation |
 				   BoxFlag_ActiveAnimation | BoxFlag_DrawDropShadow | BoxFlag_Clickable |
 				   BoxFlag_DrawText | BoxFlag_CustomRenderer, id);
-	UI_PopBoxRenderFunction(ui_cache);
 	return UI_SignalFromBox(the_box);
 }
 
-b8 UI_RadioButton(UI_Cache* ui_cache, string id) {
+UI_Signal UI_ButtonF(UI_Cache* ui_cache, const char* fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+	const char buf[8092];
+	vsnprintf(buf, 8092, fmt, args);
+	va_end(args);
+	u64 size = strlen(buf);
+	string s = str_alloc(U_GetFrameArena(), size);
+	memmove(s.str, buf, size);
+	return UI_Button(ui_cache, s);
+}
+
+b8 UI_Checkbox(UI_Cache* ui_cache, string id) {
 	UI_Box* outer = UI_BoxMake(ui_cache, BoxFlag_DrawBackground | BoxFlag_DrawBorder | BoxFlag_HotAnimation | BoxFlag_Clickable, str_cat(U_GetFrameArena(), id, str_lit("_outer")));
 	if (outer->is_on) {
 		UI_Parent(ui_cache, outer)
-			UI_ColorSet(ui_cache, outer->active_color)
+			UI_BoxColor(ui_cache, outer->active_color)
 			UI_PrefWidth(ui_cache, UI_Percentage(100))
 			UI_PrefHeight(ui_cache, UI_Percentage(100)) {
 			UI_BoxMake(ui_cache, BoxFlag_DrawBackground,
@@ -930,17 +820,23 @@ b8 UI_RadioButton(UI_Cache* ui_cache, string id) {
 	return outer->is_on;
 }
 
+b8 UI_CheckboxF(UI_Cache* ui_cache, const char* fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+	const char buf[8092];
+	vsnprintf(buf, 8092, fmt, args);
+	va_end(args);
+	u64 size = strlen(buf);
+	string s = str_alloc(U_GetFrameArena(), size);
+	memmove(s.str, buf, size);
+	return UI_Checkbox(ui_cache, s);
+}
+
 void UI_Spacer(UI_Cache* ui_cache, UI_Size size) {
-	UI_Box* parent = (UI_Box*) dstack_peek(u64, &ui_cache->parent_stack);
+	UI_Box* parent = UI_ParentPeek(ui_cache);
 	if (parent->layout_axis == axis2_x)
-		UI_PushBoxPrefWidth(ui_cache, size);
-	else
-		UI_PushBoxPrefHeight(ui_cache, size);
+		UI_PrefWidthSetNext(ui_cache, size);
+	else UI_PrefHeightSetNext(ui_cache, size);
 	
 	UI_BoxMake(ui_cache, 0, str_lit(""));
-	
-	if (parent->layout_axis == axis2_x)
-		UI_PopBoxPrefWidth(ui_cache);
-	else
-		UI_PopBoxPrefHeight(ui_cache);
 }

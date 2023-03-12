@@ -85,8 +85,13 @@ typedef struct UI_QuadVec4ColorSet {
 	vec4 tl; // top left
 } UI_QuadVec4ColorSet;
 
-static inline UI_QuadColorSet UI_QuadColorSetMake(u32 bl, u32 br, u32 tr, u32 tl) {
+inline static UI_QuadColorSet UI_QuadColorSetMake(u32 bl, u32 br, u32 tr, u32 tl) {
 	return (UI_QuadColorSet) { bl, br, tr, tl };
+}
+
+inline static UI_QuadVec4ColorSet UI_ColorToVec4Set(u32 color) {
+	vec4 a = color_code_to_vec4(color);
+	return (UI_QuadVec4ColorSet) { a, a, a, a };
 }
 
 UI_QuadVec4ColorSet UI_ColorSetToVec4Set(UI_QuadColorSet set);
@@ -129,31 +134,33 @@ struct UI_Box {
 	UI_Box* hash_prev;
 	UI_Key key;
 	u64 last_frame_touched_index;
+	b32 direct_set;
 	
 	// main things
 	UI_BoxFlags flags;
 	string identifier;
 	
 	// input things
-	b8 pressed_on_this;
+	b32 pressed_on_this;
 	
 	// layouting
 	UI_Size semantic_size[axis2_count];
 	f32 computed_size[axis2_count];
 	axis2 layout_axis;
 	f32 computed_rel_position[axis2_count];
+	rect target_bounds;
 	rect bounds;
 	rect clipped_bounds;
 	
 	// Properties!!
 	f32 hot_t;
-	UI_QuadColorSet hot_color;
+	u32 hot_color;
 	f32 active_t;
-	UI_QuadColorSet active_color;
+	u32 active_color;
 	b8 is_on;
 	
 	UI_FontInfo* font;
-	UI_QuadColorSet color;
+	u32 color;
 	u32 edge_color;
 	u32 text_color;
 	f32 rounding;
@@ -166,77 +173,9 @@ UI_Box* UI_BoxMake(UI_Cache* cache, UI_BoxFlags flags, string str);
 UI_Box* UI_BoxMakeF(UI_Cache* cache, UI_BoxFlags flags, const char* fmt, ...);
 
 //- Stacks and Stacks of things 
-
 #define UI_DeferLoop(begin, end) for(int _i_ = ((begin), 0); !_i_; _i_ += 1, (end))
 
-UI_Box* UI_PushParent(UI_Cache* ui_cache, UI_Box* parent);
-UI_Box* UI_PopParent(UI_Cache* ui_cache);
-#define UI_Parent(cache, box) UI_DeferLoop(UI_PushParent(cache, box), UI_PopParent(cache))
-
-UI_FontInfo* UI_PushFont(UI_Cache* ui_cache, UI_FontInfo* font);
-UI_FontInfo* UI_PopFont(UI_Cache* ui_cache);
-#define UI_Font(cache, font) UI_DeferLoop(UI_PushFont(cache, font), UI_PopFont(cache))
-
-u32 UI_PushBoxColor(UI_Cache* ui_cache, u32 color);
-UI_QuadColorSet UI_PopBoxColor(UI_Cache* ui_cache);
-#define UI_Color(cache, color) UI_DeferLoop(UI_PushBoxColor(cache, color), UI_PopBoxColor(cache))
-
-UI_QuadColorSet UI_PushBoxColorSet(UI_Cache* ui_cache, UI_QuadColorSet colors);
-UI_QuadColorSet UI_PopBoxColorSet(UI_Cache* ui_cache);
-#define UI_ColorSet(cache, colors) UI_DeferLoop(UI_PushBoxColorSet(cache, colors), UI_PopBoxColorSet(cache))
-
-u32 UI_PushBoxHotColor(UI_Cache* ui_cache, u32 color);
-UI_QuadColorSet UI_PopBoxHotColor(UI_Cache* ui_cache);
-#define UI_HotColor(cache, color)\
-UI_DeferLoop(UI_PushBoxHotColor(cache, color), UI_PopBoxHotColor(cache))
-
-UI_QuadColorSet UI_PushBoxHotColorSet(UI_Cache* ui_cache, UI_QuadColorSet colors);
-UI_QuadColorSet UI_PopBoxHotColorSet(UI_Cache* ui_cache);
-#define UI_HotColorSet(cache, colors) UI_DeferLoop(UI_PushBoxHotColorSet(cache, colors), UI_PopBoxHotColorSet(cache))
-
-u32 UI_PushBoxActiveColor(UI_Cache* ui_cache, u32 color);
-UI_QuadColorSet UI_PopBoxActiveColor(UI_Cache* ui_cache);
-#define UI_ActiveColor(cache, color) UI_DeferLoop(UI_PushBoxActiveColor(cache, color), UI_PopBoxActiveColor(cache))
-
-UI_QuadColorSet UI_PushBoxActiveColorSet(UI_Cache* ui_cache, UI_QuadColorSet colors);
-UI_QuadColorSet UI_PopBoxActiveColorSet(UI_Cache* ui_cache);
-#define UI_ActiveColorSet(cache, colors) UI_DeferLoop(UI_PushBoxActiveColorSet(cache, colors), UI_PopBoxActiveColorSet(cache))
-
-f32 UI_PushBoxRounding(UI_Cache* ui_cache, f32 rounding);
-f32 UI_PopBoxRounding(UI_Cache* ui_cache);
-#define UI_Rounding(cache, rounding) UI_DeferLoop(UI_PushBoxRounding(cache, rounding), UI_PopBoxRounding(cache))
-
-f32 UI_PushBoxEdgeSoftness(UI_Cache* ui_cache, f32 softness);
-f32 UI_PopBoxEdgeSoftness(UI_Cache* ui_cache);
-#define UI_EdgeSoftness(cache, softness) UI_DeferLoop(UI_PushBoxEdgeSoftness(cache, softness), UI_PopBoxEdgeSoftness(cache))
-
-f32 UI_PushBoxEdgeSize(UI_Cache* ui_cache, f32 size);
-f32 UI_PopBoxEdgeSize(UI_Cache* ui_cache);
-#define UI_EdgeSize(cache, size) UI_DeferLoop(UI_PushBoxEdgeSize(cache, size), UI_PopBoxEdgeSize(cache))
-
-u32 UI_PushBoxEdgeColor(UI_Cache* ui_cache, u32 edge_color);
-u32 UI_PopBoxEdgeColor(UI_Cache* ui_cache);
-#define UI_EdgeColor(cache, edge_color) UI_DeferLoop(UI_PushBoxEdgeColor(cache, edge_color), UI_PopBoxEdgeColor(cache))
-
-u32 UI_PushBoxTextColor(UI_Cache* ui_cache, u32 text_color);
-u32 UI_PopBoxTextColor(UI_Cache* ui_cache);
-#define UI_TextColor(cache, edge_color) UI_DeferLoop(UI_PushBoxTextColor(cache, text_color), UI_PopBoxTextColor(cache))
-
-UI_Size UI_PushBoxPrefWidth(UI_Cache* ui_cache, UI_Size width);
-UI_Size UI_PopBoxPrefWidth(UI_Cache* ui_cache);
-#define UI_PrefWidth(cache, width) UI_DeferLoop(UI_PushBoxPrefWidth(cache, width), UI_PopBoxPrefWidth(cache))
-
-UI_Size UI_PushBoxPrefHeight(UI_Cache* ui_cache, UI_Size height);
-UI_Size UI_PopBoxPrefHeight(UI_Cache* ui_cache);
-#define UI_PrefHeight(cache, height) UI_DeferLoop(UI_PushBoxPrefHeight(cache, height), UI_PopBoxPrefHeight(cache))
-
-u32 UI_PushBoxLayoutAxis(UI_Cache* ui_cache, axis2 layout_axis);
-u32 UI_PopBoxLayoutAxis(UI_Cache* ui_cache);
-#define UI_LayoutAxis(cache, layout_axis) UI_DeferLoop(UI_PushBoxLayoutAxis(cache, layout_axis), UI_PopBoxLayoutAxis(cache))
-
-UI_RenderFunction* UI_PushBoxRenderFunction(UI_Cache* ui_cache, UI_RenderFunction* fn);
-UI_RenderFunction* UI_PopBoxRenderFunction(UI_Cache* ui_cache);
-#define UI_CustomRenderFunction(cache, fn) UI_DeferLoop(UI_PushBoxRenderFunction(cache, fn), UI_PopBoxRenderFunction(cache))
+#include "meta/ui_stacks.h"
 
 //~ UI Signals
 
@@ -277,30 +216,11 @@ void UI_PushQuad(UI_Cache* ui_cache, rect bounds, rect uvs, R_Texture2D* texture
 // Some things about these macros are not nice, I really gotta make the names not tied to type again
 
 StableTable_Prototype(UI_Key, UI_Box);
-Stack_Prototype(u64);
-Stack_Prototype(u32);
-Stack_Prototype(rect);
-Stack_Prototype(UI_QuadColorSet);
-Stack_Prototype(f32);
-Stack_Prototype(UI_Size);
 
 struct UI_Cache {
 	stable_table(UI_Key, UI_Box) cache;
 	
-	dstack(u64) parent_stack;
-	dstack(u64) font_stack;
-	dstack(UI_QuadColorSet) box_color_stack;
-	dstack(UI_QuadColorSet) box_hot_color_stack;
-	dstack(UI_QuadColorSet) box_active_color_stack;
-	dstack(u32) box_edge_color_stack;
-	dstack(u32) box_text_color_stack;
-	dstack(f32) box_rounding_stack;
-	dstack(f32) box_softness_stack;
-	dstack(f32) box_edge_size_stack;
-	dstack(UI_Size) box_width_pref_stack;
-	dstack(UI_Size) box_height_pref_stack;
-	dstack(u32) box_layout_axis_stack;
-	dstack(u64) box_custom_render_stack;
+	UI_STACK_DECLS;
 	
 	UI_FontInfo default_font;
 	
@@ -318,7 +238,6 @@ struct UI_Cache {
 	u32 quad_count;
 	R_Texture2D textures[8];
 	u32 textures_count;
-	dstack(rect) clipping_stack;
 	
 	R_Texture2D white_texture;
 };
@@ -335,7 +254,9 @@ void UI_ButtonEvent(UI_Cache* ui_cache, i32 button, i32 action);
 //~ UI Builder Layer
 
 UI_Signal UI_Button(UI_Cache* ui_cache, string id);
-b8        UI_RadioButton(UI_Cache* ui_cache, string id);
+UI_Signal UI_ButtonF(UI_Cache* ui_cache, const char* fmt, ...);
+b8        UI_Checkbox(UI_Cache* ui_cache, string id);
+b8        UI_CheckboxF(UI_Cache* ui_cache, const char* fmt, ...);
 void      UI_Spacer(UI_Cache* ui_cache, UI_Size size);
 
 

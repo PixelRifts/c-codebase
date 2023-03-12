@@ -56,7 +56,19 @@ command_list = {
 			{ "bin\codebase.exe", .os = "win" },
 		},
 	},
+	{
+		.name = "run-metaprograms",
+		.out = "*compilation*",
+		.footer_panel = true,
+		.save_dirty_files = true,
+		.cursor_at_end = false,
+		.cmd =
+		{
+			{ "meta.bat", .os = "win" },
+		},
+	},
 };
 
 fkey_command[1] = "build";
 fkey_command[2] = "run";
+fkey_command[3] = "run-metaprograms";

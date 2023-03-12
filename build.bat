@@ -1,9 +1,20 @@
 @ECHO off
 SetLocal EnableDelayedExpansion
-
 IF NOT EXIST bin mkdir bin
 
 SET cc=clang
+
+REM ------------------
+REM      Options
+REM ------------------
+
+SET Use_Render2D=false
+SET Use_Physics2D=false
+SET Use_UI=true
+
+REM ------------------
+REM    Main Project
+REM ------------------
 
 REM ==============
 REM Gets list of all C files
@@ -15,19 +26,23 @@ FOR %%f in (source\core\*.c) do SET c_filenames=!c_filenames! %%f
 FOR %%f in (source\os\*.c) do SET c_filenames=!c_filenames! %%f
 REM ==============
 
-
-
 REM ==============
 REM optional layers
 
-ECHO Optional Layer Selected: Render2D
-SET c_filenames=!c_filenames! source\opt\render_2d.c
+if %Use_Render2D% == true (
+  ECHO Optional Layer Selected: Render2D
+  SET c_filenames=!c_filenames! source\opt\render_2d.c
+)
 
-ECHO Optional Layer Selected: Physics2D
-SET c_filenames=!c_filenames! source\opt\phys_2d.c
+if %Use_Physics2D% == true (
+  ECHO Optional Layer Selected: Physics2D
+  SET c_filenames=!c_filenames! source\opt\phys_2d.c
+)
 
-ECHO Optional Layer Selected: UI
-SET c_filenames=!c_filenames! source\opt\ui.c
+if %Use_UI% == true (
+  ECHO Optional Layer Selected: UI
+  SET c_filenames=!c_filenames! source\opt\ui.c
+)
 
 REM ==============
 
@@ -44,5 +59,5 @@ REM ==============
 
 REM SET compiler_flags=!compiler_flags! -fsanitize=address
 
-ECHO "Building codebase.exe..."
+ECHO Building codebase.exe...
 %cc% %c_filenames% %compiler_flags% %defines% %backend% %include_flags% %linker_flags% %output%

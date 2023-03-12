@@ -7,7 +7,6 @@
 #include "core/resources.h"
 
 #include "opt/ui.h"
-//#include <freetype/freetype.h>
 
 void MyResizeCallback(OS_Window* window, i32 w, i32 h) {
 	// TODO(voxel): @awkward Add a "first resize" to Win32Window so that This if isn't required
@@ -40,7 +39,7 @@ int main() {
 	
 	f32 start = 0.f; f32 end = 0.016f;
 	f32 delta = 0.016f;
-	b8 show_btn = false;
+	i32 show_btn = 0;
 	
 	while (OS_WindowIsOpen(window)) {
 		delta = end - start;
@@ -52,54 +51,48 @@ int main() {
 		R_Clear(BufferMask_Color);
 		UI_BeginFrame(window, ui_cache);
 		
-		UI_PrefWidth(ui_cache, UI_Percentage(65))
-			UI_PrefHeight(ui_cache, UI_Percentage(65))
-			UI_LayoutAxis(ui_cache, axis2_y)
+		UI_PrefWidth(ui_cache, UI_Percentage(100))
+			UI_PrefHeight(ui_cache, UI_Percentage(100))
+			UI_LayoutAxis(ui_cache, axis2_x)
 		{
-			UI_Box* box = UI_BoxMake(ui_cache, BoxFlag_DrawBackground | BoxFlag_DrawBorder
-									 | BoxFlag_HotAnimation | BoxFlag_ActiveAnimation | BoxFlag_Clip, str_lit("foo"));
-			
-			UI_Parent(ui_cache, box)
-				UI_EdgeSize(ui_cache, 2)
-				UI_PrefWidth(ui_cache, UI_TextContent(100))
-				UI_PrefHeight(ui_cache, UI_Pixels(50))
-				UI_LayoutAxis(ui_cache, axis2_x)
-			{
-				if (UI_Button(ui_cache, str_lit("fooA")).clicked) {
-					Log("A Hit");
-				}
-				if (UI_Button(ui_cache, str_lit("fooB")).clicked) {
-					Log("B Hit");
-				}
-				if (UI_Button(ui_cache, str_lit("fooC")).clicked) {
-					Log("C Hit");
-				}
+			UI_Box* full_container = UI_BoxMake(ui_cache, BoxFlag_DrawBackground | BoxFlag_DrawBorder | BoxFlag_Clip, str_lit("foo"));
+			UI_Parent(ui_cache, full_container) {
+				UI_Spacer(ui_cache, UI_Percentage(35));
 				
-				UI_Spacer(ui_cache, UI_Pixels(50));
-				if (UI_Button(ui_cache, str_lit("fooD")).clicked) {
-					Log("D Hit");
-					show_btn = !show_btn;
-				}
-				
-				if (show_btn) {
-					UI_PrefWidth(ui_cache, UI_Pixels(50))
-						UI_PrefHeight(ui_cache, UI_Pixels(50))
-						UI_ActiveColor(ui_cache, ColorCode_Red) {
-						if (UI_RadioButton(ui_cache, str_lit("fooE"))) {
-							Log("Test");
+				UI_LayoutAxis(ui_cache, axis2_y)
+					UI_PrefWidth(ui_cache, UI_Percentage(30))
+					UI_PrefHeight(ui_cache, UI_Percentage(100)) {
+					UI_Box* vert = UI_BoxMake(ui_cache, 0, str_lit("VerticalCheckboxContainer"));
+					
+					UI_Parent(ui_cache, vert)
+						UI_PrefWidth(ui_cache, UI_Percentage(100))
+						UI_PrefHeight(ui_cache, UI_Pixels(35))
+						UI_LayoutAxis(ui_cache, axis2_x) {
+						UI_Box* pm = UI_BoxMake(ui_cache, 0, str_lit("PlusMinusContainer"));
+						
+						UI_Parent(ui_cache, pm)
+							UI_PrefWidth(ui_cache, UI_Percentage(50))
+							UI_PrefHeight(ui_cache, UI_Pixels(35)){
+							if (UI_Button(ui_cache, str_lit("+##AddCheckbox")).clicked)
+								show_btn ++;
+							if (UI_Button(ui_cache, str_lit("-##SubCheckbox")).clicked)
+								show_btn --;
+							if (show_btn < 0) show_btn = 0;
+						}
+						
+						UI_Spacer(ui_cache, UI_Pixels(15));
+						
+						UI_ActiveColor(ui_cache, 0x9A5EBDFF) {
+							for (i32 i = show_btn; i > 0; i--)
+								UI_CheckboxF(ui_cache, "Checkbox##%d", i);
 						}
 					}
+					
 				}
 			}
 		}
 		
-		UI_PrefWidth(ui_cache, UI_Percentage(85))
-			UI_PrefHeight(ui_cache, UI_Percentage(15))
-			UI_LayoutAxis(ui_cache, axis2_y) {
-			UI_BoxMake(ui_cache, BoxFlag_DrawBackground | BoxFlag_DrawBorder, str_lit("barzz"));
-		}
-		
-		UI_EndFrame(ui_cache, delta);
+		UI_EndFrame(ui_cache, delta / 1e6);
 		
 		B_BackendSwapchainNext(window);
 		
