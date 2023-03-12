@@ -31,8 +31,8 @@ OS_Window* OS_WindowCreate(u32 width, u32 height, string title) {
 	
 	if (_window_ct == 0) {
 		string prefix = str_lit("ClassOf_");
-		string final = str_cat(scratch.arena, prefix, title);
-		final = str_copy(scratch.arena, final);
+		string final = str_cat(&scratch.arena, prefix, title);
+		final = str_copy(&scratch.arena, final);
 		_classname_buffer = calloc(final.size + 1, sizeof(char));
 		_classname_buffer = memmove(_classname_buffer, final.str, final.size + 1);
 		

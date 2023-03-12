@@ -5,11 +5,23 @@
 
 #include "defines.h"
 
-typedef struct M_ArenaTemp M_Scratch;
+#define M_SCRATCH_SIZE Kilobytes(16)
+typedef struct scratch_free_list_node scratch_free_list_node;
+struct scratch_free_list_node {
+    scratch_free_list_node* next;
+    u32 index;
+};
+
+typedef struct M_Scratch {
+    M_Arena arena;
+	u32 index;
+    u64 pos;
+} M_Scratch;
 
 typedef struct ThreadContext {
 	M_Arena arena;
-	u64 pop_to;
+	u32 max_created;
+	scratch_free_list_node* free_list;
 } ThreadContext;
 
 void tctx_init(ThreadContext* ctx);

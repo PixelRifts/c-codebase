@@ -8,18 +8,17 @@
 // TODO(voxel): Switch to freetype soon:tm:
 
 void UI_LoadFont(UI_FontInfo* fontinfo, string filepath, f32 size) {
-	M_Scratch scratch = scratch_get();
 	
 	FILE* ttfile = fopen((char*)filepath.str, "rb");
     AssertTrue(ttfile, "Failed to find Font file %.*s", str_expand(filepath));
 	fseek(ttfile, 0, SEEK_END);
 	u64 length = ftell(ttfile);
 	rewind(ttfile);
-	u8* buffer = arena_alloc(scratch.arena, length);
+	u8* buffer = malloc(length);
 	fread(buffer, length, 1, ttfile);
 	fclose(ttfile);
 	
-	u8* temp_bitmap = arena_alloc(scratch.arena, 512 * 512);
+	u8* temp_bitmap = malloc(512 * 512);
 	
 	stbtt_fontinfo finfo;
 	stbtt_pack_context packctx;
@@ -28,6 +27,8 @@ void UI_LoadFont(UI_FontInfo* fontinfo, string filepath, f32 size) {
 	stbtt_PackSetOversampling(&packctx, 1, 1);
 	stbtt_PackFontRange(&packctx, buffer, 0, size, 32, 95, fontinfo->cdata);
 	stbtt_PackEnd(&packctx);
+	
+	free(buffer);
 	
 	R_Texture2DAlloc(&fontinfo->font_texture, TextureFormat_R, 512, 512, TextureResize_Linear, TextureResize_Linear, TextureWrap_Repeat, TextureWrap_Repeat);
 	R_Texture2DData(&fontinfo->font_texture, temp_bitmap);
@@ -41,7 +42,8 @@ void UI_LoadFont(UI_FontInfo* fontinfo, string filepath, f32 size) {
 	fontinfo->baseline = (i32) (fontinfo->ascent * fontinfo->scale);
 	fontinfo->font_size = size;
 	
-	scratch_return(&scratch);
+	free(temp_bitmap);
+	
 }
 
 f32 UI_GetStringSize(UI_FontInfo* fontinfo, string str) {
@@ -581,8 +583,8 @@ void UI_Init(OS_Window* window, UI_Cache* ui_cache) {
 	
 	UI_FontPush(ui_cache, &ui_cache->default_font);
 	UI_BoxColorPush(ui_cache, 0x111111FF);
-	UI_HotColorPush(ui_cache, 0x333333FF);
-	UI_ActiveColorPush(ui_cache, 0x222222FF);
+	UI_HotColorPush(ui_cache, 0x131313FF);
+	UI_ActiveColorPush(ui_cache, 0x131313FF);
 	UI_EdgeColorPush(ui_cache, 0x9A5EBDFF);
 	UI_TextColorPush(ui_cache, 0xFFAAFFFF);
 	UI_RoundingPush(ui_cache, 5.f);
@@ -732,6 +734,18 @@ static void UI_WhitenTopColors(UI_QuadVec4ColorSet* set) {
 	set->tr.w += 0.1f;
 }
 
+static void UI_WhitenBottomColors(UI_QuadVec4ColorSet* set) {
+	set->bl.x += 0.1f;
+	set->bl.y += 0.1f;
+	set->bl.z += 0.1f;
+	set->bl.w += 0.1f;
+	
+	set->br.x += 0.1f;
+	set->br.y += 0.1f;
+	set->br.z += 0.1f;
+	set->br.w += 0.1f;
+}
+
 static void UI_ButtonRenderFunction(UI_Cache* ui_cache, UI_Box* box) {
 	UI_PushQuad(ui_cache, (rect) {box->bounds.x + 5, box->bounds.y + 5, box->bounds.w, box->bounds.h}, rect_init(0, 0, 1, 1),
 				&ui_cache->white_texture, UI_Vec4ColorSetUniform(v4(0.05, 0.05, 0.05, 1.0)),
@@ -743,7 +757,7 @@ static void UI_ButtonRenderFunction(UI_Cache* ui_cache, UI_Box* box) {
 	UI_WhitenTopColors(&hot_color);
 	color = UI_ColorSetLerp(&color, &hot_color, box->hot_t);
 	UI_QuadVec4ColorSet active_color = UI_ColorToVec4Set(box->active_color);
-	UI_WhitenTopColors(&active_color);
+	UI_WhitenBottomColors(&active_color);
 	color = UI_ColorSetLerp(&color, &active_color, box->active_t);
 	
 	UI_PushQuad(ui_cache, box->bounds, rect_init(0, 0, 1, 1),

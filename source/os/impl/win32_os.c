@@ -49,7 +49,7 @@ void OS_MemoryRelease(void* memory, u64 size) {
 
 b32 OS_FileCreate(string filename) {
     M_Scratch scratch = scratch_get();
-    string_utf16 filename16 = str16_from_str8(scratch.arena, filename);
+    string_utf16 filename16 = str16_from_str8(&scratch.arena, filename);
     b32 result = true;
     HANDLE file = CreateFileW((WCHAR*)filename16.str,
                               GENERIC_READ, 0, 0,
@@ -65,7 +65,7 @@ b32 OS_FileCreate(string filename) {
 
 b32 OS_FileExists(string filename) {
 	M_Scratch scratch = scratch_get();
-    string_utf16 filename16 = str16_from_str8(scratch.arena, filename);
+    string_utf16 filename16 = str16_from_str8(&scratch.arena, filename);
     DWORD ret = GetFileAttributesW((WCHAR*)filename16.str);
 	scratch_return(&scratch);
 	return (ret != INVALID_FILE_ATTRIBUTES && !(ret & FILE_ATTRIBUTE_DIRECTORY));
@@ -73,8 +73,8 @@ b32 OS_FileExists(string filename) {
 
 b32 OS_FileRename(string filename, string new_name) {
 	M_Scratch scratch = scratch_get();
-	string_utf16 oldname16 = str16_from_str8(scratch.arena, filename);
-	string_utf16 newname16 = str16_from_str8(scratch.arena, new_name);
+	string_utf16 oldname16 = str16_from_str8(&scratch.arena, filename);
+	string_utf16 newname16 = str16_from_str8(&scratch.arena, new_name);
 	b32 result = MoveFileW((WCHAR*)oldname16.str, (WCHAR*)newname16.str);
 	scratch_return(&scratch);
 	return result;
@@ -82,7 +82,7 @@ b32 OS_FileRename(string filename, string new_name) {
 
 string OS_FileRead(M_Arena* arena, string filename) {
 	M_Scratch scratch = scratch_get();
-	string_utf16 filename16 = str16_from_str8(scratch.arena, filename);
+	string_utf16 filename16 = str16_from_str8(&scratch.arena, filename);
 	HANDLE file = CreateFileW((WCHAR*)filename16.str,
 							  GENERIC_READ, 0, 0,
 							  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
@@ -135,7 +135,7 @@ string OS_FileRead(M_Arena* arena, string filename) {
 
 b32 OS_FileCreateWrite_List(string filename, string_list data) {
 	M_Scratch scratch = scratch_get();
-	string_utf16 filename16 = str16_from_str8(scratch.arena, filename);
+	string_utf16 filename16 = str16_from_str8(&scratch.arena, filename);
 	HANDLE file = CreateFileW((WCHAR*)filename16.str,
 							  GENERIC_READ, 0, 0,
 							  CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL,
@@ -175,7 +175,7 @@ b32 OS_FileCreateWrite_List(string filename, string_list data) {
 
 b32 OS_FileCreateWrite(string filename, string data) {
 	M_Scratch scratch = scratch_get();
-	string_utf16 filename16 = str16_from_str8(scratch.arena, filename);
+	string_utf16 filename16 = str16_from_str8(&scratch.arena, filename);
 	HANDLE file = CreateFileW((WCHAR*)filename16.str,
 							  GENERIC_WRITE, 0, 0,
 							  CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL,
@@ -212,7 +212,7 @@ b32 OS_FileCreateWrite(string filename, string data) {
 
 b32 OS_FileWrite_List(string filename, string_list data) {
 	M_Scratch scratch = scratch_get();
-	string_utf16 filename16 = str16_from_str8(scratch.arena, filename);
+	string_utf16 filename16 = str16_from_str8(&scratch.arena, filename);
 	HANDLE file = CreateFileW((WCHAR*)filename16.str,
 							  GENERIC_READ, 0, 0,
 							  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
@@ -252,7 +252,7 @@ b32 OS_FileWrite_List(string filename, string_list data) {
 
 b32 OS_FileWrite(string filename, string data) {
 	M_Scratch scratch = scratch_get();
-	string_utf16 filename16 = str16_from_str8(scratch.arena, filename);
+	string_utf16 filename16 = str16_from_str8(&scratch.arena, filename);
 	HANDLE file = CreateFileW((WCHAR*)filename16.str,
 							  GENERIC_WRITE, 0, 0,
 							  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
@@ -289,14 +289,14 @@ b32 OS_FileWrite(string filename, string data) {
 
 void OS_FileOpen(string filename) {
 	M_Scratch scratch = scratch_get();
-	string_utf16 filename16 = str16_from_str8(scratch.arena, filename);
+	string_utf16 filename16 = str16_from_str8(&scratch.arena, filename);
 	ShellExecuteW(nullptr, nullptr, (WCHAR*) filename16.str, nullptr, nullptr, SW_SHOWNORMAL);
 	scratch_return(&scratch);
 }
 
 b32 OS_FileDelete(string filename) {
 	M_Scratch scratch = scratch_get();
-	string_utf16 filename16 = str16_from_str8(scratch.arena, filename);
+	string_utf16 filename16 = str16_from_str8(&scratch.arena, filename);
 	b32 result = DeleteFileW((WCHAR*)filename16.str);
 	scratch_return(&scratch);
 	return result;
@@ -354,7 +354,7 @@ static OS_DataAccessFlags w32_access_from_attributes(DWORD attribs) {
 
 OS_FileProperties OS_FileGetProperties(string filename) {
 	M_Scratch scratch = scratch_get();
-	string_utf16 filename16 = str16_from_str8(scratch.arena, filename);
+	string_utf16 filename16 = str16_from_str8(&scratch.arena, filename);
 	OS_FileProperties result = {0};
 	WIN32_FILE_ATTRIBUTE_DATA attribs = {0};
 	if (GetFileAttributesExW((WCHAR*)filename16.str, GetFileExInfoStandard,
@@ -370,7 +370,7 @@ OS_FileProperties OS_FileGetProperties(string filename) {
 
 b32 OS_FileCreateDir(string dirname) {
 	M_Scratch scratch = scratch_get();
-	string_utf16 dirname16 = str16_from_str8(scratch.arena, dirname);
+	string_utf16 dirname16 = str16_from_str8(&scratch.arena, dirname);
 	b32 result = CreateDirectoryW((WCHAR*) dirname16.str, 0);
 	scratch_return(&scratch);
 	return result;
@@ -378,7 +378,7 @@ b32 OS_FileCreateDir(string dirname) {
 
 b32 OS_FileDeleteDir(string dirname) {
 	M_Scratch scratch = scratch_get();
-	string_utf16 dirname16 = str16_from_str8(scratch.arena, dirname);
+	string_utf16 dirname16 = str16_from_str8(&scratch.arena, dirname);
 	b32 result = RemoveDirectoryW((WCHAR*) dirname16.str);
 	scratch_return(&scratch);
 	return result;
@@ -386,8 +386,8 @@ b32 OS_FileDeleteDir(string dirname) {
 
 void OS_FileOpenDir(string dirname) {
 	M_Scratch scratch = scratch_get();
-	string_utf16 dirname16 = str16_from_str8(scratch.arena, dirname);
-	string_utf16 explore = str16_from_str8(scratch.arena, str_lit("explore"));
+	string_utf16 dirname16 = str16_from_str8(&scratch.arena, dirname);
+	string_utf16 explore = str16_from_str8(&scratch.arena, str_lit("explore"));
 	ShellExecuteW(nullptr, (WCHAR*) explore.str, (WCHAR*) dirname16.str, nullptr, nullptr, SW_SHOWNORMAL);
 	scratch_return(&scratch);
 }
@@ -403,8 +403,8 @@ typedef struct W32_FileIter {
 OS_FileIterator OS_FileIterInit(string path) {
 	M_Scratch scratch = scratch_get();
 	
-	string lookup = str_cat(scratch.arena, path, str_lit("\\*"));
-	string_utf16 lookup16 = str16_from_str8(scratch.arena, lookup);
+	string lookup = str_cat(&scratch.arena, path, str_lit("\\*"));
+	string_utf16 lookup16 = str16_from_str8(&scratch.arena, lookup);
 	OS_FileIterator result = {0};
 	W32_FileIter* w32_iter = (W32_FileIter*) &result;
 	w32_iter->handle = FindFirstFileW((WCHAR*) lookup16.str, &w32_iter->find_data);
@@ -416,7 +416,7 @@ OS_FileIterator OS_FileIterInit(string path) {
 OS_FileIterator OS_FileIterInitPattern(string lookup) {
 	M_Scratch scratch = scratch_get();
 	
-	string_utf16 lookup16 = str16_from_str8(scratch.arena, lookup);
+	string_utf16 lookup16 = str16_from_str8(&scratch.arena, lookup);
 	OS_FileIterator result = {0};
 	W32_FileIter* w32_iter = (W32_FileIter*) &result;
 	w32_iter->handle = FindFirstFileW((WCHAR*) lookup16.str, &w32_iter->find_data);
@@ -481,14 +481,14 @@ string OS_Filepath(M_Arena* arena, OS_SystemPath path) {
 		case SystemPath_CurrentDir: {
 			M_Scratch scratch = scratch_get();
 			DWORD cap = 2048;
-			u16* buffer = arena_alloc_array(scratch.arena, u16, cap);
+			u16* buffer = arena_alloc_array(&scratch.arena, u16, cap);
 			DWORD size = GetCurrentDirectoryW(cap, (WCHAR*) buffer);
 			if (size >= cap) {
 				scratch_reset(&scratch);
-				buffer = arena_alloc_array(scratch.arena, u16, size + 1);
+				buffer = arena_alloc_array(&scratch.arena, u16, size + 1);
 				size = GetCurrentDirectoryW(size + 1, (WCHAR*) buffer);
 			}
-			result = str8_from_str16(scratch.arena, (string_utf16) { buffer, size });
+			result = str8_from_str16(&scratch.arena, (string_utf16) { buffer, size });
 			result = str_replace_all(arena, result, str_lit("\\"), str_lit("/"));
 			
 			scratch_return(&scratch);
@@ -501,7 +501,7 @@ string OS_Filepath(M_Arena* arena, OS_SystemPath path) {
 			u16 *buffer = 0;
 			DWORD size = 0;
 			for (u64 r = 0; r < 4; r += 1, cap *= 4){
-				u16* try_buffer = arena_alloc_array(scratch.arena, u16, cap);
+				u16* try_buffer = arena_alloc_array(&scratch.arena, u16, cap);
 				DWORD try_size = GetModuleFileNameW(0, (WCHAR*)try_buffer, cap);
 				
 				if (try_size == cap && GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
@@ -513,7 +513,7 @@ string OS_Filepath(M_Arena* arena, OS_SystemPath path) {
 				}
 			}
 			
-			string full_path = str8_from_str16(scratch.arena, (string_utf16) { buffer, size });
+			string full_path = str8_from_str16(&scratch.arena, (string_utf16) { buffer, size });
 			string binary_path = U_GetDirectoryFromFilepath(full_path);
 			result = str_replace_all(arena, binary_path, str_lit("\\"), str_lit("/"));
 			
@@ -525,17 +525,17 @@ string OS_Filepath(M_Arena* arena, OS_SystemPath path) {
 			
 			HANDLE token = GetCurrentProcessToken();
 			DWORD cap = 2048;
-			u16 *buffer = arena_alloc_array(scratch.arena, u16, cap);
+			u16 *buffer = arena_alloc_array(&scratch.arena, u16, cap);
 			if (!GetUserProfileDirectoryW(token, (WCHAR*)buffer, &cap)) {
 				scratch_reset(&scratch);
-				buffer = arena_alloc_array(scratch.arena, u16, cap + 1);
+				buffer = arena_alloc_array(&scratch.arena, u16, cap + 1);
 				if (GetUserProfileDirectoryW(token, (WCHAR*)buffer, &cap)) {
 					buffer = 0;
 				}
 			}
 			
 			if (buffer) {
-				result = str8_from_str16(scratch.arena, str16_cstring(buffer));
+				result = str8_from_str16(&scratch.arena, str16_cstring(buffer));
 				result = str_replace_all(arena, result, str_lit("\\"), str_lit("/"));
 			}
 			
@@ -545,14 +545,14 @@ string OS_Filepath(M_Arena* arena, OS_SystemPath path) {
 		case SystemPath_TempData: {
 			M_Scratch scratch = scratch_get();
 			DWORD cap = 2048;
-			u16 *buffer = arena_alloc_array(scratch.arena, u16, cap);
+			u16 *buffer = arena_alloc_array(&scratch.arena, u16, cap);
 			DWORD size = GetTempPathW(cap, (WCHAR*)buffer);
 			if (size >= cap){
 				scratch_reset(&scratch);
-				buffer = arena_alloc_array(scratch.arena, u16, size + 1);
+				buffer = arena_alloc_array(&scratch.arena, u16, size + 1);
 				size = GetTempPathW(size + 1, (WCHAR*)buffer);
 			}
-			result = str8_from_str16(scratch.arena, (string_utf16) { buffer, size - 1 });
+			result = str8_from_str16(&scratch.arena, (string_utf16) { buffer, size - 1 });
 			result = str_replace_all(arena, result, str_lit("\\"), str_lit("/"));
 			
 			scratch_return(&scratch);
@@ -614,7 +614,7 @@ void OS_TimeSleepMilliseconds(u32 t) {
 OS_Library OS_LibraryLoad(string path) {
 	OS_Library result = {0};
 	M_Scratch scratch = scratch_get();
-	string_utf16 path16 = str16_from_str8(scratch.arena, path);
+	string_utf16 path16 = str16_from_str8(&scratch.arena, path);
 	result.v[0] = (u64) LoadLibraryW((WCHAR*) path16.str);
 	scratch_return(&scratch);
 	return result;

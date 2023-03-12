@@ -305,11 +305,11 @@ void R_ShaderPackAlloc(R_ShaderPack* _pack, R_Shader* shaders, u32 shader_count)
 void R_ShaderPackAllocLoad(R_ShaderPack* _pack, string fp_prefix) {
 	M_Scratch scratch = scratch_get();
 	
-	string vsfp = str_cat(scratch.arena, fp_prefix, str_lit(".vert.glsl"));
-	string fsfp = str_cat(scratch.arena, fp_prefix, str_lit(".frag.glsl"));
-	string gsfp = str_cat(scratch.arena, fp_prefix, str_lit(".geom.glsl"));
+	string vsfp = str_cat(&scratch.arena, fp_prefix, str_lit(".vert.glsl"));
+	string fsfp = str_cat(&scratch.arena, fp_prefix, str_lit(".frag.glsl"));
+	string gsfp = str_cat(&scratch.arena, fp_prefix, str_lit(".geom.glsl"));
 	
-	R_Shader* shader_buffer = arena_alloc(scratch.arena, sizeof(R_Shader) * 3);
+	R_Shader* shader_buffer = arena_alloc(&scratch.arena, sizeof(R_Shader) * 3);
 	u32 shader_count = 0;
 	
 	if (!OS_FileExists(vsfp))
