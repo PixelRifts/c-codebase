@@ -1,5 +1,6 @@
 bin/
-*.exe
-*.pdb
-*.ilk
-*.sln
+meta/.vs/
+meta/*.exe
+meta/*.pdb
+meta/*.ilk
+meta/*.sln

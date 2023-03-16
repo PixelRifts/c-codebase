@@ -8,27 +8,29 @@
 // TODO(voxel): Switch to freetype soon:tm:
 
 void UI_LoadFont(UI_FontInfo* fontinfo, string filepath, f32 size) {
+	M_Arena arena;
+	arena_init(&arena);
 	
 	FILE* ttfile = fopen((char*)filepath.str, "rb");
     AssertTrue(ttfile, "Failed to find Font file %.*s", str_expand(filepath));
 	fseek(ttfile, 0, SEEK_END);
 	u64 length = ftell(ttfile);
 	rewind(ttfile);
-	u8* buffer = malloc(length);
+	u8* buffer = arena_alloc(&arena, length);
+	MemoryZero(buffer, length);
 	fread(buffer, length, 1, ttfile);
 	fclose(ttfile);
 	
-	u8* temp_bitmap = malloc(512 * 512);
+	u8* temp_bitmap = arena_alloc(&arena, 512 * 512);
+	MemoryZero(temp_bitmap, 512 * 512);
 	
-	stbtt_fontinfo finfo;
+	stbtt_fontinfo finfo = {0};
 	stbtt_pack_context packctx;
 	stbtt_InitFont(&finfo, buffer, 0);
 	stbtt_PackBegin(&packctx, temp_bitmap, 512, 512, 0, 1, 0);
 	stbtt_PackSetOversampling(&packctx, 1, 1);
 	stbtt_PackFontRange(&packctx, buffer, 0, size, 32, 95, fontinfo->cdata);
 	stbtt_PackEnd(&packctx);
-	
-	free(buffer);
 	
 	R_Texture2DAlloc(&fontinfo->font_texture, TextureFormat_R, 512, 512, TextureResize_Linear, TextureResize_Linear, TextureWrap_Repeat, TextureWrap_Repeat);
 	R_Texture2DData(&fontinfo->font_texture, temp_bitmap);
@@ -42,8 +44,7 @@ void UI_LoadFont(UI_FontInfo* fontinfo, string filepath, f32 size) {
 	fontinfo->baseline = (i32) (fontinfo->ascent * fontinfo->scale);
 	fontinfo->font_size = size;
 	
-	free(temp_bitmap);
-	
+	arena_free(&arena);
 }
 
 f32 UI_GetStringSize(UI_FontInfo* fontinfo, string str) {
@@ -764,12 +765,12 @@ static void UI_ButtonRenderFunction(UI_Cache* ui_cache, UI_Box* box) {
 				&ui_cache->white_texture, color, box->rounding, box->softness,
 				0.f);
 	
-	b8 is_hot = UI_KeyEquals(ui_cache->hot_key, box->key);
+	//b8 is_hot = UI_KeyEquals(ui_cache->hot_key, box->key);
 	
 	f32 string_size = UI_GetStringSize(box->font, box->identifier);
 	vec2 pos = v2(box->bounds.x + (box->bounds.w / 2.f), box->bounds.y + (box->bounds.h / 2.f));
 	pos.x -= string_size / 2.f;
-	pos.y += is_hot ? box->font->baseline / 2.f - 2.f : box->font->baseline / 2.f;
+	pos.y += (box->font->baseline / 2.f - 2.f) * box->hot_t + (box->font->baseline / 2.f) * (1 - box->hot_t);
 	vec4 vcolor = color_code_to_vec4(box->text_color);
 	
 	for (u32 i = 0; i < box->identifier.size; i++) {

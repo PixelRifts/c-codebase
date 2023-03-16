@@ -62,7 +62,7 @@ int main() {
 				UI_LayoutAxis(ui_cache, axis2_y)
 					UI_PrefWidth(ui_cache, UI_Percentage(30))
 					UI_PrefHeight(ui_cache, UI_Percentage(100)) {
-					UI_Box* vert = UI_BoxMake(ui_cache, 0, str_lit("VerticalCheckboxContainer"));
+					UI_Box* vert = UI_BoxMake(ui_cache, BoxFlag_DrawBorder | 0, str_lit("VerticalCheckboxContainer"));
 					
 					UI_Parent(ui_cache, vert)
 						UI_PrefWidth(ui_cache, UI_Percentage(100))
