@@ -1,8 +1,15 @@
 /* date = March 1st 2023 6:37 pm */
 
+//~
 //
-//  Based on https://www.rfleury.com/p/ui-series-table-of-contents
+//                                 UI Optional Layer.
+// NOTE(voxel): Currently does NOT work with the D3D11 Backend since Uniforms are not implemented
 //
+//
+// Based on `https://www.rfleury.com/p/ui-series-table-of-contents`
+// Simple ImGUI API like 'Dear ImGui' by ocornut
+//
+//~
 
 #ifndef UI_H
 #define UI_H
@@ -17,7 +24,7 @@
 //~ UI Text Caching Layer
 // TODO(voxel): Switch over from temporary STBTTF to Freetype.
 // TODO(voxel): Implement a Glyph Cache and Unicode stuff and things
-// TODO(voxel): So for now I'll use stb-ttf
+// TODO(voxel): It's quite tedious so for now I'll use stb-ttf
 
 typedef struct UI_FontInfo {
 	R_Texture2D font_texture;
@@ -259,5 +266,6 @@ b8        UI_Checkbox(UI_Cache* ui_cache, string id);
 b8        UI_CheckboxF(UI_Cache* ui_cache, const char* fmt, ...);
 void      UI_Spacer(UI_Cache* ui_cache, UI_Size size);
 
+// TODO(voxel): A Lot more widgets to be added here
 
 #endif //UI_H

@@ -1,3 +1,14 @@
+
+//~
+//
+//                                 PHYSICS_2D Optional Layer.
+//
+//
+// Collision Detection and resolution for arbitrary Convex Polygons and Circles.
+// A lot more to add here but other stuff is more important
+//
+//~
+
 /* date = September 10th 2022 9:50 pm */
 
 #ifndef PHYS_2D_H

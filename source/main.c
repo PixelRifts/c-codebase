@@ -1,13 +1,9 @@
 #include "defines.h"
 #include "os/os.h"
 #include "os/window.h"
-#include "os/input.h"
 #include "base/tctx.h"
 #include "core/backend.h"
 #include "core/resources.h"
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-
 
 void MyResizeCallback(OS_Window* window, i32 w, i32 h) {
 	R_Viewport(0, 0, w, h);
@@ -18,23 +14,14 @@ int main() {
 	
 	ThreadContext context = {0};
 	tctx_init(&context);
-	
-	M_Arena global_arena;
-	arena_init(&global_arena);
-	
 	U_FrameArenaInit();
 	
 	OS_Window* window = OS_WindowCreate(1080, 720, str_lit("This should work"));
 	window->resize_callback = MyResizeCallback;
-	
 	B_BackendInit(window);
 	OS_WindowShow(window);
 	
-	f32 start = 0.f; f32 end = 0.016f;
-	f32 delta = 0.016f;
-	
-	//-
-	
+	//- 
 	R_ShaderPack s = {0};
 	R_ShaderPackAllocLoad(&s, str_lit("res/test"));
 	
@@ -63,39 +50,27 @@ int main() {
 	R_BufferUpdate(&b, 0, sizeof(data), data);
 	
 	R_PipelineAddBuffer(&p, &b, ArrayCount(attribs));
-	
-	u32 color = 0xb942f5ff;
-	vec4 vc = color_code_to_vec4(color);
+	R_ClearColor(.2f, .2f, .2f, 1.f);
 	
 	while (OS_WindowIsOpen(window)) {
-		delta = end - start;
-		start = OS_TimeMicrosecondsNow();
-		
-		U_ResetFrameArena();
 		OS_PollEvents();
 		
-		R_ClearColor(vc.x, vc.y, vc.z, vc.w);
+		B_BackendSelectRenderWindow(window);
 		R_Clear(BufferMask_Color);
 		
 		R_PipelineBind(&p);
 		R_Draw(&p, 0, 3);
-		
 		B_BackendSwapchainNext(window);
-		end = OS_TimeMicrosecondsNow();
 	}
+	
 	
 	R_BufferFree(&b);
 	R_PipelineFree(&p);
 	R_ShaderPackFree(&s);
 	
-	//-
-	
-	
 	B_BackendFree(window);
 	
 	OS_WindowClose(window);
-	
 	U_FrameArenaFree();
-	arena_free(&global_arena);
 	tctx_free(&context);
 }

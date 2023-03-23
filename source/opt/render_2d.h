@@ -1,3 +1,13 @@
+
+//~
+//
+//                                 RENDER_2D Optional Layer.
+// NOTE(voxel): Currently does NOT work with the D3D11 Backend since Uniforms are not implemented
+//                           Simple 2D Immediate mode Rendering API.
+//
+//
+//~
+
 /* date = July 20th 2022 9:08 pm */
 
 #ifndef RENDER_2D_H

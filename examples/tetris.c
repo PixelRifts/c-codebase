@@ -184,7 +184,6 @@ int main() {
 		
 		R_Clear(BufferMask_Color);
 		
-		//if (!game_over) {
 		R2D_BeginDraw(&renderer);
 		for (u32 y = 0; y < field_height; y++) {
 			for (u32 x = 0; x < field_width; x++) {
@@ -204,7 +203,6 @@ int main() {
 			}
 		}
 		R2D_EndDraw(&renderer);
-		//}
 		
 		B_BackendSwapchainNext(window);
 	}
