@@ -1,12 +1,14 @@
-#include "defines.h"
 #include "gl_functions.h"
+
+#if defined(GL_FUNCTIONS)
 
 typedef i64 long_func();
 typedef long_func* loader_func(const char* name);
 
-#define X(Name, Return, Args) GL_##Name##_Func* Name;
+#  define X(Name, Return, Args) GL_##Name##_Func* Name;
 GL_FUNCTIONS
-#undef X
+#  undef X
+
 
 void __LoadGLFunctions(loader_func* load_proc, loader_func* fallback) {
 #define X(Name, Return, Args) \
@@ -17,3 +19,5 @@ if (!Name) Name = (GL_##Name##_Func *) fallback(#Name);
 		
 #undef X
 }
+
+#endif // defined(GL_FUNCTIONS)

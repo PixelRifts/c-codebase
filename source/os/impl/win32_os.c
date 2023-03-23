@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 static u64 w32_ticks_per_sec = 1;
-static u32 win32_thread_context_index;
+static u32 w32_thread_context_index;
 
 //~ OS Init
 
@@ -14,17 +14,17 @@ void OS_Init(void) {
     }
     timeBeginPeriod(1);
 	
-	win32_thread_context_index = TlsAlloc();
+	w32_thread_context_index = TlsAlloc();
 }
 
 //~ TLS
 
 void OS_ThreadContextSet(void* ctx) {
-	TlsSetValue(win32_thread_context_index, ctx);
+	TlsSetValue(w32_thread_context_index, ctx);
 }
 
 void* OS_ThreadContextGet(void) {
-	return TlsGetValue(win32_thread_context_index);
+	return TlsGetValue(w32_thread_context_index);
 }
 
 //~ Memory

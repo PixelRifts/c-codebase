@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "os/win32_window.h"
+#include "win32_window.h"
 #include "os/input.h"
 
 

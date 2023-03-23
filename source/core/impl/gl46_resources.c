@@ -3,6 +3,8 @@
 
 #include "gl_functions.h"
 
+// TODO(voxel): Debug Layer
+
 HashTable_Prototype(string, i32);
 b8 str_is_null(string k)  { return k.str == 0 && k.size == 0; }
 b8 i32_is_null(i32 value) { return value == 0;  }
@@ -64,53 +66,53 @@ typedef struct R_GL46Framebuffer {
 
 //~ Elpers
 
-static u32 get_size_of(R_Attribute attrib) {
-	AssertTrue(8 == Attribute_MAX, "Non Exhaustive switch statement: get_size_of in gl46 backend");
+static u32 get_size_of(R_AttributeType attrib) {
+	AssertTrue(8 == AttributeType_MAX, "Non Exhaustive switch statement: get_size_of in gl46 backend");
 	switch (attrib) {
-		case Attribute_Float1: return 1 * sizeof(f32);
-		case Attribute_Float2: return 2 * sizeof(f32);
-		case Attribute_Float3: return 3 * sizeof(f32);
-		case Attribute_Float4: return 4 * sizeof(f32);
-		case Attribute_Integer1: return 1 * sizeof(i32);
-		case Attribute_Integer2: return 2 * sizeof(i32);
-		case Attribute_Integer3: return 3 * sizeof(i32);
-		case Attribute_Integer4: return 4 * sizeof(i32);
+		case AttributeType_Float1: return 1 * sizeof(f32);
+		case AttributeType_Float2: return 2 * sizeof(f32);
+		case AttributeType_Float3: return 3 * sizeof(f32);
+		case AttributeType_Float4: return 4 * sizeof(f32);
+		case AttributeType_Integer1: return 1 * sizeof(i32);
+		case AttributeType_Integer2: return 2 * sizeof(i32);
+		case AttributeType_Integer3: return 3 * sizeof(i32);
+		case AttributeType_Integer4: return 4 * sizeof(i32);
 	}
 	return 0;
 }
 
-static u32 get_component_count_of(R_Attribute attrib) {
-	AssertTrue(8 == Attribute_MAX, "Non Exhaustive switch statement: get_component_count_of in gl46 backend");
+static u32 get_component_count_of(R_AttributeType attrib) {
+	AssertTrue(8 == AttributeType_MAX, "Non Exhaustive switch statement: get_component_count_of in gl46 backend");
 	switch (attrib) {
-		case Attribute_Float1: return 1;
-		case Attribute_Float2: return 2;
-		case Attribute_Float3: return 3;
-		case Attribute_Float4: return 4;
-		case Attribute_Integer1: return 1;
-		case Attribute_Integer2: return 2;
-		case Attribute_Integer3: return 3;
-		case Attribute_Integer4: return 4;
+		case AttributeType_Float1: return 1;
+		case AttributeType_Float2: return 2;
+		case AttributeType_Float3: return 3;
+		case AttributeType_Float4: return 4;
+		case AttributeType_Integer1: return 1;
+		case AttributeType_Integer2: return 2;
+		case AttributeType_Integer3: return 3;
+		case AttributeType_Integer4: return 4;
 	}
 	return 0;
 }
 
-static u32 get_type_of(R_Attribute attrib) {
-	AssertTrue(8 == Attribute_MAX, "Non Exhaustive switch statement: get_type_of in gl46 backend");
+static u32 get_type_of(R_AttributeType attrib) {
+	AssertTrue(8 == AttributeType_MAX, "Non Exhaustive switch statement: get_type_of in gl46 backend");
 	switch (attrib) {
-		case Attribute_Float1: return GL_FLOAT;
-		case Attribute_Float2: return GL_FLOAT;
-		case Attribute_Float3: return GL_FLOAT;
-		case Attribute_Float4: return GL_FLOAT;
-		case Attribute_Integer1: return GL_INT;
-		case Attribute_Integer2: return GL_INT;
-		case Attribute_Integer3: return GL_INT;
-		case Attribute_Integer4: return GL_INT;
+		case AttributeType_Float1: return GL_FLOAT;
+		case AttributeType_Float2: return GL_FLOAT;
+		case AttributeType_Float3: return GL_FLOAT;
+		case AttributeType_Float4: return GL_FLOAT;
+		case AttributeType_Integer1: return GL_INT;
+		case AttributeType_Integer2: return GL_INT;
+		case AttributeType_Integer3: return GL_INT;
+		case AttributeType_Integer4: return GL_INT;
 	}
 	return GL_INVALID_ENUM;
 }
 
 static u32 get_shader_type_of(R_ShaderType type) {
-	AssertTrue(3 == ShaderType_MAX, "Non Exhaustive switch statement: get_shader_type_of in gl46 backend");
+	AssertTrue(4 == ShaderType_MAX, "Non Exhaustive switch statement: get_shader_type_of in gl46 backend");
 	switch (type) {
 		case ShaderType_Vertex: return GL_VERTEX_SHADER;
 		case ShaderType_Fragment: return GL_FRAGMENT_SHADER;
@@ -212,7 +214,7 @@ static u32 get_texture_channel_of(R_TextureChannel format) {
 
 //~ Function Implementations
 
-void R_BufferAlloc(R_Buffer* _buf, R_BufferFlags flags) {
+void R_BufferAlloc(R_Buffer* _buf, R_BufferFlags flags, u32 v_stride) {
 	R_GL46Buffer* buf = (R_GL46Buffer*) _buf;
 	buf->flags = flags;
 	glCreateBuffers(1, &buf->handle);
@@ -249,7 +251,7 @@ void R_ShaderAlloc(R_Shader* _shader, string data, R_ShaderType type) {
 	i32 ret = 0;
 	glGetShaderiv(shader->handle, GL_COMPILE_STATUS, &ret);
     if (ret == GL_FALSE) {
-		LogError("Shader Compilation Failure: ");
+		LogError("[GL46 Backend] Shader Compilation Failure:\n");
 		
         i32 length;
         glGetShaderiv(shader->handle, GL_INFO_LOG_LENGTH, &length);
@@ -287,7 +289,7 @@ void R_ShaderPackAlloc(R_ShaderPack* _pack, R_Shader* shaders, u32 shader_count)
 	i32 ret = 0;
 	glGetProgramiv(pack->handle, GL_LINK_STATUS, &ret);
 	if (ret == GL_FALSE) {
-		LogError("Shader Compilation Failure: ");
+		LogError("[GL46 Backend] Shader Compilation Failure:\n");
 		
 		i32 length;
 		glGetProgramiv(pack->handle, GL_INFO_LOG_LENGTH, &length);
@@ -314,17 +316,17 @@ void R_ShaderPackAllocLoad(R_ShaderPack* _pack, string fp_prefix) {
 	u32 shader_count = 0;
 	
 	if (!OS_FileExists(vsfp))
-		LogError("The Vertex Shader File '%s.vert.glsl' doesn't exist", fp_prefix.str);
-	else Log("Loading Vertex Shader '%s.vert.glsl'", fp_prefix.str);
+		LogError("[GL46 Backend] The Vertex Shader File '%s.vert.glsl' doesn't exist", fp_prefix.str);
+	else Log("[GL46 Backend] Loading Vertex Shader '%s.vert.glsl'", fp_prefix.str);
 	R_ShaderAllocLoad(&shader_buffer[shader_count++], vsfp, ShaderType_Vertex);
 	
 	if (!OS_FileExists(fsfp))
-		LogError("The Fragment Shader File '%s.frag.glsl' doesn't exist", fp_prefix.str);
-	else Log("Loading Fragment Shader '%s.frag.glsl'", fp_prefix.str);
+		LogError("[GL46 Backend] The Fragment Shader File '%s.frag.glsl' doesn't exist", fp_prefix.str);
+	else Log("[GL46 Backend] Loading Fragment Shader '%s.frag.glsl'", fp_prefix.str);
 	R_ShaderAllocLoad(&shader_buffer[shader_count++], fsfp, ShaderType_Fragment);
 	
 	if (OS_FileExists(gsfp)) {
-		Log("Loading Geometry Shader '%s.geom.glsl'", fp_prefix.str);
+		Log("[GL46 Backend] Loading Geometry Shader '%s.geom.glsl'", fp_prefix.str);
 		R_ShaderAllocLoad(&shader_buffer[shader_count++], gsfp, ShaderType_Geometry);
 	}
 	
@@ -414,15 +416,15 @@ void R_PipelineAddBuffer(R_Pipeline* _in, R_Buffer* _buf, u32 attribute_count) {
 	glBindVertexArray(in->handle);
 	u32 stride = 0;
 	for (u32 i = in->attribpoint; i < in->attribpoint + attribute_count; i++) {
-		stride += get_size_of(in->attributes[i]);
+		stride += get_size_of(in->attributes[i].type);
 	}
 	
 	u32 offset = 0;
 	for (u32 i = in->attribpoint; i < in->attribpoint + attribute_count; i++) {
 		glEnableVertexArrayAttrib(in->handle, i);
-		glVertexArrayAttribFormat(in->handle, i, get_component_count_of(in->attributes[i]), get_type_of(in->attributes[i]), GL_FALSE, offset);
+		glVertexArrayAttribFormat(in->handle, i, get_component_count_of(in->attributes[i].type), get_type_of(in->attributes[i].type), GL_FALSE, offset);
 		glVertexArrayAttribBinding(in->handle, i, in->bindpoint);
-		offset += get_size_of(in->attributes[i]);
+		offset += get_size_of(in->attributes[i].type);
 	}
 	
 	glVertexArrayVertexBuffer(in->handle, in->bindpoint, buf->handle, 0, stride);
@@ -556,7 +558,7 @@ void R_FramebufferCreate(R_Framebuffer* _framebuffer, u32 width, u32 height, R_T
     }
     
 	if (glCheckNamedFramebufferStatus(ret->handle, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		LogError("Incomplete framebuffer with code %x", glCheckNamedFramebufferStatus(ret->handle, GL_FRAMEBUFFER));
+		LogError("[GL46 Backend] Incomplete framebuffer with code %x", glCheckNamedFramebufferStatus(ret->handle, GL_FRAMEBUFFER));
 	}
 }
 

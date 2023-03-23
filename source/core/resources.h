@@ -15,6 +15,7 @@ typedef u32 R_BufferFlags;
 enum {
 	BufferFlag_Dynamic = 0x1,
 	
+	// Enable only one of these
 	BufferFlag_Type_Vertex = 0x2,
 	BufferFlag_Type_Index = 0x4,
 	BufferFlag_Type_Uniform = 0x8,
@@ -25,7 +26,7 @@ typedef struct R_Buffer {
 	u64 v[2];
 } R_Buffer;
 
-void R_BufferAlloc(R_Buffer* buf, R_BufferFlags flags);
+void R_BufferAlloc(R_Buffer* buf, R_BufferFlags flags, u32 v_stride);
 void R_BufferData(R_Buffer* buf, u64 size, void* data);
 void R_BufferUpdate(R_Buffer* _buf, u64 offset, u64 size, void* data);
 void R_BufferFree(R_Buffer* buf);
@@ -34,6 +35,8 @@ void R_BufferFree(R_Buffer* buf);
 
 typedef u32 R_ShaderType;
 enum {
+	ShaderType_NULL,
+	
 	ShaderType_Vertex,
 	ShaderType_Fragment,
 	ShaderType_Geometry,
@@ -43,11 +46,11 @@ enum {
 
 typedef struct R_Shader {
 	R_ShaderType type;
-	u64 v[1];
+	u64 v[2];
 } R_Shader;
 
 typedef struct R_ShaderPack {
-	u64 v[4];
+	u64 v[8];
 } R_ShaderPack;
 
 void R_ShaderAlloc(R_Shader* shader, string data, R_ShaderType type);
@@ -64,7 +67,7 @@ void R_ShaderPackUploadIntArray(R_ShaderPack* _pack, string name, i32* vals, u32
 void R_ShaderPackUploadFloat(R_ShaderPack* pack, string name, f32 val);
 void R_ShaderPackUploadVec4(R_ShaderPack* pack, string name, vec4 val);
 
-//~ Pipelines (VAOs)
+//~ Pipelines (VAOs OR NOT)
 
 typedef u32 R_InputAssembly;
 enum {
@@ -74,19 +77,24 @@ enum {
 	InputAssembly_MAX,
 };
 
-typedef u32 R_Attribute;
+typedef u32 R_AttributeType;
 enum {
-	Attribute_Float1,
-	Attribute_Float2,
-	Attribute_Float3,
-	Attribute_Float4,
-	Attribute_Integer1,
-	Attribute_Integer2,
-	Attribute_Integer3,
-	Attribute_Integer4,
+	AttributeType_Float1,
+	AttributeType_Float2,
+	AttributeType_Float3,
+	AttributeType_Float4,
+	AttributeType_Integer1,
+	AttributeType_Integer2,
+	AttributeType_Integer3,
+	AttributeType_Integer4,
 	
-	Attribute_MAX,
+	AttributeType_MAX,
 };
+
+typedef struct R_Attribute {
+	string name;
+	R_AttributeType type;
+} R_Attribute;
 
 typedef u32 R_BlendMode;
 enum {
@@ -103,7 +111,7 @@ typedef struct R_Pipeline {
 	R_BlendMode blend_mode;
 	u32 attribute_count;
 	
-	u64 v[2];
+	u64 v[8];
 } R_Pipeline;
 
 void R_PipelineAlloc(R_Pipeline* _in, R_InputAssembly assembly, R_Attribute* attributes, u32 attribute_count, R_ShaderPack* shader, R_BlendMode blending);

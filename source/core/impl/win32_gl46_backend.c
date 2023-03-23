@@ -1,7 +1,7 @@
 #include <Windows.h>
 
 #include "gl_functions.h"
-#include "os/win32_window.h"
+#include "os/impl/win32_window.h"
 
 typedef i64 long_func();
 typedef long_func* loader_func(const char* name);

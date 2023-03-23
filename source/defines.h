@@ -75,7 +75,7 @@ flush;\
 #elif defined(__linux__) || defined(__gnu_linux__)
 #  define PLATFORM_LINUX
 #else
-#  error "The compiler only supports windows and linux for now"
+#  error "The codebase only supports windows and linux(not really) for now"
 #endif
 #define PATH_MAX 4096
 
@@ -98,7 +98,7 @@ flush;\
 #  error dll_export not defined for this compiler
 #endif
 
-#ifdef PLUGIN
+#ifdef IS_PLUGIN
 #  define dll_plugin_api
 #else
 #  define dll_plugin_api dll_export

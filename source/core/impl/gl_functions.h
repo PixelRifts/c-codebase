@@ -301,10 +301,12 @@ X(glCullFace, void, (GLenum mode))\
 #endif
 
 
-#define X(Name, Return, Args)\
+#if defined(GL_FUNCTIONS)
+#  define X(Name, Return, Args)\
 typedef Return GL_##Name##_Func Args;\
 extern GL_##Name##_Func* Name;
 GL_FUNCTIONS
-#undef X
+#  undef X
+#endif // defined(GL_FUNCTIONS)
 
 #endif //GL_FUNCTIONS_H
