@@ -5,64 +5,11 @@
 
 // TODO(voxel): Debug Layer
 
-HashTable_Prototype(string, i32);
-b8 str_is_null(string k)  { return k.str == 0 && k.size == 0; }
+#include "gl46_resources.h"
+
 b8 i32_is_null(i32 value) { return value == 0;  }
 b8 i32_is_tomb(i32 value) { return value == 69; }
 HashTable_Impl(string, i32, str_is_null, str_eq, str_hash, 69, i32_is_null, i32_is_tomb);
-
-typedef struct R_GL46Buffer {
-	R_BufferFlags flags;
-	u32 handle;
-} R_GL46Buffer;
-
-typedef struct R_GL46Shader {
-	R_ShaderType type;
-	u32 handle;
-} R_GL46Shader;
-
-typedef struct R_GL46ShaderPack {
-	hash_table(string, i32) uniforms;
-	u32 handle;
-} R_GL46ShaderPack;
-
-typedef struct R_GL46Pipeline {
-	R_InputAssembly assembly;
-	R_Attribute* attributes;
-	R_GL46ShaderPack* shader;
-	R_BlendMode blend_mode;
-	u32 attribute_count;
-	
-	u32 bindpoint;
-	u32 attribpoint;
-	u32 handle;
-} R_GL46Pipeline;
-
-typedef struct R_GL46Texture2D {
-	u32 width;
-	u32 height;
-	
-	R_TextureFormat format;
-	R_TextureResizeParam min;
-	R_TextureResizeParam mag;
-	R_TextureWrapParam wrap_s;
-	R_TextureWrapParam wrap_t;
-	
-	u32 sampler_handle;
-	u32 handle;
-} R_GL46Texture2D;
-
-typedef struct R_GL46Framebuffer {
-	u32 width;
-	u32 height;
-	
-	R_Texture2D* color_attachments;
-	u32 color_attachment_count;
-	R_Texture2D depth_attachment;
-	
-	u32 handle;
-} R_GL46Framebuffer;
-
 
 //~ Elpers
 
@@ -214,33 +161,28 @@ static u32 get_texture_channel_of(R_TextureChannel format) {
 
 //~ Function Implementations
 
-void R_BufferAlloc(R_Buffer* _buf, R_BufferFlags flags, u32 v_stride) {
-	R_GL46Buffer* buf = (R_GL46Buffer*) _buf;
+void R_BufferAlloc(R_Buffer* buf, R_BufferFlags flags, u32 v_stride) {
 	buf->flags = flags;
 	glCreateBuffers(1, &buf->handle);
 }
 
-void R_BufferData(R_Buffer* _buf, u64 size, void* data) {
-	R_GL46Buffer* buf = (R_GL46Buffer*) _buf;
+void R_BufferData(R_Buffer* buf, u64 size, void* data) {
 	u32 flags = 0;
 	flags |= buf->flags & BufferFlag_Dynamic ? GL_DYNAMIC_STORAGE_BIT : 0;
 	glNamedBufferStorage(buf->handle, size, data, flags);
 }
 
-void R_BufferUpdate(R_Buffer* _buf, u64 offset, u64 size, void* data) {
-	R_GL46Buffer* buf = (R_GL46Buffer*) _buf;
+void R_BufferUpdate(R_Buffer* buf, u64 offset, u64 size, void* data) {
 	glNamedBufferSubData(buf->handle, offset, size, data);
 }
 
-void R_BufferFree(R_Buffer* _buf) {
-	R_GL46Buffer* buf = (R_GL46Buffer*) _buf;
+void R_BufferFree(R_Buffer* buf) {
 	glDeleteBuffers(1, &buf->handle);
 }
 
 //~ Shaders
 
-void R_ShaderAlloc(R_Shader* _shader, string data, R_ShaderType type) {
-	R_GL46Shader* shader = (R_GL46Shader*) _shader;
+void R_ShaderAlloc(R_Shader* shader, string data, R_ShaderType type) {
 	shader->type = type;
 	
 	shader->handle = glCreateShader(get_shader_type_of(type));
@@ -262,27 +204,24 @@ void R_ShaderAlloc(R_Shader* _shader, string data, R_ShaderType type) {
     }
 }
 
-void R_ShaderAllocLoad(R_Shader* _shader, string fp, R_ShaderType type) {
+void R_ShaderAllocLoad(R_Shader* shader, string fp, R_ShaderType type) {
 	M_Arena arena;
 	arena_init(&arena);
 	string source_code = OS_FileRead(&arena, fp);
-	R_ShaderAlloc(_shader, source_code, type);
+	R_ShaderAlloc(shader, source_code, type);
 	arena_free(&arena);
 }
 
-void R_ShaderFree(R_Shader* _shader) {
-	R_GL46Shader* shader = (R_GL46Shader*) _shader;
+void R_ShaderFree(R_Shader* shader) {
 	glDeleteShader(shader->handle);
 }
 
-void R_ShaderPackAlloc(R_ShaderPack* _pack, R_Shader* shaders, u32 shader_count) {
-	R_GL46ShaderPack* pack = (R_GL46ShaderPack*) _pack;
+void R_ShaderPackAlloc(R_ShaderPack* pack, R_Shader* shaders, u32 shader_count) {
 	hash_table_init(string, i32, &pack->uniforms);
 	
 	pack->handle = glCreateProgram();
 	for (u32 i = 0; i < shader_count; i++) {
-		R_GL46Shader* shader = (R_GL46Shader*) &shaders[i];
-		glAttachShader(pack->handle, shader->handle);
+		glAttachShader(pack->handle, shaders[i].handle);
 	}
 	glLinkProgram(pack->handle);
 	
@@ -300,12 +239,11 @@ void R_ShaderPackAlloc(R_ShaderPack* _pack, R_Shader* shaders, u32 shader_count)
 	}
 	
 	for (u32 i = 0; i < shader_count; i++) {
-		R_GL46Shader* shader = (R_GL46Shader*) &shaders[i];
-		glDetachShader(pack->handle, shader->handle);
+		glDetachShader(pack->handle, shaders[i].handle);
 	}
 }
 
-void R_ShaderPackAllocLoad(R_ShaderPack* _pack, string fp_prefix) {
+void R_ShaderPackAllocLoad(R_ShaderPack* pack, string fp_prefix) {
 	M_Scratch scratch = scratch_get();
 	
 	string vsfp = str_cat(&scratch.arena, fp_prefix, str_lit(".vert.glsl"));
@@ -330,7 +268,7 @@ void R_ShaderPackAllocLoad(R_ShaderPack* _pack, string fp_prefix) {
 		R_ShaderAllocLoad(&shader_buffer[shader_count++], gsfp, ShaderType_Geometry);
 	}
 	
-	R_ShaderPackAlloc(_pack, shader_buffer, shader_count);
+	R_ShaderPackAlloc(pack, shader_buffer, shader_count);
 	
 	for (u32 i = 0; i < shader_count; i++) {
 		R_ShaderFree(&shader_buffer[i]);
@@ -340,8 +278,7 @@ void R_ShaderPackAllocLoad(R_ShaderPack* _pack, string fp_prefix) {
 }
 
 
-void R_ShaderPackUploadMat4(R_ShaderPack* _pack, string name, mat4 mat) {
-	R_GL46ShaderPack* pack = (R_GL46ShaderPack*) _pack;
+void R_ShaderPackUploadMat4(R_ShaderPack* pack, string name, mat4 mat) {
 	i32 loc;
     if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
         loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
@@ -350,8 +287,7 @@ void R_ShaderPackUploadMat4(R_ShaderPack* _pack, string name, mat4 mat) {
     glUniformMatrix4fv(loc, 1, GL_TRUE, mat.a);
 }
 
-void R_ShaderPackUploadInt(R_ShaderPack* _pack, string name, i32 val) {
-	R_GL46ShaderPack* pack = (R_GL46ShaderPack*) _pack;
+void R_ShaderPackUploadInt(R_ShaderPack* pack, string name, i32 val) {
 	i32 loc;
     if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
         loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
@@ -360,8 +296,7 @@ void R_ShaderPackUploadInt(R_ShaderPack* _pack, string name, i32 val) {
     glUniform1i(loc, val);
 }
 
-void R_ShaderPackUploadIntArray(R_ShaderPack* _pack, string name, i32* vals, u32 count) {
-	R_GL46ShaderPack* pack = (R_GL46ShaderPack*) _pack;
+void R_ShaderPackUploadIntArray(R_ShaderPack* pack, string name, i32* vals, u32 count) {
 	i32 loc;
     if (!hash_table_get(string, i32,&pack->uniforms, name, &loc)) {
         loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
@@ -370,8 +305,7 @@ void R_ShaderPackUploadIntArray(R_ShaderPack* _pack, string name, i32* vals, u32
     glUniform1iv(loc, count, vals);
 }
 
-void R_ShaderPackUploadFloat(R_ShaderPack* _pack, string name, f32 val) {
-	R_GL46ShaderPack* pack = (R_GL46ShaderPack*) _pack;
+void R_ShaderPackUploadFloat(R_ShaderPack* pack, string name, f32 val) {
 	i32 loc;
     if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
         loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
@@ -380,8 +314,7 @@ void R_ShaderPackUploadFloat(R_ShaderPack* _pack, string name, f32 val) {
     glUniform1f(loc, val);
 }
 
-void R_ShaderPackUploadVec4(R_ShaderPack* _pack, string name, vec4 val) {
-	R_GL46ShaderPack* pack = (R_GL46ShaderPack*) _pack;
+void R_ShaderPackUploadVec4(R_ShaderPack* pack, string name, vec4 val) {
 	i32 loc;
     if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
         loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
@@ -391,28 +324,23 @@ void R_ShaderPackUploadVec4(R_ShaderPack* _pack, string name, vec4 val) {
 }
 
 
-void R_ShaderPackFree(R_ShaderPack* _pack) {
-	R_GL46ShaderPack* pack = (R_GL46ShaderPack*) _pack;
+void R_ShaderPackFree(R_ShaderPack* pack) {
 	hash_table_free(string, i32, &pack->uniforms);
 	glDeleteProgram(pack->handle);
 }
 
 //~ Vertex Input (VAOs)
 
-void R_PipelineAlloc(R_Pipeline* _in, R_InputAssembly assembly, R_Attribute* attributes, u32 attribute_count, R_ShaderPack* shader, R_BlendMode blending) {
-	R_GL46Pipeline* in = (R_GL46Pipeline*) _in;
+void R_PipelineAlloc(R_Pipeline* in, R_InputAssembly assembly, R_Attribute* attributes, u32 attribute_count, R_ShaderPack* shader, R_BlendMode blending) {
 	in->assembly = assembly;
 	in->attributes = attributes;
-	in->shader = (R_GL46ShaderPack*) shader;
+	in->shader = shader;
 	in->attribute_count = attribute_count;
 	in->blend_mode = blending;
 	glCreateVertexArrays(1, &in->handle);
 }
 
-void R_PipelineAddBuffer(R_Pipeline* _in, R_Buffer* _buf, u32 attribute_count) {
-	R_GL46Pipeline* in = (R_GL46Pipeline*) _in;
-	R_GL46Buffer* buf = (R_GL46Buffer*) _buf;
-	
+void R_PipelineAddBuffer(R_Pipeline* in, R_Buffer* buf, u32 attribute_count) {
 	glBindVertexArray(in->handle);
 	u32 stride = 0;
 	for (u32 i = in->attribpoint; i < in->attribpoint + attribute_count; i++) {
@@ -432,8 +360,7 @@ void R_PipelineAddBuffer(R_Pipeline* _in, R_Buffer* _buf, u32 attribute_count) {
 	in->bindpoint++;
 }
 
-void R_PipelineBind(R_Pipeline* _in) {
-	R_GL46Pipeline* in = (R_GL46Pipeline*) _in;
+void R_PipelineBind(R_Pipeline* in) {
 	glUseProgram(in->shader->handle);
 	glBindVertexArray(in->handle);
 	switch (in->blend_mode) {
@@ -453,15 +380,13 @@ void R_PipelineBind(R_Pipeline* _in) {
 	}
 }
 
-void R_PipelineFree(R_Pipeline* _in) {
-	R_GL46Pipeline* in = (R_GL46Pipeline*) _in;
+void R_PipelineFree(R_Pipeline* in) {
 	glDeleteVertexArrays(1, &in->handle);
 }
 
 //~ Textures
 
-void R_Texture2DAlloc(R_Texture2D* _texture, R_TextureFormat format, u32 width, u32 height, R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t) {
-	R_GL46Texture2D* texture = (R_GL46Texture2D*) _texture;
+void R_Texture2DAlloc(R_Texture2D* texture, R_TextureFormat format, u32 width, u32 height, R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t) {
 	texture->width = width;
 	texture->height = height;
 	texture->min = min;
@@ -481,23 +406,22 @@ void R_Texture2DAlloc(R_Texture2D* _texture, R_TextureFormat format, u32 width, 
 	AssertTrue(mag == TextureResize_Nearest || mag == TextureResize_Linear, "Magnification Filter for texture can only be Nearest or Linear");
 }
 
-void R_Texture2DAllocLoad(R_Texture2D* _texture, string filepath, R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t) {
+void R_Texture2DAllocLoad(R_Texture2D* texture, string filepath, R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t) {
 	i32 width, height, channels;
 	stbi_set_flip_vertically_on_load(true);
 	u8* data = stbi_load((const char*)filepath.str, &width, &height, &channels, 0);
 	
 	if (channels == 3) {
-		R_Texture2DAlloc(_texture, TextureFormat_RGB, width, height, min, mag, wrap_s, wrap_t);
+		R_Texture2DAlloc(texture, TextureFormat_RGB, width, height, min, mag, wrap_s, wrap_t);
 	} else if (channels == 4) {
-		R_Texture2DAlloc(_texture, TextureFormat_RGBA, width, height, min, mag, wrap_s, wrap_t);
+		R_Texture2DAlloc(texture, TextureFormat_RGBA, width, height, min, mag, wrap_s, wrap_t);
 	}
 	
-	R_Texture2DData(_texture, data);
+	R_Texture2DData(texture, data);
 	stbi_image_free(data);
 }
 
-void R_Texture2DSwizzle(R_Texture2D* _texture, i32* swizzles) {
-	R_GL46Texture2D* texture = (R_GL46Texture2D*) _texture;
+void R_Texture2DSwizzle(R_Texture2D* texture, i32* swizzles) {
 	GLint fixed[4] = {
 		get_texture_channel_of(swizzles[0]),
 		get_texture_channel_of(swizzles[1]),
@@ -507,63 +431,58 @@ void R_Texture2DSwizzle(R_Texture2D* _texture, i32* swizzles) {
 	glTextureParameteriv(texture->handle, GL_TEXTURE_SWIZZLE_RGBA, fixed);
 }
 
-void R_Texture2DData(R_Texture2D* _texture, void* data) {
-	R_GL46Texture2D* texture = (R_GL46Texture2D*) _texture;
+void R_Texture2DData(R_Texture2D* texture, void* data) {
 	u32 datatype = get_texture_datatype_of(texture->format);
 	glTextureSubImage2D(texture->handle, 0, 0, 0, texture->width, texture->height, get_texture_format_type_of(texture->format), datatype, data);
 }
 
-b8 R_Texture2DEquals(R_Texture2D* _a, R_Texture2D* _b) {
-	R_GL46Texture2D* a = (R_GL46Texture2D*) _a;
-	R_GL46Texture2D* b = (R_GL46Texture2D*) _b;
+b8 R_Texture2DEquals(R_Texture2D* a, R_Texture2D* b) {
 	return a->handle == b->handle;
 }
 
-void R_Texture2DBindTo(R_Texture2D* _texture, u32 slot) {
-	R_GL46Texture2D* texture = (R_GL46Texture2D*) _texture;
+void R_Texture2DBindTo(R_Texture2D* texture, u32 slot) {
 	glBindTextureUnit(slot, texture->handle);
 }
 
-void R_Texture2DFree(R_Texture2D* _texture) {
-	R_GL46Texture2D* texture = (R_GL46Texture2D*) _texture;
+void R_Texture2DFree(R_Texture2D* texture) {
 	glDeleteTextures(1, &texture->handle);
 }
 
 //~ Framebuffers
 
-void R_FramebufferCreate(R_Framebuffer* _framebuffer, u32 width, u32 height, R_Texture2D* color_attachments, u32 color_attachment_count, R_Texture2D depth_attachment) {
+void R_FramebufferCreate(R_Framebuffer* framebuffer, u32 width, u32 height, R_Texture2D* color_attachments, u32 color_attachment_count, R_Texture2D depth_attachment) {
 	if (!width) width = 1;
 	if (!height) height = 1;
-	R_GL46Framebuffer* ret = (R_GL46Framebuffer*) _framebuffer;
-	glCreateFramebuffers(1, &ret->handle);
-    glBindFramebuffer(GL_FRAMEBUFFER, ret->handle);
-	ret->width = width;
-    ret->height = height;
-	ret->color_attachments = malloc(sizeof(R_Texture2D) * color_attachment_count);
-	MemoryZero(ret->color_attachments, sizeof(R_Texture2D) * color_attachment_count);
-	ret->depth_attachment = depth_attachment;
-    ret->color_attachment_count = color_attachment_count;
+	glCreateFramebuffers(1, &framebuffer->handle);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->handle);
+	framebuffer->width = width;
+    framebuffer->height = height;
+	framebuffer->color_attachments = malloc(sizeof(R_Texture2D) * color_attachment_count);
+	MemoryZero(framebuffer->color_attachments, sizeof(R_Texture2D) * color_attachment_count);
+	framebuffer->depth_attachment = depth_attachment;
+    framebuffer->color_attachment_count = color_attachment_count;
 	
-	u32 draw_buffers_active[color_attachment_count];
+	M_Scratch scratch = scratch_get();
+	u32* draw_buffers_active = arena_alloc(&scratch.arena, color_attachment_count);
     for (u32 i = 0; i < color_attachment_count; i++) {
-        ret->color_attachments[i] = color_attachments[i];
+        framebuffer->color_attachments[i] = color_attachments[i];
         draw_buffers_active[i] = GL_COLOR_ATTACHMENT0 + i;
-        glNamedFramebufferTexture(ret->handle, GL_COLOR_ATTACHMENT0 + i, ((R_GL46Texture2D*)&color_attachments[i])->handle, 0, 0);
+        glNamedFramebufferTexture(framebuffer->handle, GL_COLOR_ATTACHMENT0 + i, color_attachments[i].handle, 0, 0);
     }
-    glNamedFramebufferDrawBuffers(ret->handle, color_attachment_count, draw_buffers_active);
+    glNamedFramebufferDrawBuffers(framebuffer->handle, color_attachment_count, draw_buffers_active);
+	scratch_return(&scratch);
 	
 	if (depth_attachment.format != TextureFormat_Invalid) {
         AssertTrue(depth_attachment.format == TextureFormat_DepthStencil, "Depth Texture format is not TextureFormat_DepthStencil");
-        glNamedFramebufferTexture(ret->handle, GL_DEPTH_STENCIL_ATTACHMENT, ((R_GL46Texture2D*)&depth_attachment)->handle, 0, 0);
+        glNamedFramebufferTexture(framebuffer->handle, GL_DEPTH_STENCIL_ATTACHMENT, depth_attachment.handle, 0, 0);
     }
     
-	if (glCheckNamedFramebufferStatus(ret->handle, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		LogError("[GL46 Backend] Incomplete framebuffer with code %x", glCheckNamedFramebufferStatus(ret->handle, GL_FRAMEBUFFER));
+	if (glCheckNamedFramebufferStatus(framebuffer->handle, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		LogError("[GL46 Backend] Incomplete framebuffer with code %x", glCheckNamedFramebufferStatus(framebuffer->handle, GL_FRAMEBUFFER));
 	}
 }
 
-void R_FramebufferBind(R_Framebuffer* _framebuffer) {
-	R_GL46Framebuffer* framebuffer = (R_GL46Framebuffer*) _framebuffer;
+void R_FramebufferBind(R_Framebuffer* framebuffer) {
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->handle);
 }
 
@@ -571,24 +490,21 @@ void R_FramebufferBindScreen(void) {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void R_FramebufferBlitToScreen(OS_Window* window, R_Framebuffer* _framebuffer) {
-	R_GL46Framebuffer* framebuffer = (R_GL46Framebuffer*) _framebuffer;
+void R_FramebufferBlitToScreen(OS_Window* window, R_Framebuffer* framebuffer) {
 	glBlitNamedFramebuffer(framebuffer->handle, 0,
 						   0, 0, framebuffer->width, framebuffer->height,
 						   0, 0, window->width, window->height,
 						   GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 }
 
-void R_FramebufferReadPixel(R_Framebuffer* _framebuffer, u32 attachment, u32 x, u32 y,
+void R_FramebufferReadPixel(R_Framebuffer* framebuffer, u32 attachment, u32 x, u32 y,
 							void* data) {
-	R_GL46Framebuffer* framebuffer = (R_GL46Framebuffer*) _framebuffer;
     glNamedFramebufferReadBuffer(framebuffer->handle, GL_COLOR_ATTACHMENT0 + attachment);
 	R_TextureFormat format = framebuffer->color_attachments[attachment].format;
     glReadPixels(x, y, 1, 1, get_texture_format_type_of(format), get_texture_datatype_of(format), data);
 }
 
-static void R_FramebufferDeleteInternal(R_Framebuffer* _framebuffer) {
-	R_GL46Framebuffer* framebuffer = (R_GL46Framebuffer*) _framebuffer;
+static void R_FramebufferDeleteInternal(R_Framebuffer* framebuffer) {
 	for (u32 i = 0; i < framebuffer->color_attachment_count; i++) {
         R_Texture2DFree(&framebuffer->color_attachments[i]);
     }
@@ -597,10 +513,8 @@ static void R_FramebufferDeleteInternal(R_Framebuffer* _framebuffer) {
     glDeleteFramebuffers(1, &framebuffer->handle);
 }
 
-void R_FramebufferResize(R_Framebuffer* _framebuffer, u32 new_width, u32 new_height) {
-	R_FramebufferDeleteInternal(_framebuffer);
-	R_GL46Framebuffer* framebuffer = (R_GL46Framebuffer*) _framebuffer;
-    
+void R_FramebufferResize(R_Framebuffer* framebuffer, u32 new_width, u32 new_height) {
+	R_FramebufferDeleteInternal(framebuffer);
 	if (!new_width) new_width = 1;
     if (!new_height) new_height = 1;
     glCreateFramebuffers(1, &framebuffer->handle);
@@ -611,7 +525,7 @@ void R_FramebufferResize(R_Framebuffer* _framebuffer, u32 new_width, u32 new_hei
     for (u32 i = 0; i < framebuffer->color_attachment_count; i++) {
         R_Texture2D old_spec = framebuffer->color_attachments[i];
 		R_Texture2DAlloc(&framebuffer->color_attachments[i], old_spec.format, new_width, new_height, old_spec.min, old_spec.mag, old_spec.wrap_s, old_spec.wrap_t);
-        glNamedFramebufferTexture(framebuffer->handle, GL_COLOR_ATTACHMENT0 + i, ((R_GL46Texture2D*)&framebuffer->color_attachments[i])->handle, 0, 0);
+        glNamedFramebufferTexture(framebuffer->handle, GL_COLOR_ATTACHMENT0 + i, framebuffer->color_attachments[i].handle, 0, 0);
     }
     
     if (framebuffer->depth_attachment.format != TextureFormat_Invalid) {
@@ -619,7 +533,7 @@ void R_FramebufferResize(R_Framebuffer* _framebuffer, u32 new_width, u32 new_hei
         
         R_Texture2D old_spec = framebuffer->depth_attachment;
 		R_Texture2DAlloc(&framebuffer->depth_attachment, old_spec.format, new_width, new_height, old_spec.min, old_spec.mag, old_spec.wrap_s, old_spec.wrap_t);
-        glNamedFramebufferTexture(framebuffer->handle, GL_DEPTH_STENCIL_ATTACHMENT, ((R_GL46Texture2D*)&framebuffer->depth_attachment)->handle, 0, 0);
+        glNamedFramebufferTexture(framebuffer->handle, GL_DEPTH_STENCIL_ATTACHMENT, framebuffer->depth_attachment.handle, 0, 0);
     }
     
     if (glCheckNamedFramebufferStatus(framebuffer->handle, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -627,8 +541,7 @@ void R_FramebufferResize(R_Framebuffer* _framebuffer, u32 new_width, u32 new_hei
     }
 }
 
-void R_FramebufferFree(R_Framebuffer* _framebuffer) {
-	R_GL46Framebuffer* framebuffer = (R_GL46Framebuffer*) _framebuffer;
+void R_FramebufferFree(R_Framebuffer* framebuffer) {
 	for (u32 i = 0; i < framebuffer->color_attachment_count; i++) {
         R_Texture2DFree(&framebuffer->color_attachments[i]);
     }
@@ -656,7 +569,6 @@ void R_Viewport(i32 x, i32 y, i32 w, i32 h) {
 	glViewport(x, y, w, h);
 }
 
-void R_Draw(R_Pipeline* _in, u32 start, u32 count) {
-	R_GL46Pipeline* in = (R_GL46Pipeline*) _in;
+void R_Draw(R_Pipeline* in, u32 start, u32 count) {
 	glDrawArrays(get_input_assembly_type_of(in->assembly), start, count);
 }

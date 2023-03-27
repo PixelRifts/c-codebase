@@ -1,61 +1,13 @@
 //~ D3D11 Resources
-#define D3D11_NO_HELPERS
-#define CINTERFACE
-#define COBJMACROS
-#include <d3d11.h>
-#include <dxgi.h>
-#include <d3dcompiler.h>
+
+#include "d3d11_resources.h"
 
 #include "core/resources.h"
 #include "os/impl/win32_window.h"
 
 #include "d3d11_functions.h"
 
-//~ Specific Impls
-
-typedef struct R_D3D11Buffer {
-	R_BufferFlags flags;
-	ID3D11Buffer* handle;
-	u32 v_stride;
-} R_D3D11Buffer;
-
-
-typedef struct R_D3D11Shader {
-	R_ShaderType type;
-	ID3D10Blob* bytecode_blob;
-	union {
-		ID3D11VertexShader* vs;
-		ID3D11PixelShader* ps;
-		ID3D11GeometryShader* gs;
-	};
-} R_D3D11Shader;
-
-typedef struct R_D3D11ShaderPack {
-	R_D3D11Shader vs;
-	R_D3D11Shader ps;
-	R_D3D11Shader gs;
-} R_D3D11ShaderPack;
-
-typedef struct R_BufferAttribCountPack {
-	R_D3D11Buffer* b;
-	u32 attrib_count;
-} R_BufferAttribCountPack;
-
-DArray_Prototype(R_BufferAttribCountPack);
 DArray_Impl(R_BufferAttribCountPack);
-
-typedef struct R_D3D11Pipeline {
-	R_InputAssembly assembly;
-	R_Attribute* attributes;
-	R_D3D11ShaderPack* shader;
-	R_BlendMode blend_mode;
-	u32 attribute_count;
-	
-	darray(R_BufferAttribCountPack) buffers;
-	ID3D11InputLayout* layout;
-	b8 layout_changed;
-} R_D3D11Pipeline;
-
 
 //~ For talking with the backend layer. Not exposed in header
 
@@ -65,7 +17,6 @@ static f32 s_clear_color[4] = {0};
 void __SetCurrentWindow(W32_Window* window) {
 	s_wnd = window;
 }
-
 
 //~ Conversion Routines
 
@@ -127,19 +78,16 @@ static string get_compile_target_of(R_ShaderType type) {
 
 //~ Buffers
 
-void R_BufferAlloc(R_Buffer* _buf, R_BufferFlags flags, u32 v_stride) {
-	R_D3D11Buffer* buf = (R_D3D11Buffer*) _buf;
+void R_BufferAlloc(R_Buffer* buf, R_BufferFlags flags, u32 v_stride) {
 	buf->flags = flags;
 	buf->v_stride = v_stride;
 	// NOTE(voxel): Doesn't actually allocate any data. BufferData handles that
 }
 
-void R_BufferData(R_Buffer* _buf, u64 size, void* data) {
+void R_BufferData(R_Buffer* buf, u64 size, void* data) {
 	// Do a temporary allocation for initializing the buffer if no explicit data is passed in
 	// This is so that there is consistency with the OpenGL backend
 	if (!data) data = arena_alloc(U_GetFrameArena(), size);
-	
-	R_D3D11Buffer* buf = (R_D3D11Buffer*) _buf;
 	
 	D3D11_SUBRESOURCE_DATA sd = {0};
 	sd.pSysMem = data;
@@ -155,24 +103,20 @@ void R_BufferData(R_Buffer* _buf, u64 size, void* data) {
 	CHECK_HR(ID3D11Device_CreateBuffer(s_wnd->device, &desc, &sd, &buf->handle));
 }
 
-void R_BufferUpdate(R_Buffer* _buf, u64 offset, u64 size, void* data) {
-	R_D3D11Buffer* buf = (R_D3D11Buffer*) _buf;
-	
+void R_BufferUpdate(R_Buffer* buf, u64 offset, u64 size, void* data) {
 	D3D11_MAPPED_SUBRESOURCE mapped_res;
 	ID3D11DeviceContext_Map(s_wnd->context, (ID3D11Resource*) buf->handle, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_res);
 	memmove(mapped_res.pData + offset, data, size);
 	ID3D11DeviceContext_Unmap(s_wnd->context, (ID3D11Resource*) buf->handle, 0);
 }
 
-void R_BufferFree(R_Buffer* _buf) {
-	R_D3D11Buffer* buf = (R_D3D11Buffer*) _buf;
+void R_BufferFree(R_Buffer* buf) {
 	SAFE_RELEASE(ID3D11Buffer, buf->handle);
 }
 
 //~ Shaders
 
-void R_ShaderAlloc(R_Shader* _shader, string data, R_ShaderType type) {
-	R_D3D11Shader* shader = (R_D3D11Shader*) _shader;
+void R_ShaderAlloc(R_Shader* shader, string data, R_ShaderType type) {
 	shader->type = type;
 	
 	HRESULT hr;
@@ -227,13 +171,12 @@ void R_ShaderAlloc(R_Shader* _shader, string data, R_ShaderType type) {
 	}
 }
 
-void R_ShaderAllocLoad(R_Shader* _shader, string fp, R_ShaderType type) {
+void R_ShaderAllocLoad(R_Shader* shader, string fp, R_ShaderType type) {
 	string source_code = OS_FileRead(U_GetFrameArena(), fp);
-	R_ShaderAlloc(_shader, source_code, type);
+	R_ShaderAlloc(shader, source_code, type);
 }
 
-void R_ShaderFree(R_Shader* _shader) {
-	R_D3D11Shader* shader = (R_D3D11Shader*) _shader;
+void R_ShaderFree(R_Shader* shader) {
 	SAFE_RELEASE(ID3D10Blob, shader->bytecode_blob);
 	switch (shader->type) {
 		case ShaderType_Vertex: SAFE_RELEASE(ID3D11VertexShader, shader->vs); break;
@@ -244,9 +187,7 @@ void R_ShaderFree(R_Shader* _shader) {
 
 
 
-void R_ShaderPackAlloc(R_ShaderPack* _pack, R_Shader* _shaders, u32 shader_count) {
-	R_D3D11ShaderPack* pack = (R_D3D11ShaderPack*) _pack;
-	R_D3D11Shader* shaders = (R_D3D11Shader*) _shaders;
+void R_ShaderPackAlloc(R_ShaderPack* pack, R_Shader* shaders, u32 shader_count) {
 	for (u32 i = 0; i < shader_count; i++) {
 		switch (shaders[i].type) {
 			case ShaderType_Vertex:   pack->vs = shaders[i]; break;
@@ -256,7 +197,7 @@ void R_ShaderPackAlloc(R_ShaderPack* _pack, R_Shader* _shaders, u32 shader_count
 	}
 }
 
-void R_ShaderPackAllocLoad(R_ShaderPack* _pack, string fp_prefix) {
+void R_ShaderPackAllocLoad(R_ShaderPack* pack, string fp_prefix) {
 	M_Scratch scratch = scratch_get();
 	
 	string vsfp = str_cat(&scratch.arena, fp_prefix, str_lit(".vert.hlsl"));
@@ -284,13 +225,12 @@ void R_ShaderPackAllocLoad(R_ShaderPack* _pack, string fp_prefix) {
 		R_ShaderAllocLoad(&shader_buffer[shader_count++], gsfp, ShaderType_Geometry);
 	}
 	
-	R_ShaderPackAlloc(_pack, shader_buffer, shader_count);
+	R_ShaderPackAlloc(pack, shader_buffer, shader_count);
 	
 	scratch_return(&scratch);
 }
 
-void R_ShaderPackFree(R_ShaderPack* _pack) {
-	R_D3D11ShaderPack* pack = (R_D3D11ShaderPack*) _pack;
+void R_ShaderPackFree(R_ShaderPack* pack) {
 	if (pack->vs.type) R_ShaderFree((R_Shader*) &pack->vs);
 	if (pack->ps.type) R_ShaderFree((R_Shader*) &pack->ps);
 	if (pack->gs.type) R_ShaderFree((R_Shader*) &pack->gs);
@@ -307,7 +247,7 @@ void R_ShaderPackUploadInt(R_ShaderPack* pack, string name, i32 val) {
 	LogFatal("[D3D11 Backend] Unimplemented: Uniforms/Push Constants not supported for D3D11");
 }
 
-void R_ShaderPackUploadIntArray(R_ShaderPack* _pack, string name, i32* vals, u32 count) {
+void R_ShaderPackUploadIntArray(R_ShaderPack* pack, string name, i32* vals, u32 count) {
 	LogFatal("[D3D11 Backend] Unimplemented: Uniforms/Push Constants not supported for D3D11");
 }
 
@@ -322,26 +262,21 @@ void R_ShaderPackUploadVec4(R_ShaderPack* pack, string name, vec4 val) {
 
 //~ Pipelines
 
-void R_PipelineAlloc(R_Pipeline* _in, R_InputAssembly assembly, R_Attribute* attributes, u32 attribute_count, R_ShaderPack* shader, R_BlendMode blending) {
-	R_D3D11Pipeline* in = (R_D3D11Pipeline*)_in;
+void R_PipelineAlloc(R_Pipeline* in, R_InputAssembly assembly, R_Attribute* attributes, u32 attribute_count, R_ShaderPack* shader, R_BlendMode blending) {
 	in->assembly = assembly;
 	in->attributes = attributes;
 	in->attribute_count = attribute_count;
-	in->shader = (R_D3D11ShaderPack*) shader;
+	in->shader = (R_ShaderPack*) shader;
 	in->blend_mode = blending;
 }
 
-void R_PipelineAddBuffer(R_Pipeline* _in, R_Buffer* _buf, u32 attribute_count) {
-	R_D3D11Pipeline* in = (R_D3D11Pipeline*)_in;
-	R_D3D11Buffer* buf = (R_D3D11Buffer*) _buf;
+void R_PipelineAddBuffer(R_Pipeline* in, R_Buffer* buf, u32 attribute_count) {
 	in->layout_changed = true;
 	darray_add(R_BufferAttribCountPack, &in->buffers,
 			   ((R_BufferAttribCountPack) { .b = buf, .attrib_count = attribute_count }));
 }
 
-void R_PipelineBind(R_Pipeline* _in) {
-	R_D3D11Pipeline* in = (R_D3D11Pipeline*)_in;
-	
+void R_PipelineBind(R_Pipeline* in) {
 	M_Scratch scratch = scratch_get();
 	
 	ID3D11Buffer** buf_arr = arena_alloc(&scratch.arena, sizeof(ID3D11Buffer*) * in->buffers.len);
@@ -349,7 +284,7 @@ void R_PipelineBind(R_Pipeline* _in) {
 	u32* offsets_arr = arena_alloc(&scratch.arena, sizeof(u32) * in->buffers.len);
 	u32 total_attrib_ct = 0;
 	Iterate(in->buffers, i) {
-		R_D3D11Buffer* curr = in->buffers.elems[i].b;
+		R_Buffer* curr = in->buffers.elems[i].b;
 		total_attrib_ct += in->buffers.elems[i].attrib_count;
 		buf_arr[i] = curr->handle;
 		strides_arr[i] = curr->v_stride;
@@ -408,8 +343,7 @@ void R_PipelineBind(R_Pipeline* _in) {
 	scratch_return(&scratch);
 }
 
-void R_PipelineFree(R_Pipeline* _in) {
-	R_D3D11Pipeline* in = (R_D3D11Pipeline*)_in;
+void R_PipelineFree(R_Pipeline* in) {
 	SAFE_RELEASE(ID3D11InputLayout, in->layout);
 	darray_free(R_BufferAttribCountPack, &in->buffers);
 }

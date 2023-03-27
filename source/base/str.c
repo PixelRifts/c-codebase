@@ -47,6 +47,10 @@ b8 str_eq(string_const a, string_const b) {
     return memcmp(a.str, b.str, b.size) == 0;
 }
 
+b8 str_is_null(string k) {
+	return k.str == 0 && k.size == 0;
+}
+
 string_const str_replace_all(M_Arena* arena, string_const to_fix, string_const needle, string_const replacement) {
     if (needle.size == 0) return to_fix;
     u64 replaceable = str_substr_count(to_fix, needle);

@@ -54,6 +54,7 @@ u32 str_hash(string_const str);
 u64 str_hash_64(string_const str);
 
 b8 str_eq(string_const a, string_const b);
+b8 str_is_null(string k);
 
 void string_list_push_node(string_const_list* list, string_const_list_node* node);
 void string_list_push(M_Arena* arena, string_const_list* list, string_const str);
