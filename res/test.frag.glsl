@@ -1,9 +1,16 @@
 #version 330 core
 
-in vec4 v_color;
-
 layout (location=0) out vec4 f_color;
 
+in vec2 v_tex_coord;
+
+uniform sampler2D tex;
+
+layout (std140) uniform TESTBUFFER {
+	float val;
+	vec4 color;
+};
+
 void main() {
-	f_color = v_color;
+	f_color = color * texture(tex, v_tex_coord);
 }

@@ -113,6 +113,20 @@ void B_BackendInit(OS_Window* _window) {
 	
 	__SetCurrentWindow(window);
 	R_Viewport(0, 0, window->width, window->height);
+	
+	ID3D11RasterizerState* rstate;
+	D3D11_RASTERIZER_DESC rdesc = {0};
+	rdesc.FillMode = D3D11_FILL_SOLID;
+	rdesc.CullMode = D3D11_CULL_BACK;
+	rdesc.FrontCounterClockwise = true;
+	rdesc.DepthClipEnable = false;
+	rdesc.ScissorEnable = false;
+	rdesc.MultisampleEnable = false;
+	rdesc.AntialiasedLineEnable = true; // Uh... probably right?
+	
+	ID3D11Device_CreateRasterizerState(window->device, &rdesc, &rstate);
+	ID3D11DeviceContext_RSSetState(window->context, rstate);
+	ID3D11RasterizerState_Release(rstate);
 }
 
 void B_BackendInitShared(OS_Window* window, OS_Window* share) {
@@ -128,7 +142,8 @@ void B_BackendSelectRenderWindow(OS_Window* _window) {
 void B_BackendSwapchainNext(OS_Window* _window) {
 	W32_Window* window = (W32_Window*)_window;
 	
-	IDXGISwapChain_Present(window->swapchain, 1, 0);
+	// NOTE(voxel): sync interval (2nd param) is set to 0 for uncapped fps
+	IDXGISwapChain_Present(window->swapchain, 0, 0);
 }
 
 void B_BackendFree(OS_Window* _window) {

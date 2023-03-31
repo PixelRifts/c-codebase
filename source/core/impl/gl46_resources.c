@@ -7,9 +7,10 @@
 
 #include "gl46_resources.h"
 
-b8 i32_is_null(i32 value) { return value == 0;  }
-b8 i32_is_tomb(i32 value) { return value == 69; }
+static b8 i32_is_null(i32 value) { return value == 0;  }
+static b8 i32_is_tomb(i32 value) { return value == 69; }
 HashTable_Impl(string, i32, str_is_null, str_eq, str_hash, 69, i32_is_null, i32_is_tomb);
+DArray_Impl(R_UniformBufferHandle);
 
 //~ Elpers
 
@@ -180,6 +181,100 @@ void R_BufferFree(R_Buffer* buf) {
 	glDeleteBuffers(1, &buf->handle);
 }
 
+
+
+void R_UniformBufferAlloc(R_UniformBuffer* buf, string name, string_array member_names,
+						  R_ShaderPack* pack, R_ShaderType type) {
+	buf->dirty = false;
+	buf->stage = type;
+	
+	buf->bindpoint = glGetUniformBlockIndex(pack->handle, (const char*) name.str);
+	glGetActiveUniformBlockiv(pack->handle, buf->bindpoint, GL_UNIFORM_BLOCK_DATA_SIZE, (i32*) &buf->size);
+	hash_table_init(string, i32, &buf->uniform_offsets);
+	
+	// @unsure Maybe use an arena allocation here, instead of a malloc
+	buf->cpu_side_buffer = malloc(buf->size);
+	MemoryZero(buf->cpu_side_buffer, buf->size);
+	
+	M_Scratch scratch = scratch_get();
+	u8** names   = arena_alloc(&scratch.arena, member_names.len * sizeof(u8*));
+	u32* indices = arena_alloc(&scratch.arena, member_names.len * sizeof(u32));
+	i32* offsets = arena_alloc(&scratch.arena, member_names.len * sizeof(i32));
+	
+	Iterate(member_names, i) {
+		names[i] = member_names.elems[i].str;
+	}
+	
+	glGetUniformIndices(pack->handle, member_names.len, (const char**) names, indices);
+	glGetActiveUniformsiv(pack->handle, member_names.len, indices, GL_UNIFORM_OFFSET, offsets);
+	
+	Iterate(member_names, i) {
+		hash_table_set(string, i32, &buf->uniform_offsets, member_names.elems[i], offsets[i]);
+	}
+	
+	scratch_return(&scratch);
+	
+	glCreateBuffers(1, &buf->handle);
+	glNamedBufferStorage(buf->handle, buf->size, buf->cpu_side_buffer, GL_DYNAMIC_STORAGE_BIT);
+}
+
+void R_UniformBufferFree(R_UniformBuffer* buf) {
+	hash_table_free(string, i32, &buf->uniform_offsets);
+	free(buf->cpu_side_buffer);
+	glDeleteBuffers(1, &buf->handle);
+}
+
+void R_UniformBufferSetMat4(R_UniformBuffer* buf, string name, mat4 mat) {
+	i32 offset = -1;
+	if (!hash_table_get(string, i32, &buf->uniform_offsets, name, &offset)) {
+		LogError("[GL33 Backend] Tried to set member '%.*s' of uniform buffer '%.*s' that doesn't exist", str_expand(name), str_expand(buf->name));
+		return;
+	}
+	memmove(buf->cpu_side_buffer + offset, &mat, sizeof(mat4));
+	buf->dirty = true;
+}
+
+void R_UniformBufferSetInt(R_UniformBuffer* buf, string name, i32 val) {
+	i32 offset = -1;
+	if (!hash_table_get(string, i32, &buf->uniform_offsets, name, &offset)) {
+		LogError("[GL33 Backend] Tried to set member '%.*s' of uniform buffer '%.*s' that doesn't exist", str_expand(name), str_expand(buf->name));
+		return;
+	}
+	memmove(buf->cpu_side_buffer + offset, &val, sizeof(i32));
+	buf->dirty = true;
+}
+
+void R_UniformBufferSetIntArray(R_UniformBuffer* buf, string name, i32* vals, u32 count) {
+	i32 offset = -1;
+	if (!hash_table_get(string, i32, &buf->uniform_offsets, name, &offset)) {
+		LogError("[GL33 Backend] Tried to set member '%.*s' of uniform buffer '%.*s' that doesn't exist", str_expand(name), str_expand(buf->name));
+		return;
+	}
+	memmove(buf->cpu_side_buffer + offset, vals, sizeof(i32) * count);
+	buf->dirty = true;
+}
+
+void R_UniformBufferSetFloat(R_UniformBuffer* buf, string name, f32 val) {
+	i32 offset = -1;
+	if (!hash_table_get(string, i32, &buf->uniform_offsets, name, &offset)) {
+		LogError("[GL33 Backend] Tried to set member '%.*s' of uniform buffer '%.*s' that doesn't exist", str_expand(name), str_expand(buf->name));
+		return;
+	}
+	memmove(buf->cpu_side_buffer + offset, &val, sizeof(f32));
+	buf->dirty = true;
+}
+
+void R_UniformBufferSetVec4(R_UniformBuffer* buf, string name, vec4 val) {
+	i32 offset = -1;
+	if (!hash_table_get(string, i32, &buf->uniform_offsets, name, &offset)) {
+		LogError("[GL33 Backend] Tried to set member '%.*s' of uniform buffer '%.*s' that doesn't exist", str_expand(name), str_expand(buf->name));
+		return;
+	}
+	memmove(buf->cpu_side_buffer + offset, &val, sizeof(vec4));
+	buf->dirty = true;
+}
+
+
 //~ Shaders
 
 void R_ShaderAlloc(R_Shader* shader, string data, R_ShaderType type) {
@@ -217,8 +312,6 @@ void R_ShaderFree(R_Shader* shader) {
 }
 
 void R_ShaderPackAlloc(R_ShaderPack* pack, R_Shader* shaders, u32 shader_count) {
-	hash_table_init(string, i32, &pack->uniforms);
-	
 	pack->handle = glCreateProgram();
 	for (u32 i = 0; i < shader_count; i++) {
 		glAttachShader(pack->handle, shaders[i].handle);
@@ -277,55 +370,7 @@ void R_ShaderPackAllocLoad(R_ShaderPack* pack, string fp_prefix) {
 	scratch_return(&scratch);
 }
 
-
-void R_ShaderPackUploadMat4(R_ShaderPack* pack, string name, mat4 mat) {
-	i32 loc;
-    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
-        loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
-        hash_table_set(string, i32, &pack->uniforms, name, loc);
-    }
-    glUniformMatrix4fv(loc, 1, GL_TRUE, mat.a);
-}
-
-void R_ShaderPackUploadInt(R_ShaderPack* pack, string name, i32 val) {
-	i32 loc;
-    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
-        loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
-        hash_table_set(string, i32, &pack->uniforms, name, loc);
-    }
-    glUniform1i(loc, val);
-}
-
-void R_ShaderPackUploadIntArray(R_ShaderPack* pack, string name, i32* vals, u32 count) {
-	i32 loc;
-    if (!hash_table_get(string, i32,&pack->uniforms, name, &loc)) {
-        loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
-        hash_table_set(string, i32, &pack->uniforms, name, loc);
-    }
-    glUniform1iv(loc, count, vals);
-}
-
-void R_ShaderPackUploadFloat(R_ShaderPack* pack, string name, f32 val) {
-	i32 loc;
-    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
-        loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
-        hash_table_set(string, i32, &pack->uniforms, name, loc);
-    }
-    glUniform1f(loc, val);
-}
-
-void R_ShaderPackUploadVec4(R_ShaderPack* pack, string name, vec4 val) {
-	i32 loc;
-    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
-        loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
-        hash_table_set(string, i32, &pack->uniforms, name, loc);
-    }
-    glUniform4f(loc, val.x, val.y, val.z, val.w);
-}
-
-
 void R_ShaderPackFree(R_ShaderPack* pack) {
-	hash_table_free(string, i32, &pack->uniforms);
 	glDeleteProgram(pack->handle);
 }
 
@@ -341,28 +386,46 @@ void R_PipelineAlloc(R_Pipeline* in, R_InputAssembly assembly, R_Attribute* attr
 }
 
 void R_PipelineAddBuffer(R_Pipeline* in, R_Buffer* buf, u32 attribute_count) {
-	glBindVertexArray(in->handle);
-	u32 stride = 0;
-	for (u32 i = in->attribpoint; i < in->attribpoint + attribute_count; i++) {
-		stride += get_size_of(in->attributes[i].type);
+	if (buf->flags & BufferFlag_Type_Vertex) {
+		glBindVertexArray(in->handle);
+		u32 stride = 0;
+		for (u32 i = in->attribpoint; i < in->attribpoint + attribute_count; i++) {
+			stride += get_size_of(in->attributes[i].type);
+		}
+		
+		u32 offset = 0;
+		for (u32 i = in->attribpoint; i < in->attribpoint + attribute_count; i++) {
+			glEnableVertexArrayAttrib(in->handle, i);
+			glVertexArrayAttribFormat(in->handle, i, get_component_count_of(in->attributes[i].type), get_type_of(in->attributes[i].type), GL_FALSE, offset);
+			glVertexArrayAttribBinding(in->handle, i, in->bindpoint);
+			offset += get_size_of(in->attributes[i].type);
+		}
+		
+		glVertexArrayVertexBuffer(in->handle, in->bindpoint, buf->handle, 0, stride);
+		
+		in->bindpoint++;
+	} else if (buf->flags & BufferFlag_Type_Index) {
+		glVertexArrayElementBuffer(in->handle, buf->handle);
 	}
-	
-	u32 offset = 0;
-	for (u32 i = in->attribpoint; i < in->attribpoint + attribute_count; i++) {
-		glEnableVertexArrayAttrib(in->handle, i);
-		glVertexArrayAttribFormat(in->handle, i, get_component_count_of(in->attributes[i].type), get_type_of(in->attributes[i].type), GL_FALSE, offset);
-		glVertexArrayAttribBinding(in->handle, i, in->bindpoint);
-		offset += get_size_of(in->attributes[i].type);
-	}
-	
-	glVertexArrayVertexBuffer(in->handle, in->bindpoint, buf->handle, 0, stride);
-	
-	in->bindpoint++;
+}
+
+void R_PipelineAddUniformBuffer(R_Pipeline* in, R_UniformBuffer* buf) {
+	darray_add(R_UniformBufferHandle, &in->uniform_buffers, buf);
 }
 
 void R_PipelineBind(R_Pipeline* in) {
 	glUseProgram(in->shader->handle);
 	glBindVertexArray(in->handle);
+	
+	Iterate(in->uniform_buffers, i) {
+		R_UniformBuffer* curr = in->uniform_buffers.elems[i];
+		if (curr->dirty) {
+			glNamedBufferSubData(curr->handle, 0, curr->size, curr->cpu_side_buffer);
+			curr->dirty = false;
+		}
+		glBindBufferBase(GL_UNIFORM_BUFFER, i, curr->handle);
+	}
+	
 	switch (in->blend_mode) {
 		case BlendMode_None: {
 			glDisable(GL_BLEND);
@@ -381,18 +444,25 @@ void R_PipelineBind(R_Pipeline* in) {
 }
 
 void R_PipelineFree(R_Pipeline* in) {
+	darray_free(R_UniformBufferHandle, &in->uniform_buffers);
 	glDeleteVertexArrays(1, &in->handle);
 }
 
 //~ Textures
 
-void R_Texture2DAlloc(R_Texture2D* texture, R_TextureFormat format, u32 width, u32 height, R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t) {
+void R_Texture2DAlloc(R_Texture2D* texture, R_TextureFormat format, u32 width, u32 height,
+					  R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s,
+					  R_TextureWrapParam wrap_t, R_TextureMutability mut,
+					  R_TextureUsage usage, void* initial_data) {
 	texture->width = width;
 	texture->height = height;
 	texture->min = min;
 	texture->mag = mag;
 	texture->wrap_s = wrap_s;
 	texture->wrap_t = wrap_t;texture->format = format;
+	texture->mut = mut;
+	texture->usage = usage;
+	
 	glCreateTextures(GL_TEXTURE_2D, 1, &texture->handle);
 	
 	glTextureParameteri(texture->handle, GL_TEXTURE_WRAP_S, get_texture_wrap_param_type_of(wrap_s));
@@ -403,21 +473,25 @@ void R_Texture2DAlloc(R_Texture2D* texture, R_TextureFormat format, u32 width, u
 	glTextureStorage2D(texture->handle, 1,
 					   get_texture_internal_format_type_of(format), width, height);
 	
+	if (initial_data) {
+		u32 datatype = get_texture_datatype_of(texture->format);
+		glTextureSubImage2D(texture->handle, 0, 0, 0, texture->width, texture->height, get_texture_format_type_of(texture->format), datatype, initial_data);
+	}
+	
 	AssertTrue(mag == TextureResize_Nearest || mag == TextureResize_Linear, "Magnification Filter for texture can only be Nearest or Linear");
 }
 
-void R_Texture2DAllocLoad(R_Texture2D* texture, string filepath, R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t) {
+void R_Texture2DAllocLoad(R_Texture2D* texture, string filepath, R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t, R_TextureMutability mut, R_TextureUsage usage) {
 	i32 width, height, channels;
 	stbi_set_flip_vertically_on_load(true);
 	u8* data = stbi_load((const char*)filepath.str, &width, &height, &channels, 0);
 	
 	if (channels == 3) {
-		R_Texture2DAlloc(texture, TextureFormat_RGB, width, height, min, mag, wrap_s, wrap_t);
+		R_Texture2DAlloc(texture, TextureFormat_RGB, width, height, min, mag, wrap_s, wrap_t, mut, usage, data);
 	} else if (channels == 4) {
-		R_Texture2DAlloc(texture, TextureFormat_RGBA, width, height, min, mag, wrap_s, wrap_t);
+		R_Texture2DAlloc(texture, TextureFormat_RGBA, width, height, min, mag, wrap_s, wrap_t, mut, usage, data);
 	}
 	
-	R_Texture2DData(texture, data);
 	stbi_image_free(data);
 }
 
@@ -440,7 +514,7 @@ b8 R_Texture2DEquals(R_Texture2D* a, R_Texture2D* b) {
 	return a->handle == b->handle;
 }
 
-void R_Texture2DBindTo(R_Texture2D* texture, u32 slot) {
+void R_Texture2DBindTo(R_Texture2D* texture, u32 slot, R_ShaderType stage) {
 	glBindTextureUnit(slot, texture->handle);
 }
 
@@ -454,29 +528,29 @@ void R_FramebufferCreate(R_Framebuffer* framebuffer, u32 width, u32 height, R_Te
 	if (!width) width = 1;
 	if (!height) height = 1;
 	glCreateFramebuffers(1, &framebuffer->handle);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->handle);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->handle);
 	framebuffer->width = width;
-    framebuffer->height = height;
+	framebuffer->height = height;
 	framebuffer->color_attachments = malloc(sizeof(R_Texture2D) * color_attachment_count);
 	MemoryZero(framebuffer->color_attachments, sizeof(R_Texture2D) * color_attachment_count);
 	framebuffer->depth_attachment = depth_attachment;
-    framebuffer->color_attachment_count = color_attachment_count;
+	framebuffer->color_attachment_count = color_attachment_count;
 	
 	M_Scratch scratch = scratch_get();
 	u32* draw_buffers_active = arena_alloc(&scratch.arena, color_attachment_count);
-    for (u32 i = 0; i < color_attachment_count; i++) {
-        framebuffer->color_attachments[i] = color_attachments[i];
-        draw_buffers_active[i] = GL_COLOR_ATTACHMENT0 + i;
-        glNamedFramebufferTexture(framebuffer->handle, GL_COLOR_ATTACHMENT0 + i, color_attachments[i].handle, 0, 0);
-    }
-    glNamedFramebufferDrawBuffers(framebuffer->handle, color_attachment_count, draw_buffers_active);
+	for (u32 i = 0; i < color_attachment_count; i++) {
+		framebuffer->color_attachments[i] = color_attachments[i];
+		draw_buffers_active[i] = GL_COLOR_ATTACHMENT0 + i;
+		glNamedFramebufferTexture(framebuffer->handle, GL_COLOR_ATTACHMENT0 + i, color_attachments[i].handle, 0, 0);
+	}
+	glNamedFramebufferDrawBuffers(framebuffer->handle, color_attachment_count, draw_buffers_active);
 	scratch_return(&scratch);
 	
 	if (depth_attachment.format != TextureFormat_Invalid) {
-        AssertTrue(depth_attachment.format == TextureFormat_DepthStencil, "Depth Texture format is not TextureFormat_DepthStencil");
-        glNamedFramebufferTexture(framebuffer->handle, GL_DEPTH_STENCIL_ATTACHMENT, depth_attachment.handle, 0, 0);
-    }
-    
+		AssertTrue(depth_attachment.format == TextureFormat_DepthStencil, "Depth Texture format is not TextureFormat_DepthStencil");
+		glNamedFramebufferTexture(framebuffer->handle, GL_DEPTH_STENCIL_ATTACHMENT, depth_attachment.handle, 0, 0);
+	}
+	
 	if (glCheckNamedFramebufferStatus(framebuffer->handle, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		LogError("[GL46 Backend] Incomplete framebuffer with code %x", glCheckNamedFramebufferStatus(framebuffer->handle, GL_FRAMEBUFFER));
 	}
@@ -499,56 +573,56 @@ void R_FramebufferBlitToScreen(OS_Window* window, R_Framebuffer* framebuffer) {
 
 void R_FramebufferReadPixel(R_Framebuffer* framebuffer, u32 attachment, u32 x, u32 y,
 							void* data) {
-    glNamedFramebufferReadBuffer(framebuffer->handle, GL_COLOR_ATTACHMENT0 + attachment);
+	glNamedFramebufferReadBuffer(framebuffer->handle, GL_COLOR_ATTACHMENT0 + attachment);
 	R_TextureFormat format = framebuffer->color_attachments[attachment].format;
-    glReadPixels(x, y, 1, 1, get_texture_format_type_of(format), get_texture_datatype_of(format), data);
+	glReadPixels(x, y, 1, 1, get_texture_format_type_of(format), get_texture_datatype_of(format), data);
 }
 
 static void R_FramebufferDeleteInternal(R_Framebuffer* framebuffer) {
 	for (u32 i = 0; i < framebuffer->color_attachment_count; i++) {
-        R_Texture2DFree(&framebuffer->color_attachments[i]);
-    }
-    if (framebuffer->depth_attachment.format != TextureFormat_Invalid)
-        R_Texture2DFree(&framebuffer->depth_attachment);
-    glDeleteFramebuffers(1, &framebuffer->handle);
+		R_Texture2DFree(&framebuffer->color_attachments[i]);
+	}
+	if (framebuffer->depth_attachment.format != TextureFormat_Invalid)
+		R_Texture2DFree(&framebuffer->depth_attachment);
+	glDeleteFramebuffers(1, &framebuffer->handle);
 }
 
 void R_FramebufferResize(R_Framebuffer* framebuffer, u32 new_width, u32 new_height) {
 	R_FramebufferDeleteInternal(framebuffer);
 	if (!new_width) new_width = 1;
-    if (!new_height) new_height = 1;
-    glCreateFramebuffers(1, &framebuffer->handle);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->handle);
-    framebuffer->width = new_width;
-    framebuffer->height = new_height;
+	if (!new_height) new_height = 1;
+	glCreateFramebuffers(1, &framebuffer->handle);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->handle);
+	framebuffer->width = new_width;
+	framebuffer->height = new_height;
 	
-    for (u32 i = 0; i < framebuffer->color_attachment_count; i++) {
-        R_Texture2D old_spec = framebuffer->color_attachments[i];
-		R_Texture2DAlloc(&framebuffer->color_attachments[i], old_spec.format, new_width, new_height, old_spec.min, old_spec.mag, old_spec.wrap_s, old_spec.wrap_t);
-        glNamedFramebufferTexture(framebuffer->handle, GL_COLOR_ATTACHMENT0 + i, framebuffer->color_attachments[i].handle, 0, 0);
-    }
-    
-    if (framebuffer->depth_attachment.format != TextureFormat_Invalid) {
-        AssertTrue(framebuffer->depth_attachment.format == TextureFormat_DepthStencil, "Depth Texture format is not TextureFormat_DepthStencil");
-        
-        R_Texture2D old_spec = framebuffer->depth_attachment;
-		R_Texture2DAlloc(&framebuffer->depth_attachment, old_spec.format, new_width, new_height, old_spec.min, old_spec.mag, old_spec.wrap_s, old_spec.wrap_t);
-        glNamedFramebufferTexture(framebuffer->handle, GL_DEPTH_STENCIL_ATTACHMENT, framebuffer->depth_attachment.handle, 0, 0);
-    }
-    
-    if (glCheckNamedFramebufferStatus(framebuffer->handle, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        AssertTrue(false, "Framebuffer Incomplete");
-    }
+	for (u32 i = 0; i < framebuffer->color_attachment_count; i++) {
+		R_Texture2D old_spec = framebuffer->color_attachments[i];
+		R_Texture2DAlloc(&framebuffer->color_attachments[i], old_spec.format, new_width, new_height, old_spec.min, old_spec.mag, old_spec.wrap_s, old_spec.wrap_t, old_spec.mut, old_spec.usage, nullptr);
+		glNamedFramebufferTexture(framebuffer->handle, GL_COLOR_ATTACHMENT0 + i, framebuffer->color_attachments[i].handle, 0, 0);
+	}
+	
+	if (framebuffer->depth_attachment.format != TextureFormat_Invalid) {
+		AssertTrue(framebuffer->depth_attachment.format == TextureFormat_DepthStencil, "Depth Texture format is not TextureFormat_DepthStencil");
+		
+		R_Texture2D old_spec = framebuffer->depth_attachment;
+		R_Texture2DAlloc(&framebuffer->depth_attachment, old_spec.format, new_width, new_height, old_spec.min, old_spec.mag, old_spec.wrap_s, old_spec.wrap_t, old_spec.mut, old_spec.usage, nullptr);
+		glNamedFramebufferTexture(framebuffer->handle, GL_DEPTH_STENCIL_ATTACHMENT, framebuffer->depth_attachment.handle, 0, 0);
+	}
+	
+	if (glCheckNamedFramebufferStatus(framebuffer->handle, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		AssertTrue(false, "Framebuffer Incomplete");
+	}
 }
 
 void R_FramebufferFree(R_Framebuffer* framebuffer) {
 	for (u32 i = 0; i < framebuffer->color_attachment_count; i++) {
-        R_Texture2DFree(&framebuffer->color_attachments[i]);
-    }
+		R_Texture2DFree(&framebuffer->color_attachments[i]);
+	}
 	free(framebuffer->color_attachments);
-    if (framebuffer->depth_attachment.format != TextureFormat_Invalid)
-        R_Texture2DFree(&framebuffer->depth_attachment);
-    glDeleteFramebuffers(1, &framebuffer->handle);
+	if (framebuffer->depth_attachment.format != TextureFormat_Invalid)
+		R_Texture2DFree(&framebuffer->depth_attachment);
+	glDeleteFramebuffers(1, &framebuffer->handle);
 }
 
 //~ Other

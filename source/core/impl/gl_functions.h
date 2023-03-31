@@ -5,6 +5,8 @@
 
 #include "defines.h"
 
+// TODO(voxel): Switch to metaprogram instead of X Lists
+
 typedef u32 GLenum;
 typedef u8 GLboolean;
 typedef u32 GLbitfield;
@@ -36,11 +38,14 @@ typedef i64 GLint64EXT;
 typedef u64 GLuint64;
 typedef u64 GLuint64EXT;
 
+typedef void (*GLDEBUGPROC) (GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message,const void *userParam);
+
 #define GL_FALSE 0
 #define GL_TRUE 1
 
 #define GL_ARRAY_BUFFER 0x8892
 #define GL_ELEMENT_ARRAY_BUFFER 0x8893
+#define GL_UNIFORM_BUFFER 0x8A11
 
 #define GL_INFO_LOG_LENGTH 0x8B84
 
@@ -177,6 +182,24 @@ typedef u64 GLuint64EXT;
 #define GL_RIGHT 0x0407
 #define GL_FRONT_AND_BACK 0x0408
 
+#define GL_UNIFORM_TYPE 0x8A37
+#define GL_UNIFORM_SIZE 0x8A38
+#define GL_UNIFORM_NAME_LENGTH 0x8A39
+#define GL_UNIFORM_BLOCK_INDEX 0x8A3A
+#define GL_UNIFORM_OFFSET 0x8A3B
+#define GL_UNIFORM_ARRAY_STRIDE 0x8A3C
+#define GL_UNIFORM_MATRIX_STRIDE 0x8A3D
+#define GL_UNIFORM_IS_ROW_MAJOR 0x8A3E
+#define GL_UNIFORM_BLOCK_BINDING 0x8A3F
+#define GL_UNIFORM_BLOCK_DATA_SIZE 0x8A40
+#define GL_UNIFORM_BLOCK_NAME_LENGTH 0x8A41
+#define GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS 0x8A42
+#define GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES 0x8A43
+#define GL_UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER 0x8A44
+#define GL_UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER 0x8A46
+
+#define GL_DEBUG_OUTPUT_SYNCHRONOUS 0x8242
+
 #if defined(BACKEND_GL33)
 
 #  define GL_FUNCTIONS \
@@ -236,6 +259,13 @@ X(glBindFramebuffer, void, (GLenum target, GLuint framebuffer_handle))\
 X(glBlitFramebuffer, void, (GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter))\
 X(glDeleteFramebuffers, void, (GLsizei count, GLuint* fbo_handles))\
 X(glCullFace, void, (GLenum mode))\
+X(glGetUniformBlockIndex, GLuint, (GLuint program, const GLchar *uniformBlockName))\
+X(glGetUniformIndices, void, (GLuint program, GLsizei uniformCount, const GLchar** uniformNames, GLuint* uniformIndices))\
+X(glGetActiveUniformsiv, void, (GLuint program, GLsizei uniformCount, const GLuint* uniformIndices, GLenum pname, GLint *params))\
+X(glGetActiveUniformBlockiv, void, (GLuint program, GLuint uniformBlockIndex, GLenum pname, GLint* params))\
+X(glBindBufferBase, void, (GLenum target, GLuint index, GLuint buffer_handle))\
+
+#  define GL_DEBUG_FUNCTIONS
 
 #elif defined(BACKEND_GL46)
 
@@ -269,6 +299,7 @@ X(glBindVertexArray, void, (GLuint vao_handle))\
 X(glVertexArrayAttribFormat, void, (GLuint vao_handle, GLuint attribute_index, GLint size, GLenum type, GLboolean normalized, GLuint relative_offset))\
 X(glVertexArrayAttribBinding, void, (GLuint vao_handle, GLuint attribute_index, GLuint binding_index))\
 X(glVertexArrayVertexBuffer, void, (GLuint vao_handle, GLuint binding_index, GLuint buffer_handle, GLintptr offset, GLsizei stride))\
+X(glVertexArrayElementBuffer, void, (GLuint vaobj, GLuint buffer_handle))\
 X(glEnableVertexArrayAttrib, void, (GLuint vao_handle, GLuint index))\
 X(glDeleteVertexArrays, void, (GLsizei count, const GLuint* vao_handles))\
 X(glDrawArrays, void, (GLenum mode, GLint first, GLsizei count))\
@@ -276,6 +307,7 @@ X(glClear, void, (GLbitfield mask))\
 X(glClearColor, void, (GLfloat r, GLfloat g, GLfloat b, GLfloat a))\
 X(glCreateTextures, void, (GLenum type, GLsizei count, GLuint* texture_handles))\
 X(glBindTextureUnit, void, (GLint slot, GLuint texture_handle))\
+X(glTextureImage2D, void, (GLuint texture_handle, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void* data))\
 X(glTextureStorage2D, void, (GLuint texture_handle, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height))\
 X(glTextureParameteri, void, (GLuint texture_handle, GLenum pname, GLint param))\
 X(glTextureParameteriv, void, (GLuint texture_handle, GLenum pname, GLint* params))\
@@ -297,15 +329,27 @@ X(glBindFramebuffer, void, (GLenum target, GLuint framebuffer_handle))\
 X(glBlitNamedFramebuffer, void, (GLuint read_fbo_handle, GLuint draw_fbo_handle, GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter))\
 X(glDeleteFramebuffers, void, (GLsizei count, GLuint* fbo_handles))\
 X(glCullFace, void, (GLenum mode))\
+X(glGetUniformBlockIndex, GLuint, (GLuint program, const GLchar *uniformBlockName))\
+X(glGetUniformIndices, void, (GLuint program, GLsizei uniformCount, const GLchar** uniformNames, GLuint* uniformIndices))\
+X(glGetActiveUniformsiv, void, (GLuint program, GLsizei uniformCount, const GLuint* uniformIndices, GLenum pname, GLint *params))\
+X(glGetActiveUniformBlockiv, void, (GLuint program, GLuint uniformBlockIndex, GLenum pname, GLint* params))\
+X(glBindBufferBase, void, (GLenum target, GLuint index, GLuint buffer_handle))\
 
+#if defined(_DEBUG)
+#  define GL_DEBUG_FUNCTIONS \
+X(glDebugMessageCallback, void, (GLDEBUGPROC callback, const void *userParam))
+#else
+#  define GL_DEBUG_FUNCTIONS
 #endif
 
+#endif
 
 #if defined(GL_FUNCTIONS)
 #  define X(Name, Return, Args)\
 typedef Return GL_##Name##_Func Args;\
 extern GL_##Name##_Func* Name;
 GL_FUNCTIONS
+GL_DEBUG_FUNCTIONS
 #  undef X
 #endif // defined(GL_FUNCTIONS)
 

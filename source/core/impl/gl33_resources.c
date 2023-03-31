@@ -5,14 +5,15 @@
 
 #include "gl33_resources.h"
 
-b8 i32_is_null(i32 value) { return value == 0;  }
-b8 i32_is_tomb(i32 value) { return value == 69; }
+static b8 i32_is_null(i32 value) { return value == 0;  }
+static b8 i32_is_tomb(i32 value) { return value == 69; }
 HashTable_Impl(string, i32, str_is_null, str_eq, str_hash, 69, i32_is_null, i32_is_tomb);
+DArray_Impl(R_UniformBufferHandle);
 
 //~ Elpers
 
 static u32 get_size_of(R_AttributeType attrib) {
-	AssertTrue(8 == AttributeType_MAX, "Non Exhaustive switch statement: get_size_of in gl33 backend");
+	AssertTrue(8 == AttributeType_MAX, "[GL33 Backend] Non Exhaustive switch statement: get_size_of");
 	switch (attrib) {
 		case AttributeType_Float1: return 1 * sizeof(f32);
 		case AttributeType_Float2: return 2 * sizeof(f32);
@@ -27,7 +28,7 @@ static u32 get_size_of(R_AttributeType attrib) {
 }
 
 static u32 get_component_count_of(R_AttributeType attrib) {
-	AssertTrue(8 == AttributeType_MAX, "Non Exhaustive switch statement: get_component_count_of in gl33 backend");
+	AssertTrue(8 == AttributeType_MAX, "[GL33 Backend] Non Exhaustive switch statement: get_component_count_of");
 	switch (attrib) {
 		case AttributeType_Float1: return 1;
 		case AttributeType_Float2: return 2;
@@ -42,7 +43,7 @@ static u32 get_component_count_of(R_AttributeType attrib) {
 }
 
 static u32 get_type_of(R_AttributeType attrib) {
-	AssertTrue(8 == AttributeType_MAX, "Non Exhaustive switch statement: get_type_of in gl33 backend");
+	AssertTrue(8 == AttributeType_MAX, "[GL33 Backend] Non Exhaustive switch statement: get_type_of");
 	switch (attrib) {
 		case AttributeType_Float1: return GL_FLOAT;
 		case AttributeType_Float2: return GL_FLOAT;
@@ -57,7 +58,7 @@ static u32 get_type_of(R_AttributeType attrib) {
 }
 
 static u32 get_shader_type_of(R_ShaderType type) {
-	AssertTrue(4 == ShaderType_MAX, "Non Exhaustive switch statement: get_shader_type_of in gl33 backend");
+	AssertTrue(4 == ShaderType_MAX, "[GL33 Backend] Non Exhaustive switch statement: get_shader_type_of");
 	switch (type) {
 		case ShaderType_Vertex: return GL_VERTEX_SHADER;
 		case ShaderType_Fragment: return GL_FRAGMENT_SHADER;
@@ -67,7 +68,7 @@ static u32 get_shader_type_of(R_ShaderType type) {
 }
 
 static u32 get_input_assembly_type_of(R_InputAssembly assembly) {
-	AssertTrue(2 == InputAssembly_MAX, "Non Exhaustive switch statement: get_input_assembly_type_of in gl33 backend");
+	AssertTrue(2 == InputAssembly_MAX, "[GL33 Backend] Non Exhaustive switch statement: get_input_assembly_type_of");
 	switch (assembly) {
 		case InputAssembly_Triangles: return GL_TRIANGLES;
 		case InputAssembly_Lines: return GL_LINES;
@@ -76,7 +77,7 @@ static u32 get_input_assembly_type_of(R_InputAssembly assembly) {
 }
 
 static u32 get_texture_wrap_param_type_of(R_TextureWrapParam param) {
-	AssertTrue(5 == TextureWrap_MAX, "Non Exhaustive switch statement: get_texture_wrap_param_type_of in gl33 backend");
+	AssertTrue(5 == TextureWrap_MAX, "[GL33 Backend] Non Exhaustive switch statement: get_texture_wrap_param_type_of");
 	switch (param) {
 		case TextureWrap_ClampToEdge: return GL_CLAMP_TO_EDGE;
 		case TextureWrap_ClampToBorder: return GL_CLAMP_TO_BORDER;
@@ -89,7 +90,7 @@ static u32 get_texture_wrap_param_type_of(R_TextureWrapParam param) {
 
 static u32 get_texture_resize_param_type_of(R_TextureResizeParam param) {
 	AssertTrue(6 == TextureResize_MAX,
-			   "Non Exhaustive switch statement: get_texture_resize_param_type_of in gl33 backend");
+			   "[GL33 Backend] Non Exhaustive switch statement: get_texture_resize_param_type_of");
 	switch (param) {
 		case TextureResize_Nearest: return GL_NEAREST;
 		case TextureResize_Linear: return GL_LINEAR;
@@ -103,7 +104,7 @@ static u32 get_texture_resize_param_type_of(R_TextureResizeParam param) {
 
 static u32 get_texture_format_type_of(R_TextureFormat format) {
 	AssertTrue(7 == TextureFormat_MAX,
-			   "Non Exhaustive switch statement: get_texture_format_type_of in gl33 backend");
+			   "[GL33 Backend] Non Exhaustive switch statement: get_texture_format_type_of");
 	switch (format) {
 		case TextureFormat_RInteger: return GL_RED_INTEGER;
 		case TextureFormat_R: return GL_RED;
@@ -117,7 +118,7 @@ static u32 get_texture_format_type_of(R_TextureFormat format) {
 
 static u32 get_texture_datatype_of(R_TextureFormat format) {
 	AssertTrue(7 == TextureFormat_MAX,
-			   "Non Exhaustive switch statement: get_texture_datatype_of in gl33 backend");
+			   "[GL33 Backend] Non Exhaustive switch statement: get_texture_datatype_of");
 	switch (format) {
 		case TextureFormat_RInteger: return GL_INT;
 		case TextureFormat_R: return GL_UNSIGNED_BYTE;
@@ -131,7 +132,7 @@ static u32 get_texture_datatype_of(R_TextureFormat format) {
 
 static u32 get_texture_internal_format_type_of(R_TextureFormat format) {
     AssertTrue(7 == TextureFormat_MAX,
-			   "Non Exhaustive switch statement: get_texture_internal_format_type_of in gl33 backend");
+			   "[GL33 Backend] Non Exhaustive switch statement: get_texture_internal_format_type_of");
 	switch (format) {
         case TextureFormat_RInteger: return GL_R32I;
         case TextureFormat_R: return GL_R8;
@@ -145,7 +146,7 @@ static u32 get_texture_internal_format_type_of(R_TextureFormat format) {
 
 static u32 get_texture_channel_of(R_TextureChannel format) {
     AssertTrue(6 == TextureChannel_MAX,
-			   "Non Exhaustive switch statement: get_texture_channel_of in gl33 backend");
+			   "[GL33 Backend] Non Exhaustive switch statement: get_texture_channel_of");
 	switch (format) {
 		case TextureChannel_Zero: return GL_ZERO;
 		case TextureChannel_One: return GL_ONE;
@@ -157,6 +158,13 @@ static u32 get_texture_channel_of(R_TextureChannel format) {
     return 0;
 }
 
+static u32 get_buffer_type_of(R_BufferFlags flags) {
+	if (flags & BufferFlag_Type_Vertex) return GL_ARRAY_BUFFER;
+	else if (flags & BufferFlag_Type_Index) return GL_ELEMENT_ARRAY_BUFFER;
+	LogFatal("[GL33 Backend] Please Provide a buffer type");
+	return 0;
+}
+
 //~ Function Implementations
 
 void R_BufferAlloc(R_Buffer* buf, R_BufferFlags flags, u32 v_stride) {
@@ -166,17 +174,112 @@ void R_BufferAlloc(R_Buffer* buf, R_BufferFlags flags, u32 v_stride) {
 
 void R_BufferData(R_Buffer* buf, u64 size, void* data) {
 	u32 usage = buf->flags & BufferFlag_Dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW;
-	glBindBuffer(GL_ARRAY_BUFFER, buf->handle);
-	glBufferData(GL_ARRAY_BUFFER, size, data, usage);
+	glBindBuffer(get_buffer_type_of(buf->flags), buf->handle);
+	glBufferData(get_buffer_type_of(buf->flags), size, data, usage);
 }
 
 void R_BufferUpdate(R_Buffer* buf, u64 offset, u64 size, void* data) {
-	glBindBuffer(GL_ARRAY_BUFFER, buf->handle);
-	glBufferSubData(GL_ARRAY_BUFFER, offset, size, data);
+	glBindBuffer(get_buffer_type_of(buf->flags), buf->handle);
+	glBufferSubData(get_buffer_type_of(buf->flags), offset, size, data);
 }
 
 void R_BufferFree(R_Buffer* buf) {
 	glDeleteBuffers(1, &buf->handle);
+}
+
+
+
+void R_UniformBufferAlloc(R_UniformBuffer* buf, string name, string_array member_names,
+						  R_ShaderPack* pack, R_ShaderType type) {
+	buf->dirty = false;
+	buf->stage = type;
+	
+	buf->bindpoint = glGetUniformBlockIndex(pack->handle, (const char*) name.str);
+	glGetActiveUniformBlockiv(pack->handle, buf->bindpoint, GL_UNIFORM_BLOCK_DATA_SIZE, (i32*) &buf->size);
+	hash_table_init(string, i32, &buf->uniform_offsets);
+	
+	// @unsure Maybe use an arena allocation here, instead of a malloc
+	buf->cpu_side_buffer = malloc(buf->size);
+	MemoryZero(buf->cpu_side_buffer, buf->size);
+	
+	M_Scratch scratch = scratch_get();
+	u8** names   = arena_alloc(&scratch.arena, member_names.len * sizeof(u8*));
+	u32* indices = arena_alloc(&scratch.arena, member_names.len * sizeof(u32));
+	i32* offsets = arena_alloc(&scratch.arena, member_names.len * sizeof(i32));
+	
+	Iterate(member_names, i) {
+		names[i] = member_names.elems[i].str;
+	}
+	
+	glGetUniformIndices(pack->handle, member_names.len, (const char**) names, indices);
+	glGetActiveUniformsiv(pack->handle, member_names.len, indices, GL_UNIFORM_OFFSET, offsets);
+	
+	Iterate(member_names, i) {
+		hash_table_set(string, i32, &buf->uniform_offsets, member_names.elems[i], offsets[i]);
+	}
+	
+	scratch_return(&scratch);
+	
+	glGenBuffers(1, &buf->handle);
+	glBindBuffer(GL_UNIFORM_BUFFER, buf->handle);
+	glBufferData(GL_UNIFORM_BUFFER, buf->size, buf->cpu_side_buffer, GL_DYNAMIC_DRAW);
+}
+
+void R_UniformBufferFree(R_UniformBuffer* buf) {
+	hash_table_free(string, i32, &buf->uniform_offsets);
+	free(buf->cpu_side_buffer);
+	glDeleteBuffers(1, &buf->handle);
+}
+
+
+void R_UniformBufferSetMat4(R_UniformBuffer* buf, string name, mat4 mat) {
+	i32 offset = -1;
+	if (!hash_table_get(string, i32, &buf->uniform_offsets, name, &offset)) {
+		LogError("[GL33 Backend] Tried to set member '%.*s' of uniform buffer '%.*s' that doesn't exist", str_expand(name), str_expand(buf->name));
+		return;
+	}
+	memmove(buf->cpu_side_buffer + offset, &mat, sizeof(mat4));
+	buf->dirty = true;
+}
+
+void R_UniformBufferSetInt(R_UniformBuffer* buf, string name, i32 val) {
+	i32 offset = -1;
+	if (!hash_table_get(string, i32, &buf->uniform_offsets, name, &offset)) {
+		LogError("[GL33 Backend] Tried to set member '%.*s' of uniform buffer '%.*s' that doesn't exist", str_expand(name), str_expand(buf->name));
+		return;
+	}
+	memmove(buf->cpu_side_buffer + offset, &val, sizeof(i32));
+	buf->dirty = true;
+}
+
+void R_UniformBufferSetIntArray(R_UniformBuffer* buf, string name, i32* vals, u32 count) {
+	i32 offset = -1;
+	if (!hash_table_get(string, i32, &buf->uniform_offsets, name, &offset)) {
+		LogError("[GL33 Backend] Tried to set member '%.*s' of uniform buffer '%.*s' that doesn't exist", str_expand(name), str_expand(buf->name));
+		return;
+	}
+	memmove(buf->cpu_side_buffer + offset, vals, sizeof(i32) * count);
+	buf->dirty = true;
+}
+
+void R_UniformBufferSetFloat(R_UniformBuffer* buf, string name, f32 val) {
+	i32 offset = -1;
+	if (!hash_table_get(string, i32, &buf->uniform_offsets, name, &offset)) {
+		LogError("[GL33 Backend] Tried to set member '%.*s' of uniform buffer '%.*s' that doesn't exist", str_expand(name), str_expand(buf->name));
+		return;
+	}
+	memmove(buf->cpu_side_buffer + offset, &val, sizeof(f32));
+	buf->dirty = true;
+}
+
+void R_UniformBufferSetVec4(R_UniformBuffer* buf, string name, vec4 val) {
+	i32 offset = -1;
+	if (!hash_table_get(string, i32, &buf->uniform_offsets, name, &offset)) {
+		LogError("[GL33 Backend] Tried to set member '%.*s' of uniform buffer '%.*s' that doesn't exist", str_expand(name), str_expand(buf->name));
+		return;
+	}
+	memmove(buf->cpu_side_buffer + offset, &val, sizeof(vec4));
+	buf->dirty = true;
 }
 
 //~ Shaders
@@ -213,8 +316,6 @@ void R_ShaderFree(R_Shader* shader) {
 }
 
 void R_ShaderPackAlloc(R_ShaderPack* pack, R_Shader* shaders, u32 shader_count) {
-	hash_table_init(string, i32, &pack->uniforms);
-	
 	pack->handle = glCreateProgram();
 	for (u32 i = 0; i < shader_count; i++) {
 		glAttachShader(pack->handle, shaders[i].handle);
@@ -273,53 +374,7 @@ void R_ShaderPackAllocLoad(R_ShaderPack* pack, string fp_prefix) {
 	scratch_return(&scratch);
 }
 
-void R_ShaderPackUploadMat4(R_ShaderPack* pack, string name, mat4 mat) {
-	i32 loc;
-    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
-        loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
-        hash_table_set(string, i32, &pack->uniforms, name, loc);
-    }
-    glUniformMatrix4fv(loc, 1, GL_TRUE, mat.a);
-}
-
-void R_ShaderPackUploadInt(R_ShaderPack* pack, string name, i32 val) {
-	i32 loc;
-    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
-        loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
-        hash_table_set(string, i32, &pack->uniforms, name, loc);
-    }
-    glUniform1i(loc, val);
-}
-
-void R_ShaderPackUploadIntArray(R_ShaderPack* pack, string name, i32* vals, u32 count) {
-	i32 loc;
-    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
-        loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
-        hash_table_set(string, i32, &pack->uniforms, name, loc);
-    }
-    glUniform1iv(loc, count, vals);
-}
-
-void R_ShaderPackUploadFloat(R_ShaderPack* pack, string name, f32 val) {
-	i32 loc;
-    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
-		loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
-		hash_table_set(string, i32, &pack->uniforms, name, loc);
-	}
-	glUniform1f(loc, val);
-}
-
-void R_ShaderPackUploadVec4(R_ShaderPack* pack, string name, vec4 val) {
-	i32 loc;
-    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
-        loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
-        hash_table_set(string, i32, &pack->uniforms, name, loc);
-    }
-    glUniform4f(loc, val.x, val.y, val.z, val.w);
-}
-
 void R_ShaderPackFree(R_ShaderPack* pack) {
-	hash_table_free(string, i32, &pack->uniforms);
 	glDeleteProgram(pack->handle);
 }
 
@@ -335,25 +390,45 @@ void R_PipelineAlloc(R_Pipeline* in, R_InputAssembly assembly, R_Attribute* attr
 }
 
 void R_PipelineAddBuffer(R_Pipeline* in, R_Buffer* buf, u32 attribute_count) {
-	glBindVertexArray(in->handle);
-	u32 stride = 0;
-	for (u32 i = in->attribpoint; i < in->attribpoint + attribute_count; i++) {
-		stride += get_size_of(in->attributes[i].type);
+	if (buf->flags & BufferFlag_Type_Vertex) {
+		glBindVertexArray(in->handle);
+		u32 stride = 0;
+		for (u32 i = in->attribpoint; i < in->attribpoint + attribute_count; i++) {
+			stride += get_size_of(in->attributes[i].type);
+		}
+		
+		glBindBuffer(get_buffer_type_of(buf->flags), buf->handle);
+		u32 offset = 0;
+		for (u32 i = in->attribpoint; i < in->attribpoint + attribute_count; i++) {
+			glVertexAttribPointer(i, get_component_count_of(in->attributes[i].type),
+								  get_type_of(in->attributes[i].type), GL_FALSE, stride, (void*) offset);
+			glEnableVertexAttribArray(i);
+			offset += get_size_of(in->attributes[i].type);
+		}
+	} else if (buf->flags & BufferFlag_Type_Index) {
+		glBindVertexArray(in->handle);
+		glBindBuffer(get_buffer_type_of(buf->flags), buf->handle);
 	}
-	
-	glBindBuffer(GL_ARRAY_BUFFER, buf->handle);
-	u32 offset = 0;
-	for (u32 i = in->attribpoint; i < in->attribpoint + attribute_count; i++) {
-		glVertexAttribPointer(i, get_component_count_of(in->attributes[i].type),
-							  get_type_of(in->attributes[i].type), GL_FALSE, stride, (void*) offset);
-		glEnableVertexAttribArray(i);
-		offset += get_size_of(in->attributes[i].type);
-	}
+}
+
+void R_PipelineAddUniformBuffer(R_Pipeline* in, R_UniformBuffer* buf) {
+	darray_add(R_UniformBufferHandle, &in->uniform_buffers, buf);
 }
 
 void R_PipelineBind(R_Pipeline* in) {
 	glUseProgram(in->shader->handle);
 	glBindVertexArray(in->handle);
+	
+	Iterate(in->uniform_buffers, i) {
+		R_UniformBuffer* curr = in->uniform_buffers.elems[i];
+		glBindBuffer(GL_UNIFORM_BUFFER, curr->handle);
+		if (curr->dirty) {
+			glBufferSubData(GL_UNIFORM_BUFFER, 0, curr->size, curr->cpu_side_buffer);
+			curr->dirty = false;
+		}
+		glBindBufferBase(GL_UNIFORM_BUFFER, i, curr->handle);
+	}
+	
 	switch (in->blend_mode) {
 		case BlendMode_None: {
 			glDisable(GL_BLEND);
@@ -377,7 +452,10 @@ void R_PipelineFree(R_Pipeline* in) {
 
 //~ Textures
 
-void R_Texture2DAlloc(R_Texture2D* texture, R_TextureFormat format, u32 width, u32 height, R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t) {
+void R_Texture2DAlloc(R_Texture2D* texture, R_TextureFormat format, u32 width, u32 height,
+					  R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s,
+					  R_TextureWrapParam wrap_t, R_TextureMutability mut, R_TextureUsage usage,
+					  void* initial_data) {
 	texture->width = width;
 	texture->height = height;
 	texture->format = format;
@@ -385,12 +463,15 @@ void R_Texture2DAlloc(R_Texture2D* texture, R_TextureFormat format, u32 width, u
 	texture->mag = mag;
 	texture->wrap_s = wrap_s;
 	texture->wrap_t = wrap_t;
+	texture->mut = mut;
+	texture->usage = usage;
+	
 	glGenTextures(1, &texture->handle);
 	glBindTexture(GL_TEXTURE_2D, texture->handle);
 	
 	u32 datatype = format == TextureFormat_DepthStencil ? GL_UNSIGNED_INT_24_8 : GL_UNSIGNED_BYTE;
 	
-	glTexImage2D(GL_TEXTURE_2D, 0, get_texture_internal_format_type_of(format), width, height, 0, get_texture_format_type_of(format), datatype, nullptr);
+	glTexImage2D(GL_TEXTURE_2D, 0, get_texture_internal_format_type_of(format), width, height, 0, get_texture_format_type_of(format), datatype, initial_data);
 	
 	AssertTrue(mag == TextureResize_Nearest || mag == TextureResize_Linear, "Magnification Filter for texture can only be Nearest or Linear");
 	
@@ -400,18 +481,20 @@ void R_Texture2DAlloc(R_Texture2D* texture, R_TextureFormat format, u32 width, u
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, get_texture_resize_param_type_of(mag));
 }
 
-void R_Texture2DAllocLoad(R_Texture2D* texture, string filepath, R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t) {
+void R_Texture2DAllocLoad(R_Texture2D* texture, string filepath, R_TextureResizeParam min,
+						  R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t,
+						  R_TextureMutability mut, R_TextureUsage usage) {
 	i32 width, height, channels;
 	stbi_set_flip_vertically_on_load(true);
 	u8* data = stbi_load((const char*)filepath.str, &width, &height, &channels, 0);
 	
 	if (channels == 3) {
-		R_Texture2DAlloc(texture, TextureFormat_RGB, width, height, min, mag, wrap_s, wrap_t);
+		R_Texture2DAlloc(texture, TextureFormat_RGB, width, height, min, mag, wrap_s, wrap_t, mut, usage,
+						 data);
 	} else if (channels == 4) {
-		R_Texture2DAlloc(texture, TextureFormat_RGBA, width, height, min, mag, wrap_s, wrap_t);
+		R_Texture2DAlloc(texture, TextureFormat_RGBA, width, height, min, mag, wrap_s, wrap_t, mut, usage, data);
 	}
 	
-	R_Texture2DData(texture, data);
 	stbi_image_free(data);
 }
 
@@ -437,7 +520,7 @@ b8 R_Texture2DEquals(R_Texture2D* a, R_Texture2D* b) {
 	return a->handle == b->handle;
 }
 
-void R_Texture2DBindTo(R_Texture2D* texture, u32 slot) {
+void R_Texture2DBindTo(R_Texture2D* texture, u32 slot, R_ShaderType stage) {
 	glActiveTexture(GL_TEXTURE0 + slot);
 	glBindTexture(GL_TEXTURE_2D, texture->handle);
 }
@@ -452,31 +535,31 @@ void R_FramebufferCreate(R_Framebuffer* framebuffer, u32 width, u32 height, R_Te
 	if (!width) width = 1;
 	if (!height) height = 1;
 	glGenFramebuffers(1, &framebuffer->handle);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->handle);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->handle);
 	framebuffer->width = width;
-    framebuffer->height = height;
+	framebuffer->height = height;
 	framebuffer->color_attachments = malloc(sizeof(R_Texture2D) * color_attachment_count);
 	MemoryZero(framebuffer->color_attachments, sizeof(R_Texture2D) * color_attachment_count);
 	framebuffer->depth_attachment = depth_attachment;
-    framebuffer->color_attachment_count = color_attachment_count;
+	framebuffer->color_attachment_count = color_attachment_count;
 	
 	M_Scratch scratch = scratch_get();
 	u32* draw_buffers_active = arena_alloc(&scratch.arena, color_attachment_count);
-    for (u32 i = 0; i < color_attachment_count; i++) {
-        framebuffer->color_attachments[i] = color_attachments[i];
-        draw_buffers_active[i] = GL_COLOR_ATTACHMENT0 + i;
-        R_Texture2DBindTo(&color_attachments[i], 0);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, color_attachments[i].handle, 0);
-    }
-    glDrawBuffers(color_attachment_count, draw_buffers_active);
+	for (u32 i = 0; i < color_attachment_count; i++) {
+		framebuffer->color_attachments[i] = color_attachments[i];
+		draw_buffers_active[i] = GL_COLOR_ATTACHMENT0 + i;
+		R_Texture2DBindTo(&color_attachments[i], 0, ShaderType_Fragment);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, color_attachments[i].handle, 0);
+	}
+	glDrawBuffers(color_attachment_count, draw_buffers_active);
 	scratch_return(&scratch);
 	
 	if (depth_attachment.format != TextureFormat_Invalid) {
-        AssertTrue(depth_attachment.format == TextureFormat_DepthStencil, "Depth Texture format is not TextureFormat_DepthStencil");
-        R_Texture2DBindTo(&depth_attachment, 0);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_attachment.handle, 0);
-    }
-    
+		AssertTrue(depth_attachment.format == TextureFormat_DepthStencil, "Depth Texture format is not TextureFormat_DepthStencil");
+		R_Texture2DBindTo(&depth_attachment, 0, ShaderType_Fragment);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_attachment.handle, 0);
+	}
+	
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		LogError("[GL33 Backend] Incomplete framebuffer with code %x", glCheckFramebufferStatus(GL_FRAMEBUFFER));
 	}
@@ -493,63 +576,67 @@ void R_FramebufferBindScreen(void) {
 void R_FramebufferBlitToScreen(OS_Window* window, R_Framebuffer* framebuffer) {
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer->handle);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBlitFramebuffer(0, 0, framebuffer->width, framebuffer->height, 0, 0, window->width, window->height,
+	glBlitFramebuffer(0, 0, framebuffer->width, framebuffer->height, 0, 0, window->width, window->height,
 					  GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 }
 
 void R_FramebufferReadPixel(R_Framebuffer* framebuffer, u32 attachment, u32 x, u32 y,
 							void* data) {
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->handle);
-    glReadBuffer(GL_COLOR_ATTACHMENT0 + attachment);
+	glReadBuffer(GL_COLOR_ATTACHMENT0 + attachment);
 	R_TextureFormat format = framebuffer->color_attachments[attachment].format;
-    glReadPixels(x, y, 1, 1, get_texture_format_type_of(format), get_texture_datatype_of(format), data);
+	glReadPixels(x, y, 1, 1, get_texture_format_type_of(format), get_texture_datatype_of(format), data);
 }
 
 static void R_FramebufferDeleteInternal(R_Framebuffer* framebuffer) {
 	for (u32 i = 0; i < framebuffer->color_attachment_count; i++) {
-        R_Texture2DFree(&framebuffer->color_attachments[i]);
-    }
-    if (framebuffer->depth_attachment.format != TextureFormat_Invalid)
-        R_Texture2DFree(&framebuffer->depth_attachment);
-    glDeleteFramebuffers(1, &framebuffer->handle);
+		R_Texture2DFree(&framebuffer->color_attachments[i]);
+	}
+	if (framebuffer->depth_attachment.format != TextureFormat_Invalid)
+		R_Texture2DFree(&framebuffer->depth_attachment);
+	glDeleteFramebuffers(1, &framebuffer->handle);
 }
 
 void R_FramebufferResize(R_Framebuffer* framebuffer, u32 new_width, u32 new_height) {
 	R_FramebufferDeleteInternal(framebuffer);
 	if (!new_width) new_width = 1;
-    if (!new_height) new_height = 1;
-    glGenFramebuffers(1, &framebuffer->handle);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->handle);
-    framebuffer->width = new_width;
-    framebuffer->height = new_height;
+	if (!new_height) new_height = 1;
+	glGenFramebuffers(1, &framebuffer->handle);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->handle);
+	framebuffer->width = new_width;
+	framebuffer->height = new_height;
 	
-    for (u32 i = 0; i < framebuffer->color_attachment_count; i++) {
-        R_Texture2D old_spec = framebuffer->color_attachments[i];
-		R_Texture2DAlloc(&framebuffer->color_attachments[i], old_spec.format, new_width, new_height, old_spec.min, old_spec.mag, old_spec.wrap_s, old_spec.wrap_t);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, framebuffer->color_attachments[i].handle, 0);
-    }
-    
-    if (framebuffer->depth_attachment.format != TextureFormat_Invalid) {
-        AssertTrue(framebuffer->depth_attachment.format == TextureFormat_DepthStencil, "Depth Texture format is not TextureFormat_DepthStencil");
-        
-        R_Texture2D old_spec = framebuffer->depth_attachment;
-		R_Texture2DAlloc(&framebuffer->depth_attachment, old_spec.format, new_width, new_height, old_spec.min, old_spec.mag, old_spec.wrap_s, old_spec.wrap_t);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, framebuffer->depth_attachment.handle, 0);
-    }
-    
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        AssertTrue(false, "Framebuffer Incomplete");
-    }
+	for (u32 i = 0; i < framebuffer->color_attachment_count; i++) {
+		R_Texture2D old_spec = framebuffer->color_attachments[i];
+		R_Texture2DAlloc(&framebuffer->color_attachments[i], old_spec.format, new_width, new_height,
+						 old_spec.min, old_spec.mag, old_spec.wrap_s, old_spec.wrap_t, old_spec.mut,
+						 old_spec.usage, nullptr);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, framebuffer->color_attachments[i].handle, 0);
+	}
+	
+	if (framebuffer->depth_attachment.format != TextureFormat_Invalid) {
+		AssertTrue(framebuffer->depth_attachment.format == TextureFormat_DepthStencil, "Depth Texture format is not TextureFormat_DepthStencil");
+		
+		R_Texture2D old_spec = framebuffer->depth_attachment;
+		R_Texture2DAlloc(&framebuffer->depth_attachment, old_spec.format, new_width, new_height, old_spec.min,
+						 old_spec.mag, old_spec.wrap_s, old_spec.wrap_t, old_spec.mut, old_spec.usage,
+						 nullptr);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, framebuffer->depth_attachment.handle, 0);
+	}
+	
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		AssertTrue(false, "Framebuffer Incomplete");
+	}
 }
 
 void R_FramebufferFree(R_Framebuffer* framebuffer) {
 	for (u32 i = 0; i < framebuffer->color_attachment_count; i++) {
-        R_Texture2DFree(&framebuffer->color_attachments[i]);
-    }
+		R_Texture2DFree(&framebuffer->color_attachments[i]);
+	}
 	free(framebuffer->color_attachments);
-    if (framebuffer->depth_attachment.format != TextureFormat_Invalid)
-        R_Texture2DFree(&framebuffer->depth_attachment);
-    glDeleteFramebuffers(1, &framebuffer->handle);
+	if (framebuffer->depth_attachment.format != TextureFormat_Invalid)
+		R_Texture2DFree(&framebuffer->depth_attachment);
+	glDeleteFramebuffers(1, &framebuffer->handle);
 }
 
 

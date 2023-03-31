@@ -18,7 +18,6 @@ enum {
 	// Enable only one of these
 	BufferFlag_Type_Vertex = 0x2,
 	BufferFlag_Type_Index = 0x4,
-	BufferFlag_Type_Uniform = 0x8,
 };
 
 typedef u32 R_ShaderType;
@@ -115,6 +114,21 @@ enum {
 	TextureChannel_MAX,
 };
 
+typedef u32 R_TextureMutability;
+enum {
+	TextureMutability_Immutable,
+	TextureMutability_Uncommon,
+	TextureMutability_Dynamic,
+	
+	TextureMutability_MAX,
+};
+
+typedef u32 R_TextureUsage;
+enum {
+	TextureUsage_ShaderResource = 0x1,
+	TextureUsage_Drawable = 0x2,
+};
+
 typedef u32 R_BufferMask;
 enum {
 	BufferMask_Color = 0x01,
@@ -135,10 +149,19 @@ enum {
 //~ Buffers
 void R_BufferAlloc(R_Buffer* buf, R_BufferFlags flags, u32 v_stride);
 void R_BufferData(R_Buffer* buf, u64 size, void* data);
-void R_BufferUpdate(R_Buffer* _buf, u64 offset, u64 size, void* data);
+void R_BufferUpdate(R_Buffer* buf, u64 offset, u64 size, void* data);
 void R_BufferFree(R_Buffer* buf);
 
+// TODO(voxel): Change set-uniform functions to work on said UBOs
+void R_UniformBufferAlloc(R_UniformBuffer* buf, string name, string_array member_names,
+						  R_ShaderPack* pack, R_ShaderType type);
+void R_UniformBufferFree(R_UniformBuffer* buf);
 
+void R_UniformBufferSetMat4(R_UniformBuffer* buf, string name, mat4 mat);
+void R_UniformBufferSetInt(R_UniformBuffer* buf, string name, i32 val);
+void R_UniformBufferSetIntArray(R_UniformBuffer* buf, string name, i32* vals, u32 count);
+void R_UniformBufferSetFloat(R_UniformBuffer* buf, string name, f32 val);
+void R_UniformBufferSetVec4(R_UniformBuffer* buf, string name, vec4 val);
 
 //~ Shaders
 void R_ShaderAlloc(R_Shader* shader, string data, R_ShaderType type);
@@ -148,39 +171,35 @@ void R_ShaderFree(R_Shader* shader);
 void R_ShaderPackAlloc(R_ShaderPack* pack, R_Shader* shaders, u32 shader_count);
 void R_ShaderPackAllocLoad(R_ShaderPack* pack, string fp_prefix);
 void R_ShaderPackFree(R_ShaderPack* pack);
-void R_ShaderPackUploadMat4(R_ShaderPack* pack, string name, mat4 mat);
-void R_ShaderPackUploadInt(R_ShaderPack* pack, string name, i32 val);
-void R_ShaderPackUploadIntArray(R_ShaderPack* _pack, string name, i32* vals, u32 count);
-void R_ShaderPackUploadFloat(R_ShaderPack* pack, string name, f32 val);
-void R_ShaderPackUploadVec4(R_ShaderPack* pack, string name, vec4 val);
-
 
 
 //~ Pipelines (VAOs OR NOT)
-void R_PipelineAlloc(R_Pipeline* _in, R_InputAssembly assembly, R_Attribute* attributes, u32 attribute_count, R_ShaderPack* shader, R_BlendMode blending);
-void R_PipelineAddBuffer(R_Pipeline* in, R_Buffer* _buf, u32 attribute_count);
+void R_PipelineAlloc(R_Pipeline* in, R_InputAssembly assembly, R_Attribute* attributes, u32 attribute_count, R_ShaderPack* shader, R_BlendMode blending);
+void R_PipelineAddBuffer(R_Pipeline* in, R_Buffer* buf, u32 attribute_count);
+void R_PipelineAddUniformBuffer(R_Pipeline* in, R_UniformBuffer* buf);
 void R_PipelineBind(R_Pipeline* in);
 void R_PipelineFree(R_Pipeline* in);
 
 
 
 //~ Textures
-void R_Texture2DAlloc(R_Texture2D* texture, R_TextureFormat format, u32 width, u32 height, R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t);
-void R_Texture2DAllocLoad(R_Texture2D* texture, string filepath, R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t);
+// NOTE(voxel): Consider converting to desc-style instead of this amount of args :pain:
+void R_Texture2DAlloc(R_Texture2D* texture, R_TextureFormat format, u32 width, u32 height, R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t, R_TextureMutability mut, R_TextureUsage usage, void* initial_data);
+void R_Texture2DAllocLoad(R_Texture2D* texture, string filepath, R_TextureResizeParam min, R_TextureResizeParam mag, R_TextureWrapParam wrap_s, R_TextureWrapParam wrap_t, R_TextureMutability mut, R_TextureUsage usage);
 void R_Texture2DData(R_Texture2D* texture, void* data);
 void R_Texture2DWhite(R_Texture2D* texture);
 b8   R_Texture2DEquals(R_Texture2D* a, R_Texture2D* b);
-void R_Texture2DSwizzle(R_Texture2D* _texture, i32* swizzles);
-void R_Texture2DBindTo(R_Texture2D* texture, u32 slot);
+void R_Texture2DSwizzle(R_Texture2D* texture, i32* swizzles);
+void R_Texture2DBindTo(R_Texture2D* texture, u32 slot, R_ShaderType stage);
 void R_Texture2DFree(R_Texture2D* texture);
 
 
 //~ Framebuffer
-void R_FramebufferCreate(R_Framebuffer* _framebuffer, u32 width, u32 height, R_Texture2D* color_attachments, u32 color_attachment_count, R_Texture2D depth_attachment);
+void R_FramebufferCreate(R_Framebuffer* framebuffer, u32 width, u32 height, R_Texture2D* color_attachments, u32 color_attachment_count, R_Texture2D depth_attachment);
 void R_FramebufferBind(R_Framebuffer* framebuffer);
 void R_FramebufferBindScreen(void);
 void R_FramebufferBlitToScreen(OS_Window* window, R_Framebuffer* framebuffer);
-void R_FramebufferReadPixel(R_Framebuffer* _framebuffer, u32 attachment, u32 x, u32 y,
+void R_FramebufferReadPixel(R_Framebuffer* framebuffer, u32 attachment, u32 x, u32 y,
 							void* data);
 void R_FramebufferResize(R_Framebuffer* framebuffer, u32 new_width, u32 new_height);
 void R_FramebufferFree(R_Framebuffer* framebuffer);

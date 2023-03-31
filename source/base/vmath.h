@@ -33,7 +33,7 @@ typedef struct quat { f32 s; f32 i; f32 j; f32 k; } quat;
 
 //~ Helpful Color things
 
-#define Color_Red vec4_init(0.8f, 0.3f, 0.2f, 1.f)
+#define Color_Red vec4_init(0.8f, 0.2f, 0.3f, 1.f)
 #define Color_Green vec4_init(0.2f, 0.8f, 0.3f, 1.f)
 #define Color_Blue vec4_init(0.3f, 0.2f, 0.8f, 1.f)
 #define Color_Magenta vec4_init(0.8f, 0.3f, 0.7f, 1.f)

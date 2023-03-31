@@ -88,6 +88,11 @@ static W32_wglGetProcAddress* v_wglGetProcAddress;
 static W32_wglChoosePixelFormatARB* v_wglChoosePixelFormatARB;
 static W32_wglCreateContextAttribsARB* v_wglCreateContextAttribsARB;
 
+void
+MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void *userParam) {
+	LogError("[GL46 Backend] OpenGL Error: %s", message);
+}
+
 long_func* _GetAddress(const char* name) {
 	return (long_func*) GetProcAddress(opengl_module, name);
 }
@@ -243,6 +248,9 @@ void B_BackendInitShared(OS_Window* _window, OS_Window* _share) {
 			WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
 			WGL_CONTEXT_MINOR_VERSION_ARB, 6,
 			WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+#if defined(_DEBUG)
+            WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_DEBUG_BIT_ARB,
+#endif
 			0,
 		};
 		
@@ -258,6 +266,9 @@ void B_BackendInitShared(OS_Window* _window, OS_Window* _share) {
 		
 		__LoadGLFunctions(v_wglGetProcAddress, _GetAddress);
 	}
+	
+	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+	glDebugMessageCallback(MessageCallback, nullptr);
 	
 	ReleaseDC(window->handle, dc);
 	
