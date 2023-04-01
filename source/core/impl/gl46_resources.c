@@ -334,6 +334,8 @@ void R_ShaderPackAlloc(R_ShaderPack* pack, R_Shader* shaders, u32 shader_count) 
 	for (u32 i = 0; i < shader_count; i++) {
 		glDetachShader(pack->handle, shaders[i].handle);
 	}
+	
+	hash_table_init(string, i32, &pack->uniforms);
 }
 
 void R_ShaderPackAllocLoad(R_ShaderPack* pack, string fp_prefix) {
@@ -371,8 +373,56 @@ void R_ShaderPackAllocLoad(R_ShaderPack* pack, string fp_prefix) {
 }
 
 void R_ShaderPackFree(R_ShaderPack* pack) {
+	hash_table_free(string, i32, &pack->uniforms);
 	glDeleteProgram(pack->handle);
 }
+
+
+void R_ShaderPackUploadMat4(R_ShaderPack* pack, string name, mat4 mat) {
+	i32 loc;
+    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
+        loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
+        hash_table_set(string, i32, &pack->uniforms, name, loc);
+    }
+    glUniformMatrix4fv(loc, 1, GL_FALSE, mat.a);
+}
+
+void R_ShaderPackUploadInt(R_ShaderPack* pack, string name, i32 val) {
+	i32 loc;
+    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
+        loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
+        hash_table_set(string, i32, &pack->uniforms, name, loc);
+    }
+    glUniform1i(loc, val);
+}
+
+void R_ShaderPackUploadIntArray(R_ShaderPack* pack, string name, i32* vals, u32 count) {
+	i32 loc;
+    if (!hash_table_get(string, i32,&pack->uniforms, name, &loc)) {
+        loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
+        hash_table_set(string, i32, &pack->uniforms, name, loc);
+    }
+    glUniform1iv(loc, count, vals);
+}
+
+void R_ShaderPackUploadFloat(R_ShaderPack* pack, string name, f32 val) {
+	i32 loc;
+    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
+        loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
+        hash_table_set(string, i32, &pack->uniforms, name, loc);
+    }
+    glUniform1f(loc, val);
+}
+
+void R_ShaderPackUploadVec4(R_ShaderPack* pack, string name, vec4 val) {
+	i32 loc;
+    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
+        loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
+        hash_table_set(string, i32, &pack->uniforms, name, loc);
+    }
+    glUniform4f(loc, val.x, val.y, val.z, val.w);
+}
+
 
 //~ Vertex Input (VAOs)
 
@@ -514,7 +564,7 @@ b8 R_Texture2DEquals(R_Texture2D* a, R_Texture2D* b) {
 	return a->handle == b->handle;
 }
 
-void R_Texture2DBindTo(R_Texture2D* texture, u32 slot, R_ShaderType stage) {
+void R_Texture2DBindTo(R_Texture2D* texture, u32 slot) {
 	glBindTextureUnit(slot, texture->handle);
 }
 

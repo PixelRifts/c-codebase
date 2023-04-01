@@ -439,7 +439,6 @@ void R_ShaderAlloc(R_Shader* shader, string data, R_ShaderType type) {
 		SAFE_RELEASE(ID3D10Blob, shader->bytecode_blob);
 		LogFatal("[D3D11 Backend] CreateShader failed: %u", type);
 	}
-	
 }
 
 void R_ShaderAllocLoad(R_Shader* shader, string fp, R_ShaderType type) {
@@ -507,6 +506,33 @@ void R_ShaderPackFree(R_ShaderPack* pack) {
 	if (pack->gs.type) R_ShaderFree((R_Shader*) &pack->gs);
 }
 
+
+// TODO(voxel): Change to Asserts once debug break is a thing
+
+void R_ShaderPackUploadMat4(R_ShaderPack* pack, string name, mat4 mat) {
+	LogError("[D3D11 backend] Global Shader Uniforms are not supported");
+	LogFatal("[D3D11 backend] use a #if defined(BACKEND_D3D11) and handle this differently");
+}
+
+void R_ShaderPackUploadInt(R_ShaderPack* pack, string name, i32 val) {
+	LogError("[D3D11 backend] Global Shader Uniforms are not supported");
+	LogFatal("[D3D11 backend] use a #if defined(BACKEND_D3D11) and handle this differently");
+}
+
+void R_ShaderPackUploadIntArray(R_ShaderPack* pack, string name, i32* vals, u32 count) {
+	LogError("[D3D11 backend] Global Shader Uniforms are not supported");
+	LogFatal("[D3D11 backend] use a #if defined(BACKEND_D3D11) and handle this differently");
+}
+
+void R_ShaderPackUploadFloat(R_ShaderPack* pack, string name, f32 val) {
+	LogError("[D3D11 backend] Global Shader Uniforms are not supported");
+	LogFatal("[D3D11 backend] use a #if defined(BACKEND_D3D11) and handle this differently");
+}
+
+void R_ShaderPackUploadVec4(R_ShaderPack* pack, string name, vec4 val) {
+	LogError("[D3D11 backend] Global Shader Uniforms are not supported");
+	LogFatal("[D3D11 backend] use a #if defined(BACKEND_D3D11) and handle this differently");
+}
 
 
 //~ Pipelines
@@ -707,9 +733,12 @@ void R_PipelineBind(R_Pipeline* in) {
 }
 
 void R_PipelineFree(R_Pipeline* in) {
+	darray_free(R_UniformBufferHandle, &in->vs_uniform_buffers);
+	darray_free(R_UniformBufferHandle, &in->ps_uniform_buffers);
+	darray_free(R_UniformBufferHandle, &in->gs_uniform_buffers);
+	darray_free(R_BufferAttribCountPack, &in->buffers);
 	SAFE_RELEASE(ID3D11BlendState, in->blend_state);
 	SAFE_RELEASE(ID3D11InputLayout, in->layout);
-	darray_free(R_BufferAttribCountPack, &in->buffers);
 }
 
 //~ Textures
@@ -830,21 +859,13 @@ b8 R_Texture2DEquals(R_Texture2D* a, R_Texture2D* b) {
 	return a->handle == b->handle;
 }
 
-void R_Texture2DBindTo(R_Texture2D* texture, u32 slot, R_ShaderType stage) {
-	switch (stage) {
-		case ShaderType_Vertex: {
-			ID3D11DeviceContext_VSSetShaderResources(s_wnd->context, slot, 1, &texture->shader_resource_view);
-			ID3D11DeviceContext_VSSetSamplers(s_wnd->context, slot, 1, &texture->sampler);
-		} break;
-		case ShaderType_Fragment: {
-			ID3D11DeviceContext_PSSetShaderResources(s_wnd->context, slot, 1, &texture->shader_resource_view);
-			ID3D11DeviceContext_PSSetSamplers(s_wnd->context, slot, 1, &texture->sampler);
-		} break;
-		case ShaderType_Geometry: {
-			ID3D11DeviceContext_GSSetShaderResources(s_wnd->context, slot, 1, &texture->shader_resource_view);
-			ID3D11DeviceContext_GSSetSamplers(s_wnd->context, slot, 1, &texture->sampler);
-		} break;
-	}
+void R_Texture2DBindTo(R_Texture2D* texture, u32 slot) {
+	ID3D11DeviceContext_VSSetShaderResources(s_wnd->context, slot, 1, &texture->shader_resource_view);
+	ID3D11DeviceContext_VSSetSamplers(s_wnd->context, slot, 1, &texture->sampler);
+	ID3D11DeviceContext_PSSetShaderResources(s_wnd->context, slot, 1, &texture->shader_resource_view);
+	ID3D11DeviceContext_PSSetSamplers(s_wnd->context, slot, 1, &texture->sampler);
+	ID3D11DeviceContext_GSSetShaderResources(s_wnd->context, slot, 1, &texture->shader_resource_view);
+	ID3D11DeviceContext_GSSetSamplers(s_wnd->context, slot, 1, &texture->sampler);
 }
 
 void R_Texture2DFree(R_Texture2D* texture) {

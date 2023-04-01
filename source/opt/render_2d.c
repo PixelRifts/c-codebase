@@ -71,24 +71,43 @@ void R2D_Init(OS_Window* window, R2D_Renderer* renderer) {
 	darray_add(R2D_Batch, &renderer->batches, (R2D_Batch) {0});
 	renderer->batches.elems[renderer->current_batch].cache = R2D_VertexCacheCreate(&renderer->arena, R2D_MAX_INTERNAL_CACHE_VCOUNT);
 	
-	R_ShaderPackAllocLoad(&renderer->shader, str_lit("res/render_2d"));
-	R_Attribute attributes[] = { Attribute_Float2, Attribute_Float2, Attribute_Float1, Attribute_Float4 };
-	R_PipelineAlloc(&renderer->pipeline, InputAssembly_Triangles, attributes, ArrayCount(attributes), &renderer->shader, BlendMode_Alpha);
-	R_BufferAlloc(&renderer->buffer, BufferFlag_Dynamic | BufferFlag_Type_Vertex);
+	R_ShaderPackAllocLoad(&renderer->shader, str_lit("res/shaders/render_2d"));
+	u32 attrib_count = 4;
+	R_Attribute* attributes = arena_alloc(&renderer->arena, sizeof(R_Attribute) * attrib_count);
+	attributes[0] = (R_Attribute) { str_lit("Position"), AttributeType_Float2 };
+	attributes[1] = (R_Attribute) { str_lit("TexCoord"), AttributeType_Float2 };
+	attributes[2] = (R_Attribute) { str_lit("TexIndex"), AttributeType_Float1 };
+	attributes[3] = (R_Attribute) { str_lit("Color"),    AttributeType_Float4 };
+	R_PipelineAlloc(&renderer->pipeline, InputAssembly_Triangles, attributes, attrib_count, &renderer->shader, BlendMode_Alpha);
+	R_BufferAlloc(&renderer->buffer, BufferFlag_Dynamic | BufferFlag_Type_Vertex, sizeof(R2D_Vertex));
 	R_BufferData(&renderer->buffer, R2D_MAX_INTERNAL_CACHE_VCOUNT * sizeof(R2D_Vertex), nullptr);
-	R_PipelineAddBuffer(&renderer->pipeline, &renderer->buffer, ArrayCount(attributes));
+	R_PipelineAddBuffer(&renderer->pipeline, &renderer->buffer, attrib_count);
 	
+	string_array ActualConstants_var_names = {0};
+	string_array_add(&ActualConstants_var_names, str_lit("u_projection"));
+	R_UniformBufferAlloc(&renderer->constants, str_lit("ActualConstants"), ActualConstants_var_names,
+						 &renderer->shader, ShaderType_Vertex);
+	string_array_free(&ActualConstants_var_names);
+	
+	// Unnecessary for d3d11
+#if !defined(BACKEND_D3D11)
 	R_PipelineBind(&renderer->pipeline);
 	i32 textures[] = { 0, 1, 2, 3, 4, 5, 6, 7 };
 	R_ShaderPackUploadIntArray(&renderer->shader, str_lit("u_tex"), textures, 8);
-	mat4 projection = mat4_transpose(mat4_ortho(0, window->width, 0, window->height, -1, 1000));
-	R_ShaderPackUploadMat4(&renderer->shader, str_lit("u_projection"), projection);
+#endif
+	
+	mat4 projection = mat4_ortho(0, window->width, 0, window->height, -1, 1000);
+	R_UniformBufferSetMat4(&renderer->constants, str_lit("u_projection"), projection);
+	R_PipelineAddUniformBuffer(&renderer->pipeline, &renderer->constants);
 	
 	R_Texture2DWhite(&renderer->white_texture);
-	R_Texture2DAllocLoad(&renderer->circle_texture, str_lit("res/circle.png"), TextureResize_Linear, TextureResize_Linear, TextureWrap_ClampToEdge, TextureWrap_ClampToEdge);
+	R_Texture2DAllocLoad(&renderer->circle_texture, str_lit("res/circle.png"), TextureResize_Linear,
+						 TextureResize_Linear, TextureWrap_ClampToEdge, TextureWrap_ClampToEdge,
+						 TextureMutability_Immutable, TextureUsage_ShaderResource);
 }
 
 void R2D_Free(R2D_Renderer* renderer) {
+	R_UniformBufferFree(&renderer->constants);
 	R_Texture2DFree(&renderer->white_texture);
 	R_BufferFree(&renderer->buffer);
 	R_PipelineFree(&renderer->pipeline);

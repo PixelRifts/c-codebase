@@ -54,6 +54,9 @@ typedef void (*GLDEBUGPROC) (GLenum source,GLenum type,GLuint id,GLenum severity
 #define GL_LINK_STATUS 0x8B82
 #define GL_VALIDATE_STATUS 0x8B83
 
+#define GL_ACTIVE_UNIFORM_BLOCKS 0x8A36
+#define GL_ACTIVE_UNIFORMS 0x8B86
+
 #define GL_STREAM_DRAW 0x88E0
 #define GL_STREAM_READ 0x88E1
 #define GL_STREAM_COPY 0x88E2
@@ -264,6 +267,7 @@ X(glGetUniformIndices, void, (GLuint program, GLsizei uniformCount, const GLchar
 X(glGetActiveUniformsiv, void, (GLuint program, GLsizei uniformCount, const GLuint* uniformIndices, GLenum pname, GLint *params))\
 X(glGetActiveUniformBlockiv, void, (GLuint program, GLuint uniformBlockIndex, GLenum pname, GLint* params))\
 X(glBindBufferBase, void, (GLenum target, GLuint index, GLuint buffer_handle))\
+X(glGetActiveUniform, void, (GLuint program, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name))\
 
 #  define GL_DEBUG_FUNCTIONS
 

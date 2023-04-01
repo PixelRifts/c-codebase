@@ -117,12 +117,7 @@ void B_BackendInit(OS_Window* _window) {
 	ID3D11RasterizerState* rstate;
 	D3D11_RASTERIZER_DESC rdesc = {0};
 	rdesc.FillMode = D3D11_FILL_SOLID;
-	rdesc.CullMode = D3D11_CULL_BACK;
-	rdesc.FrontCounterClockwise = true;
-	rdesc.DepthClipEnable = false;
-	rdesc.ScissorEnable = false;
-	rdesc.MultisampleEnable = false;
-	rdesc.AntialiasedLineEnable = true; // Uh... probably right?
+	rdesc.CullMode = D3D11_CULL_NONE;
 	
 	ID3D11Device_CreateRasterizerState(window->device, &rdesc, &rstate);
 	ID3D11DeviceContext_RSSetState(window->context, rstate);

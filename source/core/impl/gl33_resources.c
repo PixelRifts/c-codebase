@@ -203,6 +203,7 @@ void R_UniformBufferAlloc(R_UniformBuffer* buf, string name, string_array member
 	MemoryZero(buf->cpu_side_buffer, buf->size);
 	
 	M_Scratch scratch = scratch_get();
+	
 	u8** names   = arena_alloc(&scratch.arena, member_names.len * sizeof(u8*));
 	u32* indices = arena_alloc(&scratch.arena, member_names.len * sizeof(u32));
 	i32* offsets = arena_alloc(&scratch.arena, member_names.len * sizeof(i32));
@@ -338,6 +339,8 @@ void R_ShaderPackAlloc(R_ShaderPack* pack, R_Shader* shaders, u32 shader_count) 
 	for (u32 i = 0; i < shader_count; i++) {
 		glDetachShader(pack->handle, shaders[i].handle);
 	}
+	
+	hash_table_init(string, i32, &pack->uniforms);
 }
 
 void R_ShaderPackAllocLoad(R_ShaderPack* pack, string fp_prefix) {
@@ -375,8 +378,56 @@ void R_ShaderPackAllocLoad(R_ShaderPack* pack, string fp_prefix) {
 }
 
 void R_ShaderPackFree(R_ShaderPack* pack) {
+	hash_table_free(string, i32, &pack->uniforms);
 	glDeleteProgram(pack->handle);
 }
+
+
+void R_ShaderPackUploadMat4(R_ShaderPack* pack, string name, mat4 mat) {
+	i32 loc;
+    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
+        loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
+        hash_table_set(string, i32, &pack->uniforms, name, loc);
+    }
+    glUniformMatrix4fv(loc, 1, GL_FALSE, mat.a);
+}
+
+void R_ShaderPackUploadInt(R_ShaderPack* pack, string name, i32 val) {
+	i32 loc;
+    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
+        loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
+        hash_table_set(string, i32, &pack->uniforms, name, loc);
+    }
+    glUniform1i(loc, val);
+}
+
+void R_ShaderPackUploadIntArray(R_ShaderPack* pack, string name, i32* vals, u32 count) {
+	i32 loc;
+    if (!hash_table_get(string, i32,&pack->uniforms, name, &loc)) {
+        loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
+        hash_table_set(string, i32, &pack->uniforms, name, loc);
+    }
+    glUniform1iv(loc, count, vals);
+}
+
+void R_ShaderPackUploadFloat(R_ShaderPack* pack, string name, f32 val) {
+	i32 loc;
+    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
+        loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
+        hash_table_set(string, i32, &pack->uniforms, name, loc);
+    }
+    glUniform1f(loc, val);
+}
+
+void R_ShaderPackUploadVec4(R_ShaderPack* pack, string name, vec4 val) {
+	i32 loc;
+    if (!hash_table_get(string, i32, &pack->uniforms, name, &loc)) {
+        loc = glGetUniformLocation(pack->handle, (const GLchar*)name.str);
+        hash_table_set(string, i32, &pack->uniforms, name, loc);
+    }
+    glUniform4f(loc, val.x, val.y, val.z, val.w);
+}
+
 
 //~ Pipeline (VAOs)
 
@@ -446,6 +497,7 @@ void R_PipelineBind(R_Pipeline* in) {
 }
 
 void R_PipelineFree(R_Pipeline* in) {
+	darray_free(R_UniformBufferHandle, &in->uniform_buffers);
 	glDeleteVertexArrays(1, &in->handle);
 }
 
@@ -520,7 +572,7 @@ b8 R_Texture2DEquals(R_Texture2D* a, R_Texture2D* b) {
 	return a->handle == b->handle;
 }
 
-void R_Texture2DBindTo(R_Texture2D* texture, u32 slot, R_ShaderType stage) {
+void R_Texture2DBindTo(R_Texture2D* texture, u32 slot) {
 	glActiveTexture(GL_TEXTURE0 + slot);
 	glBindTexture(GL_TEXTURE_2D, texture->handle);
 }
@@ -548,7 +600,7 @@ void R_FramebufferCreate(R_Framebuffer* framebuffer, u32 width, u32 height, R_Te
 	for (u32 i = 0; i < color_attachment_count; i++) {
 		framebuffer->color_attachments[i] = color_attachments[i];
 		draw_buffers_active[i] = GL_COLOR_ATTACHMENT0 + i;
-		R_Texture2DBindTo(&color_attachments[i], 0, ShaderType_Fragment);
+		R_Texture2DBindTo(&color_attachments[i], 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, color_attachments[i].handle, 0);
 	}
 	glDrawBuffers(color_attachment_count, draw_buffers_active);
@@ -556,7 +608,7 @@ void R_FramebufferCreate(R_Framebuffer* framebuffer, u32 width, u32 height, R_Te
 	
 	if (depth_attachment.format != TextureFormat_Invalid) {
 		AssertTrue(depth_attachment.format == TextureFormat_DepthStencil, "Depth Texture format is not TextureFormat_DepthStencil");
-		R_Texture2DBindTo(&depth_attachment, 0, ShaderType_Fragment);
+		R_Texture2DBindTo(&depth_attachment, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_attachment.handle, 0);
 	}
 	

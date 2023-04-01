@@ -9,7 +9,10 @@ out float v_texindex;
 out vec2  v_texcoord;
 out vec4  v_color;
 
-uniform mat4 u_projection;
+
+layout (std140) uniform ActualConstants {
+	mat4 u_projection;
+};
 
 void main() {
     gl_Position = u_projection * vec4(a_pos, 0.0, 1.0);

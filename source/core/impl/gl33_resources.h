@@ -27,6 +27,7 @@ typedef struct R_Shader {
 } R_Shader;
 
 typedef struct R_ShaderPack {
+	hash_table(string, i32) uniforms;
 	u32 handle;
 } R_ShaderPack;
 

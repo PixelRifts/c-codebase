@@ -32,6 +32,7 @@ printf("\n");\
 flush;\
 exit(-1);\
 )
+// TODO(voxel): assert should actually do a debug break.
 #  define AssertTrue(c, format, ...) Statement(\
 if (!(c)) {\
 printf("%s:%d: Error: ", FILE_NAME, __LINE__);\

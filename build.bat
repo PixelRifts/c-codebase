@@ -8,7 +8,7 @@ REM ------------------
 REM      Options
 REM ------------------
 
-SET Use_Render2D=false
+SET Use_Render2D=true
 SET Use_Physics2D=false
 SET Use_UI=false
 
@@ -54,7 +54,7 @@ SET include_flags=-Isource -Ithird_party/include -Ithird_party/source
 SET linker_flags=-g -lshell32 -luser32 -lwinmm -luserenv -lgdi32 -Lthird_party/lib
 SET defines=-D_DEBUG -D_CRT_SECURE_NO_WARNINGS
 SET output=-obin/codebase.exe
-SET backend=-DBACKEND_GL33
+SET backend=-DBACKEND_D3D11
 REM ==============
 
 
@@ -64,7 +64,6 @@ if %backend% == -DBACKEND_D3D11 (
   SET linker_flags=%linker_flags% -ldxguid -ld3dcompiler
 )
 REM ==============
-
 
 REM SET compiler_flags=!compiler_flags! -fsanitize=address
 

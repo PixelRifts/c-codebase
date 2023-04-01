@@ -56,6 +56,7 @@ typedef struct R2D_Renderer {
 	R_Texture2D white_texture;
 	R_Texture2D circle_texture;
 	
+	R_UniformBuffer constants;
 	R_Pipeline pipeline;
 	R_Buffer buffer;
 	R_ShaderPack shader;

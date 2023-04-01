@@ -152,7 +152,6 @@ void R_BufferData(R_Buffer* buf, u64 size, void* data);
 void R_BufferUpdate(R_Buffer* buf, u64 offset, u64 size, void* data);
 void R_BufferFree(R_Buffer* buf);
 
-// TODO(voxel): Change set-uniform functions to work on said UBOs
 void R_UniformBufferAlloc(R_UniformBuffer* buf, string name, string_array member_names,
 						  R_ShaderPack* pack, R_ShaderType type);
 void R_UniformBufferFree(R_UniformBuffer* buf);
@@ -172,6 +171,11 @@ void R_ShaderPackAlloc(R_ShaderPack* pack, R_Shader* shaders, u32 shader_count);
 void R_ShaderPackAllocLoad(R_ShaderPack* pack, string fp_prefix);
 void R_ShaderPackFree(R_ShaderPack* pack);
 
+void R_ShaderPackUploadMat4(R_ShaderPack* pack, string name, mat4 mat);
+void R_ShaderPackUploadInt(R_ShaderPack* pack, string name, i32 val);
+void R_ShaderPackUploadIntArray(R_ShaderPack* pack, string name, i32* vals, u32 count);
+void R_ShaderPackUploadFloat(R_ShaderPack* pack, string name, f32 val);
+void R_ShaderPackUploadVec4(R_ShaderPack* pack, string name, vec4 val);
 
 //~ Pipelines (VAOs OR NOT)
 void R_PipelineAlloc(R_Pipeline* in, R_InputAssembly assembly, R_Attribute* attributes, u32 attribute_count, R_ShaderPack* shader, R_BlendMode blending);
@@ -190,7 +194,7 @@ void R_Texture2DData(R_Texture2D* texture, void* data);
 void R_Texture2DWhite(R_Texture2D* texture);
 b8   R_Texture2DEquals(R_Texture2D* a, R_Texture2D* b);
 void R_Texture2DSwizzle(R_Texture2D* texture, i32* swizzles);
-void R_Texture2DBindTo(R_Texture2D* texture, u32 slot, R_ShaderType stage);
+void R_Texture2DBindTo(R_Texture2D* texture, u32 slot);
 void R_Texture2DFree(R_Texture2D* texture);
 
 
