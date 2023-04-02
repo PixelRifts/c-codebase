@@ -7,6 +7,19 @@
 //- Text Caching Layer 
 // TODO(voxel): Switch to freetype soon:tm:
 
+static u8* UI_ConvertSingleChannelToRGBA(M_Arena* arena, u8* bitmap, u32 width, u32 height) {
+	u8* ret_bitmap = arena_alloc(arena, width * height * 4 * sizeof(u8));
+	for (u32 j = 0; j < height; j++) {
+		for (u32 i = 0; i < width; i++) {
+			ret_bitmap[(j * width + i) * 4 + 0] = 255;
+			ret_bitmap[(j * width + i) * 4 + 1] = 255;
+			ret_bitmap[(j * width + i) * 4 + 2] = 255;
+			ret_bitmap[(j * width + i) * 4 + 3] = bitmap[j * width + i];
+		}
+	}
+	return ret_bitmap;
+}
+
 void UI_LoadFont(UI_FontInfo* fontinfo, string filepath, f32 size) {
 	M_Arena arena;
 	arena_init(&arena);
@@ -32,12 +45,9 @@ void UI_LoadFont(UI_FontInfo* fontinfo, string filepath, f32 size) {
 	stbtt_PackFontRange(&packctx, buffer, 0, size, 32, 95, fontinfo->cdata);
 	stbtt_PackEnd(&packctx);
 	
-	R_Texture2DAlloc(&fontinfo->font_texture, TextureFormat_R, 512, 512, TextureResize_Linear, TextureResize_Linear, TextureWrap_Repeat, TextureWrap_Repeat);
-	R_Texture2DData(&fontinfo->font_texture, temp_bitmap);
-	i32 swizzles[4] = {
-		TextureChannel_One, TextureChannel_One, TextureChannel_One, TextureChannel_R
-	};
-	R_Texture2DSwizzle(&fontinfo->font_texture, swizzles);
+	u8* rgbmap = UI_ConvertSingleChannelToRGBA(&arena, temp_bitmap, 512, 512);
+	
+	R_Texture2DAlloc(&fontinfo->font_texture, TextureFormat_RGBA, 512, 512, TextureResize_Linear, TextureResize_Linear, TextureWrap_Repeat, TextureWrap_Repeat, TextureMutability_Immutable, TextureUsage_ShaderResource, rgbmap);
 	
 	fontinfo->scale = stbtt_ScaleForPixelHeight(&finfo, size);
 	stbtt_GetFontVMetrics(&finfo, &fontinfo->ascent, &fontinfo->descent, nullptr);
@@ -299,36 +309,52 @@ UI_Signal UI_SignalFromBox(UI_Box* box) {
 //~ UI Rendering Layer
 
 static void UI_InitializeRenderer(OS_Window* window, UI_Cache* ui_cache) {
-	R_Attribute attributes[] = {
-		Attribute_Float2,
-		Attribute_Float2,
-		Attribute_Float2,
-		Attribute_Float1,
-		Attribute_Float4,
-		Attribute_Float4,
-		Attribute_Float3,
-	};
-	R_ShaderPackAllocLoad(&ui_cache->shaderpack, str_lit("res/ui"));
-	R_PipelineAlloc(&ui_cache->pipeline, InputAssembly_Triangles, attributes, ArrayCount(attributes),
+	arena_init(&ui_cache->arena);
+	
+	// TODO(voxel): Change input rate of a few of these attributes for saving vram
+	u32 attrib_count = 7;
+	R_Attribute* attributes = arena_alloc(&ui_cache->arena, sizeof(R_Attribute) * attrib_count);
+	attributes[0] = (R_Attribute) { str_lit("BoxSize"),                     AttributeType_Float2 },
+	attributes[1] = (R_Attribute) { str_lit("BoxCenter"),                   AttributeType_Float2 },
+	attributes[2] = (R_Attribute) { str_lit("TexCoord"),                    AttributeType_Float2 },
+	attributes[3] = (R_Attribute) { str_lit("TexIndex"),                    AttributeType_Float1 },
+	attributes[4] = (R_Attribute) { str_lit("Color"),                       AttributeType_Float4 },
+	attributes[5] = (R_Attribute) { str_lit("ClipQuad"),                    AttributeType_Float4 },
+	attributes[6] = (R_Attribute) { str_lit("RoundingSoftnessAndEdgeSize"), AttributeType_Float3 },
+	
+	R_ShaderPackAllocLoad(&ui_cache->shaderpack, str_lit("res/shaders/ui"));
+	R_PipelineAlloc(&ui_cache->pipeline, InputAssembly_Triangles, attributes, attrib_count,
 					&ui_cache->shaderpack, BlendMode_Alpha);
 	
-	R_BufferAlloc(&ui_cache->gpu_side_buffer, BufferFlag_Dynamic | BufferFlag_Type_Vertex);
+	R_BufferAlloc(&ui_cache->gpu_side_buffer, BufferFlag_Dynamic | BufferFlag_Type_Vertex, sizeof(UI_Vertex));
 	R_BufferData(&ui_cache->gpu_side_buffer, MAX_UI_QUADS * 6 * sizeof(UI_Vertex), nullptr);
-	R_PipelineAddBuffer(&ui_cache->pipeline, &ui_cache->gpu_side_buffer, ArrayCount(attributes));
+	R_PipelineAddBuffer(&ui_cache->pipeline, &ui_cache->gpu_side_buffer, attrib_count);
 	
+	string_array ActualConstants_var_names = {0};
+	string_array_add(&ActualConstants_var_names, str_lit("u_projection"));
+	R_UniformBufferAlloc(&ui_cache->constants, str_lit("ActualConstants"), ActualConstants_var_names,
+						 &ui_cache->shaderpack, ShaderType_Vertex);
+	string_array_free(&ActualConstants_var_names);
+	R_PipelineAddUniformBuffer(&ui_cache->pipeline, &ui_cache->constants);
+	
+#if !defined(BACKEND_D3D11)
 	R_PipelineBind(&ui_cache->pipeline);
 	i32 textures[] = { 0, 1, 2, 3, 4, 5, 6, 7 };
 	R_ShaderPackUploadIntArray(&ui_cache->shaderpack, str_lit("u_tex"), textures, 8);
-	mat4 projection = mat4_transpose(mat4_ortho(0, window->width, 0, window->height, -1, 1000));
-	R_ShaderPackUploadMat4(&ui_cache->shaderpack, str_lit("u_projection"), projection);
+#endif
+	
+	mat4 projection = mat4_ortho(0, window->width, 0, window->height, -1, 1000);
+	R_UniformBufferSetMat4(&ui_cache->constants, str_lit("u_projection"), projection);
 	
 	R_Texture2DWhite(&ui_cache->white_texture);
 }
 
 static void UI_FreeRenderer(UI_Cache* ui_cache) {
+	R_UniformBufferFree(&ui_cache->constants);
 	R_BufferFree(&ui_cache->gpu_side_buffer);
 	R_ShaderPackFree(&ui_cache->shaderpack);
 	R_PipelineFree(&ui_cache->pipeline);
+	arena_free(&ui_cache->arena);
 }
 
 static void UI_BeginRendererFrame(UI_Cache* ui_cache) {
@@ -611,7 +637,7 @@ void UI_Resize(UI_Cache* ui_cache, i32 w, i32 h) {
 	ui_cache->clipping_rect_stack.elems[0].w = w;
 	ui_cache->clipping_rect_stack.elems[0].h = h;
 	
-	mat4 projection = mat4_transpose(mat4_ortho(0, w, 0, h, -1, 1000));
+	mat4 projection = mat4_ortho(0, w, 0, h, -1, 1000);
 	R_ShaderPackUploadMat4(&ui_cache->shaderpack, str_lit("u_projection"), projection);
 }
 
@@ -652,6 +678,7 @@ void UI_BeginFrame(OS_Window* window, UI_Cache* ui_cache) {
 }
 
 static void UI_PushBoxRecursive(UI_Cache* ui_cache, UI_Box* box) {
+	if (UI_KeyIsNull(box->key)) return;
 	UI_PushBox(ui_cache, box);
 	
 	if (box->flags & BoxFlag_Clip) {

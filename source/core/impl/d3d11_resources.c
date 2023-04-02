@@ -826,7 +826,7 @@ void R_Texture2DAllocLoad(R_Texture2D* texture, string filepath, R_TextureResize
 
 
 void R_Texture2DSwizzle(R_Texture2D* texture, i32* swizzles) {
-	// TODO(voxel): Not possible with D3D11. Remove this
+	LogFatal("[D3D11 Backend] Swizzling is unsupported by this backend");
 }
 
 void R_Texture2DData(R_Texture2D* texture, void* data) {
@@ -860,12 +860,12 @@ b8 R_Texture2DEquals(R_Texture2D* a, R_Texture2D* b) {
 }
 
 void R_Texture2DBindTo(R_Texture2D* texture, u32 slot) {
-	ID3D11DeviceContext_VSSetShaderResources(s_wnd->context, slot, 1, &texture->shader_resource_view);
-	ID3D11DeviceContext_VSSetSamplers(s_wnd->context, slot, 1, &texture->sampler);
+	//ID3D11DeviceContext_VSSetShaderResources(s_wnd->context, slot, 1, &texture->shader_resource_view);
+	//ID3D11DeviceContext_VSSetSamplers(s_wnd->context, slot, 1, &texture->sampler);
 	ID3D11DeviceContext_PSSetShaderResources(s_wnd->context, slot, 1, &texture->shader_resource_view);
 	ID3D11DeviceContext_PSSetSamplers(s_wnd->context, slot, 1, &texture->sampler);
-	ID3D11DeviceContext_GSSetShaderResources(s_wnd->context, slot, 1, &texture->shader_resource_view);
-	ID3D11DeviceContext_GSSetSamplers(s_wnd->context, slot, 1, &texture->sampler);
+	//ID3D11DeviceContext_GSSetShaderResources(s_wnd->context, slot, 1, &texture->shader_resource_view);
+	//ID3D11DeviceContext_GSSetSamplers(s_wnd->context, slot, 1, &texture->sampler);
 }
 
 void R_Texture2DFree(R_Texture2D* texture) {

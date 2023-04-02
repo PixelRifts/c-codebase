@@ -227,6 +227,8 @@ StableTable_Prototype(UI_Key, UI_Box);
 struct UI_Cache {
 	stable_table(UI_Key, UI_Box) cache;
 	
+	M_Arena arena;
+	
 	UI_STACK_DECLS;
 	
 	UI_FontInfo default_font;
@@ -240,6 +242,7 @@ struct UI_Cache {
 	// Rendering stuff
 	R_ShaderPack shaderpack;
 	R_Pipeline pipeline;
+	R_UniformBuffer constants;
 	R_Buffer gpu_side_buffer;
 	UI_Vertex cpu_side_buffer[MAX_UI_QUADS * 6];
 	u32 quad_count;

@@ -26,7 +26,9 @@ const vec2 vertex_multiplers[] = {
     vec2(-.5, +.5),
 };
 
-uniform mat4 u_projection;
+layout (std140) uniform ActualConstants {
+	mat4 u_projection;
+};
 
 void main() {
     vec2 pos = a_boxcenter + (a_boxsize * vertex_multiplers[gl_VertexID % 6]);

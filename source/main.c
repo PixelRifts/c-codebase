@@ -1,11 +1,3 @@
-
-//~
-//
-// Tetris Example (Followed OLC's tutorial and translated to c)
-// Optional Layers Required: Render2D
-//
-//~
-
 #include "defines.h"
 #include "os/os.h"
 #include "os/window.h"
@@ -14,46 +6,14 @@
 #include "core/backend.h"
 #include "core/resources.h"
 
-#include "opt/render_2d.h"
+#include "opt/ui.h"
 
-#include <stdlib.h>
-
-DArray_Prototype(i32);
-DArray_Impl(i32);
-
-string_array tetrominos = {0};
-i32 field_width = 12;
-i32 field_height = 18;
-u8* field;
-
-f32 xoff = 50;
-f32 yoff = 50;
-f32 block_size = 20;
-
-i32 index_with_rotate(i32 x, i32 y, i32 r) {
-	switch (r % 4) {
-		case 0: return y * 4 + x;
-		case 1: return 12 + y - (x * 4);
-		case 2: return 15 - (y * 4) - x;
-		case 3: return 3 - y + (x * 4);
+void MyResizeCallback(OS_Window* window, i32 w, i32 h) {
+	// TODO(voxel): @awkward Add a "first resize" to Win32Window so that This if isn't required
+	if (window->user_data) {
+		R_Viewport(0, 0, w, h);
+		UI_Resize((UI_Cache*) window->user_data, w, h);
 	}
-	return 0;
-}
-
-b8 piece_fit_test(u8 id, i32 r, i32 pos_x, i32 pos_y) {
-	for (i32 y = 0; y < 4; y++) {
-		for (i32 x = 0; x < 4; x++) {
-			i32 piece_index = index_with_rotate(x, y, r);
-			
-			i32 field_index = (pos_y + y) * field_width + (pos_x + x);
-			if (pos_x + x >= 0 && pos_x + x < field_width &&
-				pos_y + y >= 0 && pos_y + y < field_height) {
-				if (tetrominos.elems[id].str[piece_index] == 'X' && field[field_index] != 0)
-					return false;
-			}
-		}
-	}
-	return true;
 }
 
 int main() {
@@ -61,162 +21,89 @@ int main() {
 	
 	ThreadContext context = {0};
 	tctx_init(&context);
-	U_FrameArenaInit();
 	
 	M_Arena global_arena;
 	arena_init(&global_arena);
 	
+	U_FrameArenaInit();
+	
 	OS_Window* window = OS_WindowCreate(1080, 720, str_lit("This should work"));
+	window->resize_callback = MyResizeCallback;
+	
 	B_BackendInit(window);
 	OS_WindowShow(window);
 	
-	R2D_Renderer renderer = {0};
-	R2D_Init(window, &renderer);
+	UI_Cache* ui_cache = arena_alloc(&global_arena, sizeof(UI_Cache));
+	UI_Init(window, ui_cache);
+	window->user_data = ui_cache;
 	
-	vec4 colors[] = {
-		(vec4) {0},
-		Color_Red,
-		Color_Green,
-		Color_Blue,
-		Color_Cyan,
-		Color_Magenta,
-		Color_Yellow,
-		Color_PureRed,
-		(vec4) {0},
-		Color_White,
-	};
+	f32 start = 0.f; f32 end = 0.016f;
+	f32 delta = 0.016f;
+	i32 show_btn = 0;
 	
-	string_array_add(&tetrominos, str_lit("..X." "..X." "..X." "..X."));
-	string_array_add(&tetrominos, str_lit("..X." ".XX." ".X.." "...."));
-	string_array_add(&tetrominos, str_lit(".X.." ".XX." "..X." "...."));
-	string_array_add(&tetrominos, str_lit("...." ".XX." ".XX." "...."));
-	string_array_add(&tetrominos, str_lit("..X." ".XX." "..X." "...."));
-	string_array_add(&tetrominos, str_lit("...." ".XX." "..X." "..X."));
-	string_array_add(&tetrominos, str_lit("...." ".XX." ".X.." ".X.."));
-	
-	field = arena_alloc(&global_arena, sizeof(u8) * field_width * field_height);
-	
-	for (u32 y = 0; y < field_height; y++) {
-		for (u32 x = 0; x < field_width; x++) {
-			field[y * field_width + x] =
-			(x == 0 || x == field_width - 1 || y == field_height - 1)
-				? 9 : 0;
-		}
-	}
-	
-	srand(OS_TimeMicrosecondsNow());
-	
-	b8 game_over = false;
-	i32 current_piece_id = rand() % 7;
-	i32 current_rotation = 0;
-	i32 current_x = (field_width / 2) - 1, current_y = 0;
-	
-	f32 start, end, dt;
-	start = OS_TimeMicrosecondsNow();
-	
-	f32 speed = 2;
-	f32 speed_acc = 0;
-	
-	while (OS_WindowIsOpen(window) && !game_over) {
-		OS_PollEvents();
-		U_ResetFrameArena();
-		
-		end = OS_TimeMicrosecondsNow();
-		dt = (end - start) / 1e6;
+	while (OS_WindowIsOpen(window)) {
+		delta = end - start;
 		start = OS_TimeMicrosecondsNow();
 		
-		current_x -= (OS_InputKeyPressed(Input_Key_LeftArrow) || OS_InputKeyHeld(Input_Key_LeftArrow)) && piece_fit_test(current_piece_id, current_rotation, current_x - 1, current_y);
-		current_x += (OS_InputKeyPressed(Input_Key_RightArrow) || OS_InputKeyHeld(Input_Key_RightArrow)) && piece_fit_test(current_piece_id, current_rotation, current_x + 1, current_y);
-		current_y += 
-		(OS_InputKeyPressed(Input_Key_DownArrow) || OS_InputKeyHeld(Input_Key_DownArrow)) && piece_fit_test(current_piece_id, current_rotation, current_x, current_y + 1);
-		current_rotation += (OS_InputKeyPressed('Z') || OS_InputKeyHeld('Z')) && piece_fit_test(current_piece_id, current_rotation + 1, current_x, current_y);
-		
-		speed_acc += dt;
-		if (speed_acc >= speed) {
-			if (piece_fit_test(current_piece_id, current_rotation, current_x, current_y + 1))
-				current_y++;
-			else {
-				for (u32 y = 0; y < 4; y++) {
-					for (u32 x = 0; x < 4; x++) {
-						if (tetrominos.elems[current_piece_id]
-							.str[index_with_rotate(x, y, current_rotation)] == 'X') {
-							field[(current_y + y) * field_width + (current_x + x)] = current_piece_id+1;
-						}
-					}
-				}
-				
-				darray(i32) fixed_lines = {0};
-				for (u32 y = 0; y < 4; y++) {
-					if (current_y + y < field_height - 1) {
-						b8 line_destroyed = true;
-						for (u32 x = 1; x < field_width - 1; x++) {
-							line_destroyed &= field[(current_y + y) * field_width + x] != 0;
-						}
-						if (line_destroyed) {
-							for (u32 x = 1; x < field_width - 1; x++) {
-								field[(current_y + y) * field_width + x] = 0;
-							}
-							darray_add(i32, &fixed_lines, current_y + y);
-						}
-					}
-				}
-				Iterate(fixed_lines,  i) {
-					i32 line = fixed_lines.elems[i];
-					for (u32 x = 1; x < field_width - 1; x++) {
-						for (i32 y = line; y > 0; y--) {
-							field[y * field_width + x] = field[(y - 1) * field_width + x];
-						}
-						field[x] = 0;
-					}
-				}
-				darray_free(i32, &fixed_lines);
-				
-				current_x = (field_width / 2) - 1, current_y = 0;
-				current_piece_id = rand() % 7;
-				current_rotation = 0;
-				
-				if (!piece_fit_test(current_piece_id, current_rotation, current_x, current_y + 1)) {
-					game_over = true;
-				} else {
-					speed = Clamp(0.3, speed - 0.1, 3);
-				}
-			}
-			
-			speed_acc = 0;
-		}
+		U_ResetFrameArena();
+		OS_PollEvents();
 		
 		R_Clear(BufferMask_Color);
+		UI_BeginFrame(window, ui_cache);
 		
-		R2D_BeginDraw(&renderer);
-		for (u32 y = 0; y < field_height; y++) {
-			for (u32 x = 0; x < field_width; x++) {
-				if (field[y * field_width + x])
-					R2D_DrawQuadC(&renderer,
-								  (rect) { xoff + x * block_size, yoff + y * block_size, block_size, block_size }, colors[field[y * field_width + x]]);
+		UI_PrefWidth(ui_cache, UI_Percentage(100))
+			UI_PrefHeight(ui_cache, UI_Percentage(100))
+			UI_LayoutAxis(ui_cache, axis2_x)
+		{
+			UI_Box* full_container = UI_BoxMake(ui_cache, BoxFlag_DrawBackground | BoxFlag_DrawBorder | BoxFlag_Clip, str_lit("foo"));
+			UI_Parent(ui_cache, full_container) {
+				UI_Spacer(ui_cache, UI_Percentage(35));
+				
+				UI_LayoutAxis(ui_cache, axis2_y)
+					UI_PrefWidth(ui_cache, UI_Percentage(30))
+					UI_PrefHeight(ui_cache, UI_Percentage(100)) {
+					UI_Box* vert = UI_BoxMake(ui_cache, BoxFlag_DrawBorder | 0, str_lit("VerticalCheckboxContainer"));
+					
+					UI_Parent(ui_cache, vert)
+						UI_PrefWidth(ui_cache, UI_Percentage(100))
+						UI_PrefHeight(ui_cache, UI_Pixels(35))
+						UI_LayoutAxis(ui_cache, axis2_x) {
+						UI_Box* pm = UI_BoxMake(ui_cache, 0, str_lit("PlusMinusContainer"));
+						
+						UI_Parent(ui_cache, pm)
+							UI_PrefWidth(ui_cache, UI_Percentage(50))
+							UI_PrefHeight(ui_cache, UI_Pixels(35)){
+							if (UI_Button(ui_cache, str_lit("+##AddCheckbox")).clicked)
+								show_btn ++;
+							if (UI_Button(ui_cache, str_lit("-##SubCheckbox")).clicked)
+								show_btn --;
+							if (show_btn < 0) show_btn = 0;
+						}
+						
+						UI_Spacer(ui_cache, UI_Pixels(15));
+						
+						UI_ActiveColor(ui_cache, 0x9A5EBDFF) {
+							for (i32 i = show_btn; i > 0; i--)
+								UI_CheckboxF(ui_cache, "Checkbox##%d", i);
+						}
+					}
+					
+				}
 			}
 		}
 		
-		for (u32 y = 0; y < 4; y++) {
-			for (u32 x = 0; x < 4; x++) {
-				if (tetrominos.elems[current_piece_id]
-					.str[index_with_rotate(x, y, current_rotation)] == 'X')
-					R2D_DrawQuadC(&renderer,
-								  (rect) { xoff + (current_x + x) * block_size, yoff + (current_y + y) * block_size, block_size, block_size },
-								  colors[current_piece_id + 1]);
-			}
-		}
-		R2D_EndDraw(&renderer);
+		UI_EndFrame(ui_cache, delta / 1e6);
 		
 		B_BackendSwapchainNext(window);
+		
+		end = OS_TimeMicrosecondsNow();
 	}
 	
-	R2D_Free(&renderer);
-	
 	B_BackendFree(window);
+	
 	OS_WindowClose(window);
 	
-	arena_free(&global_arena);
-	
 	U_FrameArenaFree();
+	arena_free(&global_arena);
 	tctx_free(&context);
 }

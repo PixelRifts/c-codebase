@@ -8,9 +8,9 @@ REM ------------------
 REM      Options
 REM ------------------
 
-SET Use_Render2D=true
+SET Use_Render2D=false
 SET Use_Physics2D=false
-SET Use_UI=false
+SET Use_UI=true
 
 REM ------------------
 REM    Main Project

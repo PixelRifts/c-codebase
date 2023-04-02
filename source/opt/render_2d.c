@@ -88,6 +88,7 @@ void R2D_Init(OS_Window* window, R2D_Renderer* renderer) {
 	R_UniformBufferAlloc(&renderer->constants, str_lit("ActualConstants"), ActualConstants_var_names,
 						 &renderer->shader, ShaderType_Vertex);
 	string_array_free(&ActualConstants_var_names);
+	R_PipelineAddUniformBuffer(&renderer->pipeline, &renderer->constants);
 	
 	// Unnecessary for d3d11
 #if !defined(BACKEND_D3D11)
@@ -98,7 +99,6 @@ void R2D_Init(OS_Window* window, R2D_Renderer* renderer) {
 	
 	mat4 projection = mat4_ortho(0, window->width, 0, window->height, -1, 1000);
 	R_UniformBufferSetMat4(&renderer->constants, str_lit("u_projection"), projection);
-	R_PipelineAddUniformBuffer(&renderer->pipeline, &renderer->constants);
 	
 	R_Texture2DWhite(&renderer->white_texture);
 	R_Texture2DAllocLoad(&renderer->circle_texture, str_lit("res/circle.png"), TextureResize_Linear,
@@ -117,7 +117,7 @@ void R2D_Free(R2D_Renderer* renderer) {
 
 void R2D_ResizeProjection(R2D_Renderer* renderer, vec2 render_size) {
 	R_PipelineBind(&renderer->pipeline);
-	mat4 projection = mat4_transpose(mat4_ortho(0, render_size.x, 0, render_size.y, -1, 1000));
+	mat4 projection = mat4_ortho(0, render_size.x, 0, render_size.y, -1, 1000);
 	R_ShaderPackUploadMat4(&renderer->shader, str_lit("u_projection"), projection);
 }
 

@@ -18,8 +18,8 @@
 
 #include <stdlib.h>
 
-Array_Prototype(i32_array, i32);
-Array_Impl(i32_array, i32);
+DArray_Prototype(i32);
+DArray_Impl(i32);
 
 string_array tetrominos = {0};
 i32 field_width = 12;
@@ -61,8 +61,10 @@ int main() {
 	
 	ThreadContext context = {0};
 	tctx_init(&context);
+	U_FrameArenaInit();
 	
-	M_Arena* global_arena = arena_make();
+	M_Arena global_arena;
+	arena_init(&global_arena);
 	
 	OS_Window* window = OS_WindowCreate(1080, 720, str_lit("This should work"));
 	B_BackendInit(window);
@@ -92,7 +94,7 @@ int main() {
 	string_array_add(&tetrominos, str_lit("...." ".XX." "..X." "..X."));
 	string_array_add(&tetrominos, str_lit("...." ".XX." ".X.." ".X.."));
 	
-	field = arena_alloc(global_arena, sizeof(u8) * field_width * field_height);
+	field = arena_alloc(&global_arena, sizeof(u8) * field_width * field_height);
 	
 	for (u32 y = 0; y < field_height; y++) {
 		for (u32 x = 0; x < field_width; x++) {
@@ -117,6 +119,7 @@ int main() {
 	
 	while (OS_WindowIsOpen(window) && !game_over) {
 		OS_PollEvents();
+		U_ResetFrameArena();
 		
 		end = OS_TimeMicrosecondsNow();
 		dt = (end - start) / 1e6;
@@ -142,7 +145,7 @@ int main() {
 					}
 				}
 				
-				i32_array fixed_lines = {0};
+				darray(i32) fixed_lines = {0};
 				for (u32 y = 0; y < 4; y++) {
 					if (current_y + y < field_height - 1) {
 						b8 line_destroyed = true;
@@ -153,7 +156,7 @@ int main() {
 							for (u32 x = 1; x < field_width - 1; x++) {
 								field[(current_y + y) * field_width + x] = 0;
 							}
-							i32_array_add(&fixed_lines, current_y + y);
+							darray_add(i32, &fixed_lines, current_y + y);
 						}
 					}
 				}
@@ -166,7 +169,7 @@ int main() {
 						field[x] = 0;
 					}
 				}
-				i32_array_free(&fixed_lines);
+				darray_free(i32, &fixed_lines);
 				
 				current_x = (field_width / 2) - 1, current_y = 0;
 				current_piece_id = rand() % 7;
@@ -212,7 +215,8 @@ int main() {
 	B_BackendFree(window);
 	OS_WindowClose(window);
 	
-	arena_free(global_arena);
+	arena_free(&global_arena);
 	
+	U_FrameArenaFree();
 	tctx_free(&context);
 }
