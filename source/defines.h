@@ -75,7 +75,7 @@ flush;\
 #elif defined(__linux__) || defined(__gnu_linux__)
 #  define PLATFORM_LINUX
 #else
-#  error "The codebase only supports windows and linux(not really) for now"
+#  error "The codebase only supports windows and linux for now"
 #endif
 #define PATH_MAX 4096
 

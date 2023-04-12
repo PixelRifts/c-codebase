@@ -30,7 +30,7 @@ void* OS_ThreadContextGet(void) {
 //~ Memory
 
 void* OS_MemoryReserve(u64 size) {
-    return VirtualAlloc(0, size, MEM_RESERVE, PAGE_READWRITE);
+    return VirtualAlloc(0, size, MEM_RESERVE, PAGE_NOACCESS);
 }
 
 void OS_MemoryCommit(void* memory, u64 size) {
@@ -121,8 +121,7 @@ string OS_FileRead(M_Arena* arena, string filename) {
 		if (success){
 			result.str = buffer;
 			result.size = total_size;
-		}
-		else{
+		} else {
 			arena_end_temp(restore_point);
 		}
 		

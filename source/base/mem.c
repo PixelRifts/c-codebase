@@ -7,48 +7,6 @@
 // Dependency on the OS. Although it is generic
 #include "os/os.h"
 
-// Using the OS Layer here now, gotta implement one for linux
-/*
-#ifdef PLATFORM_WIN
-#include <windows.h>
-#elif defined(PLATFORM_LINUX)
-#include <sys/mman.h>
-#endif
-
-static void* mem_reserve(u64 size) {
-#ifdef PLATFORM_WIN
-    void* memory = VirtualAlloc(0, size, MEM_RESERVE, PAGE_NOACCESS);
-#elif defined(PLATFORM_LINUX)
-    void* memory = mmap(nullptr, size, PROT_NONE, MAP_PRIVATE | MAP_ANON, -1, 0);
-#endif
-    return memory;
-}
-
-static void mem_release(void* memory, u64 size) {
-#ifdef PLATFORM_WIN
-    VirtualFree(memory, 0, MEM_RELEASE);
-#elif defined(PLATFORM_LINUX)
-    munmap(memory, size);
-#endif
-}
-
-static void mem_commit(void* memory, u64 size) {
-#ifdef PLATFORM_WIN
-    VirtualAlloc(memory, size, MEM_COMMIT, PAGE_READWRITE);
-#elif defined(PLATFORM_LINUX)
-    mprotect(memory, size, PROT_READ | PROT_WRITE);
-#endif
-}
-
-static void mem_decommit(void* memory, u64 size) {
-#ifdef PLATFORM_WIN
-    VirtualFree(memory, size, MEM_DECOMMIT);
-#elif defined(PLATFORM_LINUX)
-    mprotect(memory, size, PROT_NONE);
-#endif
-}
-*/
-
 #define DEFAULT_ALIGNMENT sizeof(void*)
 
 b8 is_power_of_two(uintptr_t x) {

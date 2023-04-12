@@ -31,6 +31,7 @@ load_paths_custom = {
 
 load_paths = {
 	{ load_paths_custom, .os = "win"  },
+	{ load_paths_custom, .os = "linux"  },
 };
 
 command_list = {
@@ -43,6 +44,7 @@ command_list = {
 		.cmd =
 		{
 			{ "build.bat", .os = "win" },
+			{ "./build.sh", .os = "linux" },
 		},
 	},
 	{
@@ -54,6 +56,7 @@ command_list = {
 		.cmd =
 		{
 			{ "bin\codebase.exe", .os = "win" },
+			{ "bin/codebase", .os = "linux" },
 		},
 	},
 	{
@@ -65,6 +68,7 @@ command_list = {
 		.cmd =
 		{
 			{ "meta.bat", .os = "win" },
+			{ "./meta.sh", .os = "linux" },
 		},
 	},
 };

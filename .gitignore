@@ -1,6 +1,7 @@
 bin/
 meta/.vs/
-meta/*.exe
+meta/table_gen.exe
+meta/table_gen
 meta/*.pdb
 meta/*.ilk
 meta/*.sln

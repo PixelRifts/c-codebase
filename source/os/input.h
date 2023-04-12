@@ -10,7 +10,7 @@
 #ifdef PLATFORM_WIN
 #  include "impl/win32_key_codes.h"
 #else
-#  error "Not Implemented YET"
+//#  error "Not Implemented YET"
 #endif
 
 void __OS_InputKeyCallback(u8 key, i32 action);
