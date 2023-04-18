@@ -82,7 +82,7 @@ backend="-DBACKEND_GL33"
 
 # ==============
 # TODO(voxel): REMOVE BACKEND SPECIFIC LINKS
-if [ "$backend" -eq "-DBACKEND_D3D11" ]
+if [ "$backend" = "-DBACKEND_D3D11" ]
 then
   linker_flags="$linker_flags -ldxguid -ld3dcompiler"
 fi

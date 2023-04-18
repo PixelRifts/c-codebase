@@ -40,6 +40,7 @@ void string_array_free(string_const_array* array);
 //-
 
 #define str_lit(s) (string_const) { .str = (u8*)(s), .size = sizeof(s) - 1 }
+#define str_make(s) (string_const) { .str = (u8*)(s), .size = strlen(s) }
 #define str_expand(s) (i32)(s).size, (s).str
 
 string_const str_alloc(M_Arena* arena, u64 size); // NOTE(EVERYONE): this will try to get one extra byte for \0

@@ -301,6 +301,30 @@ b32 OS_FileDelete(string filename) {
 	return result;
 }
 
+b32 OS_FileCreateDir(string dirname) {
+	M_Scratch scratch = scratch_get();
+	string_utf16 dirname16 = str16_from_str8(&scratch.arena, dirname);
+	b32 result = CreateDirectoryW((WCHAR*) dirname16.str, 0);
+	scratch_return(&scratch);
+	return result;
+}
+
+b32 OS_FileDeleteDir(string dirname) {
+	M_Scratch scratch = scratch_get();
+	string_utf16 dirname16 = str16_from_str8(&scratch.arena, dirname);
+	b32 result = RemoveDirectoryW((WCHAR*) dirname16.str);
+	scratch_return(&scratch);
+	return result;
+}
+
+void OS_FileOpenDir(string dirname) {
+	M_Scratch scratch = scratch_get();
+	string_utf16 dirname16 = str16_from_str8(&scratch.arena, dirname);
+	string_utf16 explore = str16_from_str8(&scratch.arena, str_lit("explore"));
+	ShellExecuteW(nullptr, (WCHAR*) explore.str, (WCHAR*) dirname16.str, nullptr, nullptr, SW_SHOWNORMAL);
+	scratch_return(&scratch);
+}
+
 //~ File Properties
 
 static U_DateTime w32_date_time_from_system_time(SYSTEMTIME* in){
@@ -365,30 +389,6 @@ OS_FileProperties OS_FileGetProperties(string filename) {
 		result.access = w32_access_from_attributes(attribs.dwFileAttributes);
 	}
 	return result;
-}
-
-b32 OS_FileCreateDir(string dirname) {
-	M_Scratch scratch = scratch_get();
-	string_utf16 dirname16 = str16_from_str8(&scratch.arena, dirname);
-	b32 result = CreateDirectoryW((WCHAR*) dirname16.str, 0);
-	scratch_return(&scratch);
-	return result;
-}
-
-b32 OS_FileDeleteDir(string dirname) {
-	M_Scratch scratch = scratch_get();
-	string_utf16 dirname16 = str16_from_str8(&scratch.arena, dirname);
-	b32 result = RemoveDirectoryW((WCHAR*) dirname16.str);
-	scratch_return(&scratch);
-	return result;
-}
-
-void OS_FileOpenDir(string dirname) {
-	M_Scratch scratch = scratch_get();
-	string_utf16 dirname16 = str16_from_str8(&scratch.arena, dirname);
-	string_utf16 explore = str16_from_str8(&scratch.arena, str_lit("explore"));
-	ShellExecuteW(nullptr, (WCHAR*) explore.str, (WCHAR*) dirname16.str, nullptr, nullptr, SW_SHOWNORMAL);
-	scratch_return(&scratch);
 }
 
 //~ File Iterator

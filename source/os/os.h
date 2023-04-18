@@ -112,7 +112,7 @@ void       OS_LibraryRelease(OS_Library lib);
 
 //~ Threading
 
-typedef u32 thread_func(void* context); 
+typedef u64 thread_func(void* context); 
 
 typedef struct OS_Thread {
 	u64 v[1];
