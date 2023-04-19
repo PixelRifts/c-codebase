@@ -31,9 +31,28 @@ Mainly made to use as few libraries as possible and for my own exploration and u
   - Simple 2D Physics (Only collision detection and resolution done. No dynamics yet)
 
 ## How do I use this codebase?
-
-It has a simple build script batch file.
-Just cd into the directory and run `build.bat`!
+I would recommend you to make your own :)
+However if you still want to:
+It has a simple build script file.
+Just cd into the directory and run `build.bat` or `build.sh`!
 
 You need clang installed as I have not tested this with other compilers.
-Windows Only because I can't test things out with Linux since I don't have a Linux machine.
+Linux is currently WIP
+
+## TODOs
+- [ ] Linux
+    - [ ] Windowing with X11
+    - [ ] Input Handling
+    - [ ] OpenGL 3.3 backend layer
+    - [ ] OpenGL 4.6 backend layer
+    - [ ] (MAYBE) Implement functions that are insanely tedious (OS_ThreadWaitForAll/Any and others)
+- [ ] Optional Layers
+    - [ ] More UI Widgets
+- [ ] D3D11
+    - [ ] Framebuffer support
+- [ ] Cleanup
+    - [ ] Switch from X-Lists to Metaprogram tables for OpenGL function loading
+    - [ ] Remove Backend specific links (d3d11) by loading functions from dll
+
+- [ ] Major Goals
+    - [ ] Custom Build system (so I can combine .bat and .sh build files)
