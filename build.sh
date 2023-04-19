@@ -73,7 +73,7 @@ fi
 # ==============
 compiler_flags="-Wall -Wvarargs -Werror -Wno-unused-function -Wno-format-security -Wno-incompatible-pointer-types-discards-qualifiers -Wno-unused-but-set-variable -Wno-int-to-void-pointer-cast"
 include_flags="-Isource -Ithird_party/include -Ithird_party/source"
-linker_flags="-g -lm -Lthird_party/lib"
+linker_flags="-g -lm -lX11 -Lthird_party/lib"
 defines="-D_DEBUG -D_CRT_SECURE_NO_WARNINGS"
 output="-obin/codebase"
 backend="-DBACKEND_GL33"

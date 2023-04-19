@@ -3,6 +3,8 @@
 
 #include "window.h"
 
-#ifdef PLATFORM_WIN
+#if defined(PLATFORM_WIN)
 #include "impl/win32_window.c"
+#elif defined(PLATFORM_LINUX)
+#include "impl/x11_window.c"
 #endif
