@@ -5,7 +5,11 @@
 
 #include "defines.h"
 
+// TODO(voxel): assert should actually do a debug break.
+
 #if defined(_DEBUG)
+
+
 #  define Log(format, ...) Statement(\
 printf("Info: ");\
 printf(format, ##__VA_ARGS__);\
@@ -32,7 +36,6 @@ printf("\n");\
 flush;\
 exit(-1);\
 )
-// TODO(voxel): assert should actually do a debug break.
 #  define AssertTrue(c, format, ...) Statement(\
 if (!(c)) {\
 printf("%s:%d: Error: ", FILE_NAME, __LINE__);\
@@ -41,12 +44,15 @@ printf(format, ##__VA_ARGS__);\
 printf("\n");\
 }\
 )
+
+
+
 #else
 #  define Log(format, ...) Statement()
 #  define LogError(format, ...) Statement()
 #  define LogReturn(ret, format, ...) Statement()
 #  define LogFatal(format, ...) Statement()
 #  define AssertTrue(c, format, ...) Statement()
-#endif
+#endif // DEBUG
 
 #endif //LOG_H

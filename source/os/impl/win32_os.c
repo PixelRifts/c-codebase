@@ -328,7 +328,7 @@ void OS_FileOpenDir(string dirname) {
 //~ File Properties
 
 static U_DateTime w32_date_time_from_system_time(SYSTEMTIME* in){
-	U_DateTime result = {};
+	U_DateTime result = {0};
 	result.year   = in->wYear;
 	result.month  = (u8)in->wMonth;
 	result.day    = in->wDay;
@@ -438,7 +438,7 @@ b32  OS_FileIterNext(M_Arena* arena, OS_FileIterator* iter, string* name_out, OS
 			
 			// setup to emit
 			b32 emit = (!is_dot && !is_dotdot);
-			WIN32_FIND_DATAW data = {};
+			WIN32_FIND_DATAW data = {0};
 			if (emit){
 				MemoryCopyStruct(&data, &w32_iter->find_data);
 			}
@@ -643,15 +643,19 @@ void OS_ThreadWaitForJoin(OS_Thread* other) {
 }
 
 void _OS_ThreadWaitForJoinAll(OS_Thread** threads, u32 count) {
-	HANDLE handles[count];
+	M_Scratch scratch = scratch_get();
+	HANDLE* handles = arena_alloc(&scratch.arena, count);
 	for (u32 i = 0; i < count; i++)
 		handles[i] = (HANDLE) threads[i]->v[0];
 	WaitForMultipleObjects(count, handles, TRUE, INFINITE);
+	scratch_return(&scratch);
 }
 
 void _OS_ThreadWaitForJoinAny(OS_Thread** threads, u32 count) {
-	HANDLE handles[count];
+	M_Scratch scratch = scratch_get();
+	HANDLE* handles = arena_alloc(&scratch.arena, count);
 	for (u32 i = 0; i < count; i++)
 		handles[i] = (HANDLE) threads[i]->v[0];
 	WaitForMultipleObjects(count, handles, FALSE, INFINITE);
+	scratch_return(&scratch);
 }

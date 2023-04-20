@@ -1,8 +1,10 @@
 @ECHO off
 SetLocal EnableDelayedExpansion
 IF NOT EXIST bin mkdir bin
+IF NOT EXIST bin\int mkdir bin\int
 
-SET cc=clang
+call vcvarsall.bat x64
+SET cc=cl.exe
 
 REM ------------------
 REM      Options
@@ -47,25 +49,42 @@ if %Use_UI% == true (
 REM ==============
 
 
+SET backend=BACKEND_D3D11
+
 
 REM ==============
-SET compiler_flags=-Wall -Wvarargs -Werror -Wno-unused-function -Wno-format-security -Wno-incompatible-pointer-types-discards-qualifiers -Wno-unused-but-set-variable -Wno-int-to-void-pointer-cast
-SET include_flags=-Isource -Ithird_party/include -Ithird_party/source
-SET linker_flags=-g -lshell32 -luser32 -lwinmm -luserenv -lgdi32 -Lthird_party/lib
-SET defines=-D_DEBUG -D_CRT_SECURE_NO_WARNINGS
-SET output=-obin/codebase.exe
-SET backend=-DBACKEND_D3D11
+if %cc% == cl.exe (
+  SET compiler_flags=/Zc:preprocessor /wd4090 /wd5105
+  SET include_flags=/I.\source\ /I.\third_party\include\ /I.\third_party\source\
+  SET linker_flags=/link /DEBUG /LIBPATH:.\third_party\lib shell32.lib user32.lib winmm.lib userenv.lib gdi32.lib
+  SET output=/Fe.\bin\codebase /Fo.\bin\int\
+  SET defines=/D_DEBUG /D_CRT_SECURE_NO_WARNINGS /D%backend%
+)
+
+if %cc% == clang (
+  SET compiler_flags=-Wall -Wvarargs -Werror -Wno-unused-function -Wno-format-security -Wno-incompatible-pointer-types-discards-qualifiers -Wno-unused-but-set-variable -Wno-int-to-void-pointer-cast
+  SET include_flags=-Isource -Ithird_party/include -Ithird_party/source
+  SET linker_flags=-g -lshell32 -luser32 -lwinmm -luserenv -lgdi32 -Lthird_party/lib
+  SET output=-obin/codebase.exe
+  SET defines=-D_DEBUG -D_CRT_SECURE_NO_WARNINGS -D%backend%
+)
+
 REM ==============
 
 
 REM ==============
 REM TODO(voxel): REMOVE BACKEND SPECIFIC LINKS
-if %backend% == -DBACKEND_D3D11 (
-  SET linker_flags=%linker_flags% -ldxguid -ld3dcompiler
+if %backend% == BACKEND_D3D11 (
+  if %cc% == cl.exe (
+    SET linker_flags=%linker_flags% dxguid.lib d3dcompiler.lib
+  )
+  if %cc% == clang (
+    SET linker_flags=%linker_flags% -ldxguid -ld3dcompiler
+  )
 )
 REM ==============
 
 REM SET compiler_flags=!compiler_flags! -fsanitize=address
 
 ECHO Building codebase.exe...
-%cc% %c_filenames% %compiler_flags% %defines% %backend% %include_flags% %linker_flags% %output%
+%cc% %compiler_flags% %c_filenames% %defines% %include_flags% %output% %linker_flags%

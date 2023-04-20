@@ -36,7 +36,9 @@ However if you still want to:
 It has a simple build script file.
 Just cd into the directory and run `build.bat` or `build.sh`!
 
-You need clang installed as I have not tested this with other compilers.
+You need clang OR MSVC installed as I have not tested this with gcc.
+AFAIK it should just work with gcc anyways.
+
 Linux is currently WIP
 
 ## TODOs

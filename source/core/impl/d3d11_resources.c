@@ -270,7 +270,7 @@ void R_BufferData(R_Buffer* buf, u64 size, void* data) {
 void R_BufferUpdate(R_Buffer* buf, u64 offset, u64 size, void* data) {
 	D3D11_MAPPED_SUBRESOURCE mapped_res;
 	ID3D11DeviceContext_Map(s_wnd->context, (ID3D11Resource*) buf->handle, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_res);
-	memmove(mapped_res.pData + offset, data, size);
+	memmove(((u8*)mapped_res.pData) + offset, data, size);
 	ID3D11DeviceContext_Unmap(s_wnd->context, (ID3D11Resource*) buf->handle, 0);
 }
 

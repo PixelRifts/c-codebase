@@ -136,12 +136,12 @@ M_Scratch scratch_get(void) {
 
 void scratch_reset(M_Scratch* scratch) {
 	ThreadContext* ctx = (ThreadContext*) OS_ThreadContextGet();
-	return tctx_scratch_reset(ctx, scratch);
+	tctx_scratch_reset(ctx, scratch);
 }
 
 void scratch_return(M_Scratch* scratch) {
 	ThreadContext* ctx = (ThreadContext*) OS_ThreadContextGet();
-	return tctx_scratch_return(ctx, scratch);
+	tctx_scratch_return(ctx, scratch);
 }
 
 //~ Pool
@@ -156,8 +156,8 @@ void pool_init(M_Pool* pool, u64 element_size) {
 }
 
 void pool_clear(M_Pool* pool) {
-	for (void *it = (void*)pool + sizeof(M_Pool), *preit = it;
-		 it <= (void*)pool->memory + pool->commit_position;
+	for (u8* it = (u8*)pool + sizeof(M_Pool), *preit = it;
+		 it <= (u8*)pool->memory + pool->commit_position;
 		 preit = it, it += pool->element_size) {
 		((M_PoolFreeNode*)preit)->next = (M_PoolFreeNode*)it;
 	}
@@ -192,10 +192,10 @@ void pool_dealloc(M_Pool* pool, void* ptr) {
 }
 
 void pool_dealloc_range(M_Pool* pool, void* ptr, u64 count) {
-	void* it = ptr;
+	u8* it = ptr;
 	for (u64 k = 0; k < count; k++) {
 		((M_PoolFreeNode*)it)->next = pool->head;
-		pool->head = it;
+		pool->head = (M_PoolFreeNode*) it;
 		it += pool->element_size;
 	}
 }

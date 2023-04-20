@@ -270,7 +270,7 @@ static str_decode str_decode_utf8(u8 *str, u32 cap){
     u8 first_byte_mask[] = { 0, 0x7F, 0x1F, 0x0F, 0x07 };
     u8 final_shift[] = { 0, 18, 12, 6, 0 };
     
-    str_decode result = {};
+    str_decode result = {0};
     if (cap > 0){
         result.codepoint = '#';
         result.size = 1;
