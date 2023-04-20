@@ -1,7 +1,11 @@
-/* date = July 15th 2022 7:50 pm */
+/* date = April 19th 2023 7:51 pm */
 
-#ifndef WIN32_KEY_CODES_H
-#define WIN32_KEY_CODES_H
+#ifndef KEY_CODES_H
+#define KEY_CODES_H
+
+#define Input_Press 1
+#define Input_Release 2
+#define Input_Repeat 3
 
 #define Input_MouseButton_Left 0
 #define Input_MouseButton_Middle 1
@@ -32,16 +36,17 @@
 #define Input_Key_NumpadSlash 111
 #define Input_Key_NumpadPeriod 46
 
-#define Input_Key_Shift 16
-#define Input_Key_Control 17
-#define Input_Key_Alt 18
+#define Input_Key_LeftShift 160
+#define Input_Key_RightShift 161
+#define Input_Key_LeftControl 162
+#define Input_Key_RightControl 163
+#define Input_Key_LeftAlt 164
+#define Input_Key_RightAlt 165
 #define Input_Key_CapsLock 20
 #define Input_Key_ScrollLock 145
 #define Input_Key_NumLock 144
-#define Input_Key_Windows 91
 #define Input_Key_Grave 192
 #define Input_Key_Enter 13
-#define Input_Key_ContextMenu 93
 
 #define Input_Key_Period 190
 #define Input_Key_Comma 188
@@ -74,4 +79,4 @@
 #define Input_Key_Insert 45
 #define Input_Key_Delete 46
 
-#endif //WIN32_KEY_CODES_H
+#endif //KEY_CODES_H

@@ -20,8 +20,11 @@ typedef struct OS_InputState {
 } OS_InputState;
 static OS_InputState _state;
 
-void __OS_InputKeyCallback(u8 key, int action) {
-    //if (key < 0 || key >= 350) return;
+void __OS_InputKeyCallback(u8 key, i32 action) {
+    //if (key < 0 || key >= 350) {
+	//LogError("Unknown Key: %u", key);
+	//return;
+	//}
     
     switch (action) {
         case Input_Press: {
@@ -40,17 +43,50 @@ void __OS_InputKeyCallback(u8 key, int action) {
 	}
 }
 
-void __OS_InputButtonCallback(int button, int action) {
+b8 __OS_InputKeyCallbackCheckRepeat(u8 key, i32 action) {
+	//if (key < 0 || key >= 350) {
+	//LogError("Unknown Key: %u", key);
+	//return false;
+	//}
+    
+	b8 did_repeat = false;
+	if (action == Input_Press) {
+		if (_state.key_current_states[key] == 1) {
+			action = Input_Repeat;
+			did_repeat = true;
+		}
+	}
+	
+    switch (action) {
+        case Input_Press: {
+			_state.key_frame_states[key] = 0b00000001;
+			_state.key_current_states[key] = 1;
+		} break;
+		
+		case Input_Release: {
+			_state.key_frame_states[key] = 0b00000010;
+			_state.key_current_states[key] = 0;
+		} break;
+		
+		case Input_Repeat: {
+			_state.key_frame_states[key] = 0b00000100;
+		} break;
+	}
+	
+	return did_repeat;
+}
+
+void __OS_InputButtonCallback(u8 button, int action) {
     if (button < 0 || button >= 8) return;
     switch (action) {
         case Input_Press: {
-            _state.button_frame_states[button] |= 0b00000001;
+            _state.button_frame_states[button] = 0b00000001;
             _state.button_current_states[button] = 1;
             _state.mouse_recordedx = _state.mouse_x;
             _state.mouse_recordedy = _state.mouse_y;
         } break;
         case Input_Release: {
-            _state.button_frame_states[button] |= 0b00000010;
+            _state.button_frame_states[button] = 0b00000010;
 			_state.button_current_states[button] = 0;
             _state.mouse_recordedx = _state.mouse_x;
             _state.mouse_recordedy = _state.mouse_y;
@@ -70,21 +106,21 @@ void __OS_InputScrollCallback(f32 xscroll, f32 yscroll) {
     _state.mouse_absscrolly += yscroll;
 }
 
-void __OS_InputReset() {
+void __OS_InputReset(void) {
     memset(_state.key_frame_states, 0, 350 * sizeof(u8));
     memset(_state.button_frame_states, 0, 8 * sizeof(u8));
     _state.mouse_scrollx = 0;
     _state.mouse_scrolly = 0;
 }
 
-b32 OS_InputKey(i32 key) { return _state.key_current_states[key]; }
-b32 OS_InputKeyPressed(i32 key) { return (_state.key_frame_states[key] == 0b00000001); }
-b32 OS_InputKeyReleased(i32 key) { return (_state.key_frame_states[key] == 0b00000010); }
-b32 OS_InputKeyHeld(i32 key) { return (_state.key_frame_states[key] == 0b00000100); }
-b32 OS_InputButton(i32 button) { return _state.button_current_states[button]; }
-b32 OS_InputButtonPressed(i32 button)
+b32 OS_InputKey(u8 key) { return _state.key_current_states[key]; }
+b32 OS_InputKeyPressed(u8 key) { return (_state.key_frame_states[key] == 0b00000001); }
+b32 OS_InputKeyReleased(u8 key) { return (_state.key_frame_states[key] == 0b00000010); }
+b32 OS_InputKeyHeld(u8 key) { return (_state.key_frame_states[key] == 0b00000100); }
+b32 OS_InputButton(u8 button) { return _state.button_current_states[button]; }
+b32 OS_InputButtonPressed(u8 button)
 { return (_state.button_frame_states[button] == 0b00000001); }
-b32 OS_InputButtonReleased(i32 button)
+b32 OS_InputButtonReleased(u8 button)
 { return (_state.button_frame_states[button] == 0b00000010); }
 f32 OS_InputGetMouseX() { return _state.mouse_x; }
 f32 OS_InputGetMouseY() { return _state.mouse_y; }

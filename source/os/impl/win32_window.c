@@ -100,6 +100,11 @@ void OS_WindowShow(OS_Window* _window) {
 	UpdateWindow(window->handle);
 }
 
+// @seealso this function in x11_window.c for some notes
+void OS_WindowSetOpen(b8 open) {
+	_should_close = !open;
+}
+
 b8 OS_WindowIsOpen(OS_Window* _window) {
 	return !_should_close;
 }

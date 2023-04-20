@@ -3,6 +3,10 @@
 #include "base/tctx.h"
 #include "base/log.h"
 #include "os/window.h"
+#include "os/input.h"
+
+void mybtncallback(OS_Window* window, u8 btn, i32 action) {
+}
 
 int main() {
 	OS_Init();
@@ -12,9 +16,20 @@ int main() {
 	arena_init(&global_arena);
 	
 	OS_Window* window = OS_WindowCreate(1080, 720, str_lit("Yeet"));
+	window->button_callback = mybtncallback;
 	OS_WindowShow(window);
 	while (OS_WindowIsOpen(window)) {
 		OS_PollEvents();
+		
+		if (OS_InputKeyPressed(Input_Key_Apostrophe)) {
+			Log("Foo");
+		}
+		if (OS_InputButtonPressed(Input_MouseButton_Left)) {
+			Log("Bar");
+		}
+		
+		f32 yscroll = OS_InputGetMouseScrollY();
+		if (yscroll) Log("%2.3f", yscroll);
 	}
 	OS_WindowClose(window);
 	

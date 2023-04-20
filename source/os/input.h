@@ -3,29 +3,29 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-#define Input_Press 1
-#define Input_Release 2
-#define Input_Repeat 3
+// Common KeyCodes
+#include "key_codes.h"
 
-#ifdef PLATFORM_WIN
-#  include "impl/win32_key_codes.h"
-#else
-//#  error "Not Implemented YET"
+#if defined(PLATFORM_WIN)
+#  include "impl/win32_key_code_translate.h"
+#elif defined(PLATFORM_LINUX)
+#  include "impl/x11_key_code_translate.h"
 #endif
 
 void __OS_InputKeyCallback(u8 key, i32 action);
-void __OS_InputButtonCallback(i32 button, i32 action);
+b8   __OS_InputKeyCallbackCheckRepeat(u8 key, i32 action);
+void __OS_InputButtonCallback(u8 button, i32 action);
 void __OS_InputCursorPosCallback(f32 xpos, f32 ypos);
 void __OS_InputScrollCallback(f32 xscroll, f32 yscroll);
-void __OS_InputReset();
+void __OS_InputReset(void);
 
-b32 OS_InputKey(i32 key);
-b32 OS_InputKeyPressed(i32 key);
-b32 OS_InputKeyReleased(i32 key);
-b32 OS_InputKeyHeld(i32 key);
-b32 OS_InputButton(i32 button);
-b32 OS_InputButtonPressed(i32 button);
-b32 OS_InputButtonReleased(i32 button);
+b32 OS_InputKey(u8 key);
+b32 OS_InputKeyPressed(u8 key);
+b32 OS_InputKeyReleased(u8 key);
+b32 OS_InputKeyHeld(u8 key);
+b32 OS_InputButton(u8 button);
+b32 OS_InputButtonPressed(u8 button);
+b32 OS_InputButtonReleased(u8 button);
 f32 OS_InputGetMouseX();
 f32 OS_InputGetMouseY();
 f32 OS_InputGetMouseScrollX();

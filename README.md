@@ -41,11 +41,10 @@ Linux is currently WIP
 
 ## TODOs
 - [ ] Linux
-    - [ ] Windowing with X11
-    - [ ] Input Handling
+    - [x] Windowing with X11
+    - [x] Input Handling
     - [ ] OpenGL 3.3 backend layer
     - [ ] OpenGL 4.6 backend layer
-    - [ ] (MAYBE) Implement functions that are insanely tedious (OS_ThreadWaitForAll/Any and others)
 - [ ] Optional Layers
     - [ ] More UI Widgets
 - [ ] D3D11
@@ -53,6 +52,9 @@ Linux is currently WIP
 - [ ] Cleanup
     - [ ] Switch from X-Lists to Metaprogram tables for OpenGL function loading
     - [ ] Remove Backend specific links (d3d11) by loading functions from dll
-
 - [ ] Major Goals
     - [ ] Custom Build system (so I can combine .bat and .sh build files)
+
+
+- [ ] Maybes
+    - [ ] Implement functions that are insanely tedious (OS_ThreadWaitForAll/Any and others)
