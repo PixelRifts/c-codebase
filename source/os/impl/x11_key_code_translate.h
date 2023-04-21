@@ -5,10 +5,10 @@
 
 // https://www.cl.cam.ac.uk/~mgk25/ucs/keysymdef.h
 
-#define X11Input_Key_LeftArrow 0xff96
-#define X11Input_Key_UpArrow 0xff97
-#define X11Input_Key_RightArrow 0xff98
-#define X11Input_Key_DownArrow 0xff99
+#define X11Input_Key_LeftArrow 0xff51
+#define X11Input_Key_UpArrow 0xff52
+#define X11Input_Key_RightArrow 0xff53
+#define X11Input_Key_DownArrow 0xff54
 
 #define X11Input_Key_Minus 0x002d
 #define X11Input_Key_Equals 0x003d
@@ -74,6 +74,8 @@
 #define X11Input_Key_Delete 0xffff
 
 static inline u8 __X11KeyCode_Translate(u32 in) {
+	if (in >= 'a' && in <= 'z') return in - 32;
+	
 	// is this smart? there HAS to be a better way
 	switch (in) {
 		case X11Input_Key_LeftArrow: return Input_Key_LeftArrow;

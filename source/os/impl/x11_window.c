@@ -41,12 +41,13 @@ OS_Window* OS_WindowCreate(u32 width, u32 height, string title) {
 	window->width = width;
 	window->height = height;
 	window->title = title;
+	window->display = _display;
 	
 	window->handle =
 		XCreateSimpleWindow(_display, RootWindow(_display, _screen), 30, 30, width, height, 0, 0, 0);
 	XSelectInput(_display, window->handle,
 				 KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask |
-				 PointerMotionMask | ResizeRedirectMask);
+				 PointerMotionMask | ResizeRedirectMask | ExposureMask);
 	XStoreName(_display, window->handle, (char*)title.str);
 	
 	hash_table_set(Window, X11_WindowHandle, &_window_map, window->handle, window);
@@ -134,6 +135,10 @@ void OS_PollEvents(void) {
 			}
 		} else if (event.type == MotionNotify) {
 			__OS_InputCursorPosCallback((f32)event.xmotion.x, (f32)event.xmotion.y);
+		} else if (event.type == Expose) {
+			X11_Window* window;
+			hash_table_get(Window, X11_WindowHandle, &_window_map, event.xexpose.window, &window);
+			if (window->resize_callback) window->resize_callback((OS_Window*) window, event.xexpose.width, event.xexpose.height);
 		}
 	}
 }

@@ -17,14 +17,14 @@ out vec4  v_clip_quad;
 out vec3  v_rounding_softness_and_edge_size;
 out vec2  v_sampling_loc;
 
-const vec2 vertex_multiplers[] = {
-    vec2(-.5, -.5),
-    vec2(+.5, -.5),
-    vec2(+.5, +.5),
-    vec2(-.5, -.5),
-    vec2(+.5, +.5),
-    vec2(-.5, +.5),
-};
+const vec2 vertex_multiplers[6] = vec2[6](
+										  vec2(-.5, -.5),
+										  vec2(+.5, -.5),
+										  vec2(+.5, +.5),
+										  vec2(-.5, -.5),
+										  vec2(+.5, +.5),
+										  vec2(-.5, +.5)
+										  );
 
 layout (std140) uniform ActualConstants {
 	mat4 u_projection;

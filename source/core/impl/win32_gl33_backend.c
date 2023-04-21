@@ -78,15 +78,15 @@ typedef BOOL WINAPI W32_wglChoosePixelFormatARB(HDC hdc, const int* piAttribILis
 typedef HGLRC WINAPI W32_wglCreateContextAttribsARB(HDC hdc, HGLRC hShareContext, const int* attribList);
 typedef BOOL WINAPI W32_wglSwapLayerBuffers(HDC hdc, UINT plane);
 
-static HMODULE opengl_module;
+static HMODULE opengl_module = 0;
 
-static W32_wglCreateContext* v_wglCreateContext;
+static W32_wglCreateContext* v_wglCreateContext = 0;
 
-static W32_wglDeleteContext* v_wglDeleteContext;
-static W32_wglMakeCurrent* v_wglMakeCurrent;
-static W32_wglGetProcAddress* v_wglGetProcAddress;
-static W32_wglChoosePixelFormatARB* v_wglChoosePixelFormatARB;
-static W32_wglCreateContextAttribsARB* v_wglCreateContextAttribsARB;
+static W32_wglDeleteContext* v_wglDeleteContext = 0;
+static W32_wglMakeCurrent* v_wglMakeCurrent = 0;
+static W32_wglGetProcAddress* v_wglGetProcAddress = 0;
+static W32_wglChoosePixelFormatARB* v_wglChoosePixelFormatARB = 0;
+static W32_wglCreateContextAttribsARB* v_wglCreateContextAttribsARB = 0;
 
 long_func* _GetAddress(const char* name) {
 	return (long_func*) GetProcAddress(opengl_module, name);

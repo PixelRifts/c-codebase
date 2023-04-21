@@ -10,7 +10,7 @@ cc=clang
 
 Use_Render2D=false
 Use_Physics2D=false
-Use_UI=false
+Use_UI=true
 
 # ------------------
 #    Main Project
@@ -76,7 +76,7 @@ include_flags="-Isource -Ithird_party/include -Ithird_party/source"
 linker_flags="-g -lm -lX11 -Lthird_party/lib"
 defines="-D_DEBUG -D_CRT_SECURE_NO_WARNINGS"
 output="-obin/codebase"
-backend="-DBACKEND_GL33"
+backend="-DBACKEND_GL46"
 # ==============
 
 

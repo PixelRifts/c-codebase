@@ -5,9 +5,11 @@
 
 #include <X11/Xlib.h>
 
-#if defined(BACKEND_GL33) || defined(BACKEND_GL46)
-//#  include <GL/glx.h>
-#endif
+typedef XID GLXWindow;
+typedef XID GLXDrawable;
+typedef struct __GLXFBConfig* GLXFBConfig;
+typedef struct __GLXcontext* GLXContext;
+typedef void GLXextproc(void);
 
 typedef struct X11_Window {
 	u32 width;
@@ -18,12 +20,11 @@ typedef struct X11_Window {
 	ButtonCallback* button_callback;
 	void* user_data;
 	
+	Display* display;
 	Window handle;
-	b32 should_close;
 #if defined(BACKEND_GL33) || defined(BACKEND_GL46)
 	struct {
-		//XVisualInfo* visual_info;
-		//GLXContext gl_context;
+		GLXContext gl_context;
 	};
 #endif
 } X11_Window;

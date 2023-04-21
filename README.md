@@ -42,11 +42,11 @@ AFAIK it should just work with gcc anyways.
 Linux is currently WIP
 
 ## TODOs
-- [ ] Linux
+- [x] Linux
     - [x] Windowing with X11
     - [x] Input Handling
-    - [ ] OpenGL 3.3 backend layer
-    - [ ] OpenGL 4.6 backend layer
+    - [x] OpenGL 3.3 backend layer
+    - [x] OpenGL 4.6 backend layer
 - [ ] Optional Layers
     - [ ] More UI Widgets
 - [ ] D3D11

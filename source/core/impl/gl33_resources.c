@@ -293,12 +293,12 @@ void R_ShaderAlloc(R_Shader* shader, string data, R_ShaderType type) {
 	glShaderSource(shader->handle, 1, (const GLchar *const *)&data.str, &size);
 	glCompileShader(shader->handle);
 	
-	i32 ret = 0;
+	i32 ret = 69;
 	glGetShaderiv(shader->handle, GL_COMPILE_STATUS, &ret);
 	if (ret == GL_FALSE) {
 		LogError("[GL33 Backend] Shader Compilation Failure:\n");
 		
-		i32 length;
+		i32 length = 0;
 		glGetShaderiv(shader->handle, GL_INFO_LOG_LENGTH, &length);
 		GLchar *info = calloc(length, sizeof(GLchar));
 		glGetShaderInfoLog(shader->handle, length, NULL, info);
@@ -326,9 +326,9 @@ void R_ShaderPackAlloc(R_ShaderPack* pack, R_Shader* shaders, u32 shader_count) 
 	i32 ret = 0;
 	glGetProgramiv(pack->handle, GL_LINK_STATUS, &ret);
 	if (ret == GL_FALSE) {
-		LogError("[GL33 Backend] Shader Compilation Failure:\n");
+		LogError("[GL33 Backend] Program Linking Failure:\n");
 		
-		i32 length;
+		i32 length = 0;
 		glGetProgramiv(pack->handle, GL_INFO_LOG_LENGTH, &length);
 		GLchar *info = calloc(length, sizeof(GLchar));
 		glGetProgramInfoLog(pack->handle, length, NULL, info);

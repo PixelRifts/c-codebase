@@ -3,8 +3,6 @@
 
 #include "gl_functions.h"
 
-// TODO(voxel): Debug Layer
-
 #include "gl46_resources.h"
 
 static b8 i32_is_null(i32 value) { return value == 0;  }
@@ -321,7 +319,7 @@ void R_ShaderPackAlloc(R_ShaderPack* pack, R_Shader* shaders, u32 shader_count) 
 	i32 ret = 0;
 	glGetProgramiv(pack->handle, GL_LINK_STATUS, &ret);
 	if (ret == GL_FALSE) {
-		LogError("[GL46 Backend] Shader Compilation Failure:\n");
+		LogError("[GL46 Backend] Program Linking Failure:\n");
 		
 		i32 length;
 		glGetProgramiv(pack->handle, GL_INFO_LOG_LENGTH, &length);
