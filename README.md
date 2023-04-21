@@ -39,7 +39,7 @@ Just cd into the directory and run `build.bat` or `build.sh`!
 You need clang OR MSVC installed as I have not tested this with gcc.
 AFAIK it should just work with gcc anyways.
 
-Linux is currently WIP
+Not tested EXTENSIVELY with linux but the codebase does work
 
 ## TODOs
 - [x] Linux
