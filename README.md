@@ -13,7 +13,7 @@ Mainly made to use as few libraries as possible and for my own exploration and u
   - Math
   - Logging
   - Generic Data structure defining macros
-- An OS Layer: (Only win32 implemented):
+- An OS Layer: (Only win32 and x11 linux implemented):
   - Basic File handling
   - Dynamic Library Loading
   - Windowing
