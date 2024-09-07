@@ -109,6 +109,7 @@ void* prev = stack->elems;\
 u32 new_cap = DoubleCapacity(stack->cap);\
 stack->elems = calloc(new_cap, sizeof(Data));\
 memmove(stack->elems, prev, stack->len * sizeof(Data));\
+stack->cap = new_cap;\
 free(prev);\
 }\
 stack->elems[stack->len++] = data;\
