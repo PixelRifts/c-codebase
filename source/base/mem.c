@@ -182,6 +182,8 @@ void* pool_alloc(M_Pool* pool) {
 		OS_MemoryCommit(commit_ptr, M_POOL_COMMIT_CHUNK * pool->element_size);
 		pool_dealloc_range(pool, commit_ptr, M_POOL_COMMIT_CHUNK);
 		
+		pool->commit_position += M_POOL_COMMIT_CHUNK * pool->element_size;
+		
 		return pool_alloc(pool);
 	}
 }
